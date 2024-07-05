@@ -146,8 +146,17 @@ var map = new maplibregl.Map({
                 "type": "fill",
                 "source": "japan",
                 "paint": {
-                    "fill-color": "rgba(211, 211, 211, 1)", // 薄いグレー
+                    "fill-color": "rgba(255, 255, 255, 1)", // 日本の色を白に
                     "fill-outline-color": "rgba(0, 0, 0, 1)"
+                }
+            },
+            {
+                "id": "japan-outline",
+                "type": "line",
+                "source": "japan",
+                "paint": {
+                    "line-color": "rgba(0, 0, 0, 1)",
+                    "line-width": 1 // 境界線の太さを設定
                 }
             }
         ]
