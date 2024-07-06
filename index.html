@@ -56,8 +56,8 @@
             background-color: rgba(255, 0, 0, 1);
         }
         .icon4 {
-            width: 7px;
-            height: 7px;
+            width: 10px;
+            height: 10px;
             border: 1px solid rgba(0, 0, 0, 1);
             background-color: rgba(255, 170, 170, 1);
         }
@@ -68,8 +68,8 @@
             clip-path: polygon(50% 4.5%, 61% 39.5%, 98% 39.5%, 68% 61.5%, 79% 95.5%, 50% 74.5%, 21% 95.5%, 32% 61.5%, 2% 39.5%, 39% 39.5%);
         }
         .icon6 {
-            width: 7px;
-            height: 7px;
+            width: 10px;
+            height: 10px;
             border: 1px solid rgba(200, 0, 200, 1);
             background-color: rgba(255, 0, 255, 1);
         }
@@ -130,7 +130,7 @@ var map = new maplibregl.Map({
             "japan": {
                 "type": "geojson",
                 "data": "Japan.geojson",
-                attribution: '「位置参照情報ダウンロードサービス」（国土交通省）を加工して作成'
+                attribution: "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
             }
         },
         "layers": [
@@ -164,13 +164,54 @@ var map = new maplibregl.Map({
     center: [136, 35.7], // 初期中心位置
     zoom: 4, // 初期ズームレベル
     maxZoom: 9, // 最大ズームレベル
-    minZoom: 4, // 最小ズームレベル
+    minZoom: 4 // 最小ズームレベル
 });
 
 // 地図にスケールコントロールを追加
 map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
 
 var allFeatures = [];
+var literatureData = {};
+
+/// 文献データを読み込む関数
+function loadLiteratureData(callback) {
+    $.get("Literature.csv", function(data) {
+        // CSVパース用の正規表現
+        var lines = data.split(/\r?\n/); // 改行コードによって行を分割
+        var headers = lines[0].split(',').map(function(header) {
+            return header.trim(); // ヘッダーをトリムして取得
+        });
+
+        for (var i = 1; i < lines.length; i++) {
+            var line = lines[i];
+            if (!line.trim()) continue; // 空行をスキップ
+
+            var values = [];
+            var startIndex = 0;
+            var inQuotes = false;
+
+            for (var k = 0; k < line.length; k++) {
+                if (line[k] === ',' && !inQuotes) {
+                    values.push(line.substring(startIndex, k).trim());
+                    startIndex = k + 1;
+                } else if (line[k] === '"') {
+                    inQuotes = !inQuotes;
+                }
+            }
+
+            // 最後の値を取得
+            values.push(line.substring(startIndex).trim());
+
+            var literature = {};
+            for (var j = 0; j < headers.length; j++) {
+                literature[headers[j]] = values[j]; // トリムせずに値をセット
+            }
+
+            literatureData[literature["LID_CSV"]] = literature["LitList"];
+        }
+        callback();
+    });
+}
 
 // フィルタリングされた学名または和名を表示する関数
 function filterFeatures(searchText) {
@@ -178,7 +219,6 @@ function filterFeatures(searchText) {
         return feature.properties["学名"] === searchText || feature.properties["和名"] === searchText;
     });
     displayFeatures(filteredFeatures); // 学名または和名を表示
-    updateSelectedSpecies(searchText); // 選択された学名または和名を更新
 }
 
 function displayFeatures(features) {
@@ -216,11 +256,23 @@ function displayFeatures(features) {
 
         var el = document.createElement('div');
         el.className = iconClass;
-
+        if (feature.properties["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] !== '5_標本記録') {
+            el.style.cursor = 'pointer'; // マウスホバー時にポインターに変更
+        }
         // マーカーを作成して地図に追加
-        new maplibregl.Marker(el)
+        var marker = new maplibregl.Marker(el)
             .setLngLat(feature.geometry.coordinates)
             .addTo(map);
+
+        // ポップアップの設定
+        if (feature.properties["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] !== '5_標本記録') {
+            var literatureID = feature.properties["文献ID"];
+            var literature = literatureData[literatureID] || "文献情報が見つかりません";
+            var popup = new maplibregl.Popup({ offset: 25 })
+                .setHTML('<p>' + '和名: ' + feature.properties["文献中の和名"] + '<br>学名: ' + feature.properties["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"] + '<br>Page: ' + feature.properties["掲載ページ"] + '<br>場所: ' + feature.properties["場所（原文ママ）"] + '<br><br>文献: ' + literature.replace(/^"(.*)"$/, '$1') + '</p>');
+
+            marker.setPopup(popup);
+        }
     });
 }
 
@@ -259,21 +311,23 @@ function updateDropdownList(searchText) {
     });
 }
 
-$.getJSON("DistributionRecord.geojson", function (data) {
-    allFeatures = data.features;
+loadLiteratureData(function() {
+    $.getJSON("DistributionRecord.geojson", function (data) {
+        allFeatures = data.features;
 
-    // ページロード時に全ての学名と和名をドロップダウンリストに表示
-    updateDropdownList('');
+        // ページロード時に全ての学名と和名をドロップダウンリストに表示
+        updateDropdownList('');
 
-    // 検索入力欄に入力があったときにドロップダウンリストを更新
-    document.getElementById('searchInput').addEventListener('input', function (e) {
-        updateDropdownList(e.target.value);
-    });
+        // 検索入力欄に入力があったときにドロップダウンリストを更新
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            updateDropdownList(e.target.value);
+        });
 
-    // 更新ボタンがクリックされたときの挙動を設定
-    document.getElementById('updateButton').addEventListener('click', function () {
-        var selectedName = document.getElementById('dropdown').value.split(" / ")[0];
-        filterFeatures(selectedName);
+        // 更新ボタンがクリックされたときの挙動を設定
+        document.getElementById('updateButton').addEventListener('click', function () {
+            var selectedName = document.getElementById('dropdown').value.split(" / ")[0];
+            filterFeatures(selectedName);
+        });
     });
 });
 </script>
