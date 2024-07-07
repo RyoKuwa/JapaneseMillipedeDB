@@ -331,6 +331,12 @@ loadLiteratureData(function() {
         document.getElementById('updateButton').addEventListener('click', function () {
             var selectedName = document.getElementById('dropdown').value.split(" / ")[0];
             filterFeatures(selectedName);
+
+            // ポップアップを閉じる
+            var popups = document.getElementsByClassName('maplibregl-popup');
+            while (popups[0]) {
+                popups[0].remove();
+            }
         });
     });
 });
