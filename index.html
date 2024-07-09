@@ -381,7 +381,7 @@ loadLiteratureData(function() {
         const olElement = document.getElementById('literature-items');
         sortedliteratureList2.forEach(item => {
             const liElement = document.createElement('li');
-            liElement.textContent = item.LitList;
+            liElement.innerHTML = item.LitList;
             olElement.appendChild(liElement);
         });
             // ポップアップを閉じる
