@@ -11,7 +11,7 @@
     <!-- 地図とマーカーのCSS -->
     <style>
         body { margin: 0; padding: 0; font-family: 'Times New Roman'; }
-        #mapid { position: absolute; top: 0; bottom: 0; width: 100%; height: 800px; }
+        #mapid { position: absolute; top: 0; bottom: 50%; width: 100%; height: 800px; z-index: 0; }
         #searchContainer { position: absolute; top: 10px; left: 10px; background: white; padding: 10px; z-index: 1; }
         #selectedSpecies { position: absolute; top: 50px; left: 50px; background: rgba(255, 255, 255, 0); padding: 10px; z-index: 1; font-family: 'Times New Roman'; }
         #dropdown { font-family: 'Times New Roman'; }
@@ -89,6 +89,14 @@
 
 <!--地図の配置-->
 <div id="mapid"></div>
+
+<!-- 文献リスト -->
+<div id="literature-list" style="position: absolute; top: 800px; width: 100%; background-color: #f9f9f9;">
+  <ol id="literature-items"; padding: 10px;">
+    <!-- 更新されたときにここに追加されます -->
+  </ol>
+</div>
+
 <!--検索部分-->
 <div id="searchContainer">
     <input type="text" id="searchInput" placeholder="学名または和名を入力">
@@ -176,8 +184,9 @@ map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), '
 
 var allFeatures = [];
 var literatureData = {};
+var literatureDataNum = [];
 
-/// 文献データを読み込む関数
+// 文献データを読み込む関数
 function loadLiteratureData(callback) {
     $.get("Literature.csv", function(data) {
         // CSVパース用の正規表現
@@ -211,12 +220,12 @@ function loadLiteratureData(callback) {
                 literature[headers[j]] = values[j]; // トリムせずに値をセット
             }
 
-            literatureData[literature["LID_CSV"]] = literature["LitList"];
+            literatureDataNum.push({ Lnumber: literature["Lnumber"], LitList: literature["LitList"].replace(/^"(.*)"$/, '$1') });
+            literatureData[literature["LID_CSV"]] = literature["LitList"].replace(/^"(.*)"$/, '$1');
         }
         callback();
     });
 }
-
 // フィルタリングされた学名または和名を表示する関数
 function filterFeatures(searchText) {
     var filteredFeatures = allFeatures.filter(function (feature) {
@@ -304,7 +313,6 @@ function updateDropdownList(searchText) {
         });
 
         var sortedNames = Array.from(uniqueNames).sort();
-
         // ソートされた学名と和名をドロップダウンリストに追加
         sortedNames.forEach(function (name) {
             var option = document.createElement('option');
@@ -331,7 +339,51 @@ loadLiteratureData(function() {
         document.getElementById('updateButton').addEventListener('click', function () {
             var selectedName = document.getElementById('dropdown').value.split(" / ")[0];
             filterFeatures(selectedName);
+        // 文献リストを表示
+        $("#literature-items").empty();
+        var addedLiterature = new Set(); // 重複を管理するためのセット
 
+        // 文字列Referenceを追加
+        $("#literature-items").append('<p>Reference</p>'); 
+        var literatureList2 = [];
+        data.features.forEach(function(feature) {
+            if (feature.properties["学名"] === selectedName) {
+                var literatureID = feature.properties["文献ID"];
+                var literatureList = literatureData[feature.properties["文献ID"]];
+                if (literatureID && literatureList && !addedLiterature.has(literatureID)) {
+                    // ダブルクォートの削除
+                    literatureList = literatureList.replace(/^"(.*)"$/, '$1');
+                    addedLiterature.add(literatureID); // セットに追加
+                    literatureList2.push({LitList: literatureList});
+                }
+            }
+        });
+        // literatureList2をliteratureDataNumのLnumberの順番に並べ替える関数
+        function sortliteratureList2ByliteratureDataNum(literatureList2, literatureDataNum) {
+            // LitListとLnumberのマップを作成
+            const litNumMap = new Map();
+            literatureDataNum.forEach(item => {
+            litNumMap.set(item.LitList, item.Lnumber);
+            });
+
+            // literatureList2をソート
+            const sortedliteratureList2 = literatureList2.sort((a, b) => {
+            return litNumMap.get(a.LitList) - litNumMap.get(b.LitList);
+            });
+
+            return sortedliteratureList2;
+        }
+
+        // 並べ替えを実行
+        const sortedliteratureList2 = sortliteratureList2ByliteratureDataNum(literatureList2, literatureDataNum);
+
+        // 並べ替えた結果をli要素として表示
+        const olElement = document.getElementById('literature-items');
+        sortedliteratureList2.forEach(item => {
+            const liElement = document.createElement('li');
+            liElement.textContent = item.LitList;
+            olElement.appendChild(liElement);
+        });
             // ポップアップを閉じる
             var popups = document.getElementsByClassName('maplibregl-popup');
             while (popups[0]) {
