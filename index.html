@@ -391,6 +391,13 @@ loadLiteratureData(function() {
 
         // リセットボタンがクリックされたときの挙動を設定
         document.getElementById('resetButton').addEventListener('click', function () {
+            // 既存のマーカーを削除
+            document.querySelectorAll('.maplibregl-marker').forEach(marker => marker.remove());
+            // ポップアップを閉じる
+            var popups = document.getElementsByClassName('maplibregl-popup');
+            while (popups[0]) {
+                popups[0].remove();
+            }
             // ドロップダウンをリセットする
             document.getElementById('islandDropdown').selectedIndex = 0;
             document.getElementById('prefectureDropdown').selectedIndex = 0;
