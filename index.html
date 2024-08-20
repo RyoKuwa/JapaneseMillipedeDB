@@ -112,7 +112,7 @@
         <option value="">都道府県を選択</option>
     </select>
     <!-- リセットボタン -->
-    <button id="updateButton">リセット</button>
+    <button id="resetButton">リセット</button>
 </div>
 
 <!-- レジェンド（アイコンの説明） -->
@@ -350,13 +350,11 @@ function updateDropdownList(searchText) {
             var prefectureName = properties["都道府県_jp"];
             
             // 検索テキストと一致する学名または和名をセットに追加
-            if ((sciName && (searchText === "" || sciName.includes(searchText))) ||
-                (japName && (searchText === "" || japName.includes(searchText)))) {
-                    //島嶼・都道府県でフィルタリング
-                    if ((selectedIsland === '' || islandName === selectedIsland) &&
-                        (selectedPrefecture === '' || prefectureName === selectedPrefecture)){
-                        uniqueNames.add(sciName + " / " + japName);
-                }
+            if (((sciName && (searchText === "" || sciName.includes(searchText))) ||
+                (japName && (searchText === "" || japName.includes(searchText)))) &&
+                (selectedIsland === '' || islandName === selectedIsland) &&
+                (selectedPrefecture === '' || prefectureName === selectedPrefecture)) {
+                    uniqueNames.add(sciName + " / " + japName);
             }
         });
 
@@ -392,7 +390,12 @@ loadLiteratureData(function() {
         });
 
         // リセットボタンがクリックされたときの挙動を設定
-        document.getElementById('updateButton').addEventListener('click', function () {
+        document.getElementById('resetButton').addEventListener('click', function () {
+            // ドロップダウンをリセットする
+            document.getElementById('islandDropdown').selectedIndex = 0;
+            document.getElementById('prefectureDropdown').selectedIndex = 0;
+            selectedIsland = ('');
+            selectedPrefecture = ('');
             updateDropdownList('');
         });
 
