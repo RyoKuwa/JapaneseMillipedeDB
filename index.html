@@ -13,7 +13,7 @@
         body { margin: 0; padding: 0; font-family: 'Times New Roman'; }
         #mapid { position: absolute; top: 0; bottom: 0; width: 100%; height: 800px; z-index: 0; }
         #searchContainer { position: absolute; top: 10px; left: 10px; background: white; padding: 10px; z-index: 1; }
-        #dropdown { font-family: 'Times New Roman'; }
+        #taxonDropdown { font-family: 'Times New Roman'; }
         .maplibregl-popup-content {
             border: 1px solid black;
             box-shadow: 1px 1px 5px black;
@@ -100,7 +100,7 @@
 <div id="searchContainer">
     <!-- 分類群のドロップダウン -->
     <input type="text" id="searchInput" placeholder="学名または和名を入力">
-    <select id="dropdown">
+    <select id="taxonDropdown">
         <option value="">分類群を選択</option>
     </select>
     <!-- 島リストのドロップダウン -->
@@ -231,6 +231,16 @@ $.get("Prefecture.csv", function(data) {
 var selectedName = ('');
 var selectedIsland = ('');
 var selectedPrefecture = ('');
+var searchText = ('');
+
+// ページロード時に全ての学名と和名をドロップダウンリストに表示
+updateDropdownList('');
+
+// 検索入力欄に入力があったときにドロップダウンリストを更新
+document.getElementById('searchInput').addEventListener('input', function (e) {
+    updateDropdownList(e.target.value);
+    searchText = e.target.value
+});
 
 // 全フィーチャーを格納するための変数
 var allFeatures = [];
@@ -239,45 +249,45 @@ var literatureData = {};
 
 // 文献データを読み込む関数
 var literatureDataNum = [];
-function loadLiteratureData(callback) {
-    $.get("Literature.csv", function(data) {
-        // CSVパース用の正規表現
-        var lines = data.split(/\r?\n/); // 改行コードによって行を分割
-        var headers = lines[0].split(',').map(function(header) {
-            return header.trim(); // ヘッダーをトリムして取得
-        });
 
-        for (var i = 1; i < lines.length; i++) {
-            var line = lines[i];
-            if (!line.trim()) continue; // 空行をスキップ
-
-            var values = [];
-            var startIndex = 0;
-            var inQuotes = false;
-
-            for (var k = 0; k < line.length; k++) {
-                if (line[k] === ',' && !inQuotes) {
-                    values.push(line.substring(startIndex, k).trim());
-                    startIndex = k + 1;
-                } else if (line[k] === '"') {
-                    inQuotes = !inQuotes;
-                }
-            }
-
-            // 最後の値を取得
-            values.push(line.substring(startIndex).trim());
-
-            var literature = {};
-            for (var j = 0; j < headers.length; j++) {
-                literature[headers[j]] = values[j]; // トリムせずに値をセット
-            };
-            literatureDataNum.push({ Lnumber: literature["Lnumber"], LID_CSV: literature["LID_CSV"], LitList: literature["LitList"].replace(/^"(.*)"$/, '$1'), Link: literature["Link"] });
-            literatureData[literature["LID_CSV"]] = literature["LitList"];
-        }
-        callback();
+// 文献データの読み込み
+$.get("Literature.csv", function(data) {
+    // CSVパース用の正規表現
+    var lines = data.split(/\r?\n/); // 改行コードによって行を分割
+    var headers = lines[0].split(',').map(function(header) {
+        return header.trim(); // ヘッダーをトリムして取得
     });
-}
 
+    for (var i = 1; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line.trim()) continue; // 空行をスキップ
+
+        var values = [];
+        var startIndex = 0;
+        var inQuotes = false;
+
+        for (var k = 0; k < line.length; k++) {
+            if (line[k] === ',' && !inQuotes) {
+                values.push(line.substring(startIndex, k).trim());
+                startIndex = k + 1;
+            } else if (line[k] === '"') {
+                inQuotes = !inQuotes;
+            }
+        }
+
+        // 最後の値を取得
+        values.push(line.substring(startIndex).trim());
+
+        var literature = {};
+        for (var j = 0; j < headers.length; j++) {
+            literature[headers[j]] = values[j]; // トリムせずに値をセット
+        };
+        literatureDataNum.push({ Lnumber: literature["Lnumber"], LID_CSV: literature["LID_CSV"], LitList: literature["LitList"].replace(/^"(.*)"$/, '$1'), Link: literature["Link"] });
+        literatureData[literature["LID_CSV"]] = literature["LitList"];
+    }
+});
+
+// マーカーの設定
 function displayFeatures(features) {
     // 既存のマーカーを削除
     document.querySelectorAll('.maplibregl-marker').forEach(marker => marker.remove());
@@ -330,11 +340,10 @@ function filterFeatures(selectedName, selectedIsland, selectedPrefecture) {
     displayFeatures(filteredFeatures); // フィルタリングされたフィーチャーを表示
 }
 
-
 // 分類群のドロップダウンリストを更新する関数
 function updateDropdownList(searchText) {
-    var dropdown = document.getElementById('dropdown');
-    dropdown.innerHTML = '<option value="">分類群を選択</option>';
+    var taxonDropdown = document.getElementById('taxonDropdown');
+    taxonDropdown.innerHTML = '<option value="">分類群を選択</option>';
 
     // GeoJSONファイルからデータを読み込む
     $.getJSON("DistributionRecord.geojson", function (data) {
@@ -365,109 +374,107 @@ function updateDropdownList(searchText) {
             var option = document.createElement('option');
             option.value = name;
             option.textContent = name;
-            dropdown.appendChild(option);
+            taxonDropdown.appendChild(option);
         });
     });
 }
 
-loadLiteratureData(function() {
+// 文献データの絞り込みと表示
+function loadLiteratureData() {
     $.getJSON("DistributionRecord.geojson", function (data) {
         allFeatures = data.features;
-
-        // ページロード時に全ての学名と和名をドロップダウンリストに表示
-        updateDropdownList('');
-
-        // 検索入力欄に入力があったときにドロップダウンリストを更新
-        document.getElementById('searchInput').addEventListener('input', function (e) {
-            updateDropdownList(e.target.value);
-        });
-
-        //島嶼と都道府県のドロップダウンが変更されたときの動作
-        $('#islandDropdown, #prefectureDropdown').change(function() {
-            if (selectedName ===''){
-                updateDropdownList('');
-            }
-        });
-
-        // リセットボタンがクリックされたときの挙動を設定
-        document.getElementById('resetButton').addEventListener('click', function () {
-            // 既存のマーカーを削除
-            document.querySelectorAll('.maplibregl-marker').forEach(marker => marker.remove());
-            // ポップアップを閉じる
-            var popups = document.getElementsByClassName('maplibregl-popup');
-            while (popups[0]) {
-                popups[0].remove();
-            }
-            // ドロップダウンをリセットする
-            document.getElementById('islandDropdown').selectedIndex = 0;
-            document.getElementById('prefectureDropdown').selectedIndex = 0;
-            document.getElementById('searchInput').value = '';
-            selectedIsland = ('');
-            selectedPrefecture = ('');
-            updateDropdownList('');
-        });
-
-        $('#dropdown, #islandDropdown, #prefectureDropdown').change(function() {
-            selectedName = document.getElementById('dropdown').value.split(" / ")[0];
-            selectedIsland = document.getElementById('islandDropdown').value;
-            selectedPrefecture = document.getElementById('prefectureDropdown').value;
             
-            filterFeatures(selectedName, selectedIsland, selectedPrefecture);
+        // 選択された学名によって表示するマーカーをフィルタリング
+        filterFeatures(selectedName, selectedIsland, selectedPrefecture);
 
-            // 文献リストを表示
-            $("#literature-items").empty();
-            var addedLiterature = new Set(); // 重複を管理するためのセット
+        // 文献リストを表示
+        $("#literature-items").empty();
+        var addedLiterature = new Set(); // 重複を管理するためのセット
 
-            // 分布記録の文献IDリストをLitIDsへ代入
-            var LitIDs = [];
+        // 分布記録の文献IDリストをLitIDsへ代入
+        var LitIDs = [];
 
-            data.features.forEach(function(feature) {
-                if (feature.properties["学名"] === selectedName &&
-               (selectedIsland === '' || feature.properties["島_jp"] === selectedIsland) &&
-               (selectedPrefecture === '' || feature.properties["都道府県_jp"] === selectedPrefecture)) {
-                    var literatureID = feature.properties["文献ID"];
-                    var litList = literatureData[feature.properties["文献ID"]];
-                    
-                    if (literatureID && litList && !addedLiterature.has(literatureID)) {
-                        // ダブルクォートの削除
-                        litList = litList.replace(/^"(.*)"$/, '$1');
-                        //文献IDリストに文献IDを追加
-                        LitIDs.push ({LID_CSV: feature.properties["文献ID"]});
-                    }
+        data.features.forEach(function(feature) {
+            if (feature.properties["学名"] === selectedName &&
+            (selectedIsland === '' || feature.properties["島_jp"] === selectedIsland) &&
+            (selectedPrefecture === '' || feature.properties["都道府県_jp"] === selectedPrefecture)) {
+                var literatureID = feature.properties["文献ID"];
+                var litList = literatureData[feature.properties["文献ID"]];
+                
+                if (literatureID && litList && !addedLiterature.has(literatureID)) {
+                    // ダブルクォートの削除
+                    litList = litList.replace(/^"(.*)"$/, '$1');
+                    //文献IDリストに文献IDを追加
+                    LitIDs.push ({LID_CSV: feature.properties["文献ID"]});
                 }
-            });
+            }
+        });
 
-            // LitIDs（分布記録の参考文献）が空ではない場合、文字列Referenceを追加
-            if (LitIDs.length !== 0) {
-                $("#literature-items").append('<h3>Reference</h3>');
-            };
+        // LitIDs（分布記録の参考文献）が空ではない場合、文字列Referenceを追加
+        if (LitIDs.length !== 0) {
+            $("#literature-items").append('<h3>Reference</h3>');
+        };
 
-            // 1. literatureDataNumをLnumberの順番にソート
-            literatureDataNum.sort((a, b) => a.Lnumber - b.Lnumber);
+        // 1. literatureDataNumをLnumberの順番にソート
+        literatureDataNum.sort((a, b) => a.Lnumber - b.Lnumber);
 
-            // 2. LitIDsのLID_CSVとliteratureDataNumのLID_CSVをマッチさせてHTML出力
-            const sortedList = document.getElementById('literature-items');
+        // 2. LitIDsのLID_CSVとliteratureDataNumのLID_CSVをマッチさせてHTML出力
+        const sortedList = document.getElementById('literature-items');
 
-            //htmlタグ付きの文献リストを作成し、sortedListとして出力
-            literatureDataNum.forEach(b => {
-                const matchingItem = LitIDs.find(a => a.LID_CSV === b.LID_CSV);
-                if (matchingItem) {
-                const listItem = document.createElement('li');
-                if (b.Link) {
-                    listItem.innerHTML = `${b.LitList} <a href="${b.Link}">${b.Link}</a>`;
-                } else {
-                    listItem.innerHTML = `${b.LitList}`;
-                }
-                sortedList.appendChild(listItem);
-                } // 作成した文献リストをsortedListに追加
-            });
-                // ポップアップを閉じる
-                var popups = document.getElementsByClassName('maplibregl-popup');
-                while (popups[0]) {
-                    popups[0].remove();
-                }
+        //htmlタグ付きの文献リストを作成し、sortedListとして出力
+        literatureDataNum.forEach(b => {
+            const matchingItem = LitIDs.find(a => a.LID_CSV === b.LID_CSV);
+            if (matchingItem) {
+            const listItem = document.createElement('li');
+            if (b.Link) {
+                listItem.innerHTML = `${b.LitList} <a href="${b.Link}">${b.Link}</a>`;
+            } else {
+                listItem.innerHTML = `${b.LitList}`;
+            }
+            sortedList.appendChild(listItem);
+            } // 作成した文献リストをsortedListに追加
         });
     });
+};
+
+//島嶼、都道府県のドロップダウンが変更されたときの動作
+$('#islandDropdown, #prefectureDropdown').change(function() {
+    if (selectedName ===''){
+        updateDropdownList(searchText);
+    }
+});
+
+////分類群、島嶼、都道府県のドロップダウンが変更されたときの動作
+$('#taxonDropdown, #islandDropdown, #prefectureDropdown').change(function() {
+    selectedName = document.getElementById('taxonDropdown').value.split(" / ")[0];
+    selectedIsland = document.getElementById('islandDropdown').value;
+    selectedPrefecture = document.getElementById('prefectureDropdown').value;
+    loadLiteratureData();
+    // ポップアップを閉じる
+    var popups = document.getElementsByClassName('maplibregl-popup');
+    while (popups[0]) {
+        popups[0].remove();
+    }
+});
+
+// リセットボタンがクリックされたときの挙動
+document.getElementById('resetButton').addEventListener('click', function () {
+    // 既存のマーカーを削除
+    document.querySelectorAll('.maplibregl-marker').forEach(marker => marker.remove());
+    // ポップアップを閉じる
+    var popups = document.getElementsByClassName('maplibregl-popup');
+    while (popups[0]) {
+        popups[0].remove();
+    }
+    // ドロップダウンをリセットする
+    document.getElementById('islandDropdown').selectedIndex = 0;
+    document.getElementById('prefectureDropdown').selectedIndex = 0;
+    document.getElementById('searchInput').value = '';
+    selectedName = ('');
+    selectedIsland = ('');
+    selectedPrefecture = ('');
+    updateDropdownList('');
+    loadLiteratureData();
 });
 </script>
 
