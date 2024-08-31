@@ -101,7 +101,6 @@
     <!-- 分類群のドロップダウン -->
     <input type="text" id="searchInput" placeholder="学名または和名を入力">
     <select id="taxonDropdown">
-        <option value="">分類群を選択</option>
     </select>
     <!-- 島リストのドロップダウン -->
     <select id="islandDropdown">
@@ -190,10 +189,10 @@ var map = new maplibregl.Map({
 // 地図にスケールを追加
 map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
 
-// Island.csvからデータを取得してドロップダウンに表示する
+// Island.csvからデータを取得
+var islands = new Set(); // 重複を排除するためSetを使用
 $.get("Island.csv", function(data) {
     var lines = data.split(/\r?\n/); // 改行で行を分割
-    var islands = new Set(); // 重複を排除するためSetを使用
 
     // 1行目を除くデータを取得し、セットに追加
     lines.slice(1).forEach(function(line) {
@@ -202,17 +201,12 @@ $.get("Island.csv", function(data) {
             islands.add(columns[0].trim()); // トリムしてセットに追加
         }
     });
-
-    // ドロップダウンに島を追加
-    islands.forEach(function(island) {
-        $('#islandDropdown').append('<option value="' + island + '">' + island + '</option>');
-    });
 });
 
-// Prefecture.csvからデータを取得してドロップダウンに表示する
+// Prefecture.csvからデータを取得
+var prefectures = new Set(); // 重複を排除するためSetを使用
 $.get("Prefecture.csv", function(data) {
     var lines = data.split(/\r?\n/); // 改行で行を分割
-    var prefectures = new Set(); // 重複を排除するためSetを使用
 
     // 1行目を除くデータを取得し、セットに追加
     lines.slice(1).forEach(function(line) {
@@ -221,24 +215,22 @@ $.get("Prefecture.csv", function(data) {
             prefectures.add(columns[0].trim()); // トリムしてセットに追加
         }
     });
-
-    // ドロップダウンに都道府県を追加
-    prefectures.forEach(function(prefecture) {
-        $('#prefectureDropdown').append('<option value="' + prefecture + '">' + prefecture + '</option>');
-    });
 });
 
+//選択されたドロップダウンと検索文字列
 var selectedName = ('');
 var selectedIsland = ('');
 var selectedPrefecture = ('');
 var searchText = ('');
 
-// ページロード時に全ての学名と和名をドロップダウンリストに表示
-updateDropdownList('');
+// ページロード時にドロップダウンリストを更新
+updateTaxonDropdownList('');
+updateIslandDropdownList('');
+updatePrefectureDropdownList('');
 
 // 検索入力欄に入力があったときにドロップダウンリストを更新
 document.getElementById('searchInput').addEventListener('input', function (e) {
-    updateDropdownList(e.target.value);
+    updateTaxonDropdownList(e.target.value);
     searchText = e.target.value
 });
 
@@ -341,16 +333,16 @@ function filterFeatures(selectedName, selectedIsland, selectedPrefecture) {
 }
 
 // 分類群のドロップダウンリストを更新する関数
-function updateDropdownList(searchText) {
+function updateTaxonDropdownList(searchText) {
     var taxonDropdown = document.getElementById('taxonDropdown');
-    taxonDropdown.innerHTML = '<option value="">分類群を選択</option>';
 
     // GeoJSONファイルからデータを読み込む
     $.getJSON("DistributionRecord.geojson", function (data) {
         var features = data.features;
         var uniqueNames = new Set();
-
-        // 各フィーチャーから学名と和名を取得してフィルタリング
+        var uniqueSciNames = ('');
+        
+        // 各フィーチャーから学名、和名、島、都道府県を取得してフィルタリング
         features.forEach(function (feature) {
             var properties = feature.properties;
             var sciName = properties["学名"];
@@ -364,18 +356,102 @@ function updateDropdownList(searchText) {
                 (selectedIsland === '' || islandName === selectedIsland) &&
                 (selectedPrefecture === '' || prefectureName === selectedPrefecture)) {
                     uniqueNames.add(sciName + " / " + japName);
+                    //uniqueSciNames.add(sciName);
             }
         });
 
-        var sortedNames = Array.from(uniqueNames).sort();
+        var sortedTaxa = Array.from(uniqueNames).sort();
 
         // ソートされた学名と和名をドロップダウンリストに追加
-        sortedNames.forEach(function (name) {
-            var option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            taxonDropdown.appendChild(option);
+        taxonDropdown.innerHTML = 
+        `<option value="">分類群を選択（必須）</option>` +
+        sortedTaxa.map(name => 
+            `<option value="${name}">${name}</option>`
+        ).join('');
+    });
+}
+
+// 島嶼のドロップダウンリストを更新する関数
+function updateIslandDropdownList(searchText) {
+    var islandDropdown = document.getElementById('islandDropdown');
+
+    // GeoJSONファイルからデータを読み込む
+    $.getJSON("DistributionRecord.geojson", function (data) {
+        var features = data.features;
+        var uniqueIslands = new Set();
+
+        // 各フィーチャーから学名、和名、島、都道府県を取得してフィルタリング
+        features.forEach(function (feature) {
+            var properties = feature.properties;
+            var sciName = properties["学名"];
+            var japName = properties["和名"];
+            var islandName = properties["島_jp"];
+            var prefectureName = properties["都道府県_jp"];
+            
+            // 検索テキストと一致する島嶼をセットに追加
+            if (((sciName && (searchText === "" || sciName.includes(searchText))) ||
+                (japName && (searchText === "" || japName.includes(searchText)))) &&
+                (selectedName === '' || sciName === selectedName) &&
+                (selectedIsland === '' || islandName === selectedIsland) &&
+                (selectedPrefecture === '' || prefectureName === selectedPrefecture)) {
+                    uniqueIslands.add(islandName);
+            }
         });
+
+        // "-" および "" を除外し、islands の順序で並び替える
+        var islandArray = Array.from(islands);
+        var sortedIslands = Array.from(uniqueIslands)
+            .filter(island => island !== "-" && island !== "" && island !== null)
+            .sort((a, b) => islandArray.indexOf(a) - islandArray.indexOf(b));
+
+        // ソートされた島嶼をドロップダウンリストに追加
+        islandDropdown.innerHTML = 
+        `<option value="">島を選択</option>` +
+        sortedIslands.map(name => 
+            `<option value="${name}">${name}</option>`
+        ).join('');
+    });
+}
+
+// 都道府県のドロップダウンリストを更新する関数
+function updatePrefectureDropdownList(searchText) {
+    var prefectureDropdown = document.getElementById('prefectureDropdown');
+
+    // GeoJSONファイルからデータを読み込む
+    $.getJSON("DistributionRecord.geojson", function (data) {
+        var features = data.features;
+        var uniquePrefectures = new Set();
+
+        // 各フィーチャーから学名、和名、島、都道府県を取得してフィルタリング
+        features.forEach(function (feature) {
+            var properties = feature.properties;
+            var sciName = properties["学名"];
+            var japName = properties["和名"];
+            var islandName = properties["島_jp"];
+            var prefectureName = properties["都道府県_jp"];
+            
+            // 検索テキストと一致する都道府県をセットに追加
+            if (((sciName && (searchText === "" || sciName.includes(searchText))) ||
+                (japName && (searchText === "" || japName.includes(searchText)))) &&
+                (selectedName === '' || sciName === selectedName) &&
+                (selectedIsland === '' || islandName === selectedIsland) &&
+                (selectedPrefecture === '' || prefectureName === selectedPrefecture)) {
+                    uniquePrefectures.add(prefectureName);
+            }
+        });
+
+        // "-" および "" を除外し、prefectures の順序で並び替える
+        var prefectureArray = Array.from(prefectures);
+        var sortedPrefectures = Array.from(uniquePrefectures)
+            .filter(pref => pref !== "-" && pref !== "" && pref !== null)
+            .sort((a, b) => prefectureArray.indexOf(a) - prefectureArray.indexOf(b));
+
+        // ソートされた都道府県をドロップダウンリストに追加
+        prefectureDropdown.innerHTML = 
+        `<option value="">都道府県を選択</option>` +
+        sortedPrefectures.map(name => 
+            `<option value="${name}">${name}</option>`
+        ).join('');
     });
 }
 
@@ -437,19 +513,21 @@ function loadLiteratureData() {
     });
 };
 
-//島嶼、都道府県のドロップダウンが変更されたときの動作
-$('#islandDropdown, #prefectureDropdown').change(function() {
-    if (selectedName ===''){
-        updateDropdownList(searchText);
-    }
-});
-
 ////分類群、島嶼、都道府県のドロップダウンが変更されたときの動作
 $('#taxonDropdown, #islandDropdown, #prefectureDropdown').change(function() {
     selectedName = document.getElementById('taxonDropdown').value.split(" / ")[0];
     selectedIsland = document.getElementById('islandDropdown').value;
     selectedPrefecture = document.getElementById('prefectureDropdown').value;
     loadLiteratureData();
+    if (selectedName === ''){
+        updateTaxonDropdownList('');
+    }
+    if (selectedIsland === ''){
+        updateIslandDropdownList('');
+    }
+    if (selectedPrefecture === ''){
+        updatePrefectureDropdownList('');
+    }
     // ポップアップを閉じる
     var popups = document.getElementsByClassName('maplibregl-popup');
     while (popups[0]) {
@@ -473,7 +551,9 @@ document.getElementById('resetButton').addEventListener('click', function () {
     selectedName = ('');
     selectedIsland = ('');
     selectedPrefecture = ('');
-    updateDropdownList('');
+    updateTaxonDropdownList('');
+    updateIslandDropdownList('');
+    updatePrefectureDropdownList('');
     loadLiteratureData();
 });
 </script>
