@@ -102,13 +102,13 @@
     <input type="text" id="searchInput" placeholder="学名または和名を入力">
     <select id="taxonDropdown">
     </select>
-    <!-- 島リストのドロップダウン -->
-    <select id="islandDropdown">
-        <option value="">島嶼を選択</option>
-    </select>
     <!-- 都道府県リストのドロップダウン -->
     <select id="prefectureDropdown">
         <option value="">都道府県を選択</option>
+    </select>
+    <!-- 島リストのドロップダウン -->
+    <select id="islandDropdown">
+        <option value="">島嶼を選択</option>
     </select>
     <!-- リセットボタン -->
     <button id="resetButton">リセット</button>
@@ -225,8 +225,8 @@ var searchText = ('');
 
 // ページロード時にドロップダウンリストを更新
 updateTaxonDropdownList('');
-updateIslandDropdownList('');
 updatePrefectureDropdownList('');
+updateIslandDropdownList('');
 
 // 検索入力欄に入力があったときにドロップダウンリストを更新
 document.getElementById('searchInput').addEventListener('input', function (e) {
@@ -337,7 +337,7 @@ function updateTaxonDropdownList(searchText) {
     var taxonDropdown = document.getElementById('taxonDropdown');
 
     // GeoJSONファイルからデータを読み込む
-    $.getJSON("DistributionRecord.geojson", function (data) {
+    $.getJSON("DistributionRecord_web.geojson", function (data) {
         var features = data.features;
         var uniqueNames = new Set();
         var uniqueSciNames = ('');
@@ -371,54 +371,12 @@ function updateTaxonDropdownList(searchText) {
     });
 }
 
-// 島嶼のドロップダウンリストを更新する関数
-function updateIslandDropdownList(searchText) {
-    var islandDropdown = document.getElementById('islandDropdown');
-
-    // GeoJSONファイルからデータを読み込む
-    $.getJSON("DistributionRecord.geojson", function (data) {
-        var features = data.features;
-        var uniqueIslands = new Set();
-
-        // 各フィーチャーから学名、和名、島、都道府県を取得してフィルタリング
-        features.forEach(function (feature) {
-            var properties = feature.properties;
-            var sciName = properties["学名"];
-            var japName = properties["和名"];
-            var islandName = properties["島_jp"];
-            var prefectureName = properties["都道府県_jp"];
-            
-            // 検索テキストと一致する島嶼をセットに追加
-            if (((sciName && (searchText === "" || sciName.includes(searchText))) ||
-                (japName && (searchText === "" || japName.includes(searchText)))) &&
-                (selectedName === '' || sciName === selectedName) &&
-                (selectedIsland === '' || islandName === selectedIsland) &&
-                (selectedPrefecture === '' || prefectureName === selectedPrefecture)) {
-                    uniqueIslands.add(islandName);
-            }
-        });
-
-        // "-" および "" を除外し、islands の順序で並び替える
-        var islandArray = Array.from(islands);
-        var sortedIslands = Array.from(uniqueIslands)
-            .filter(island => island !== "-" && island !== "" && island !== null)
-            .sort((a, b) => islandArray.indexOf(a) - islandArray.indexOf(b));
-
-        // ソートされた島嶼をドロップダウンリストに追加
-        islandDropdown.innerHTML = 
-        `<option value="">島を選択</option>` +
-        sortedIslands.map(name => 
-            `<option value="${name}">${name}</option>`
-        ).join('');
-    });
-}
-
 // 都道府県のドロップダウンリストを更新する関数
 function updatePrefectureDropdownList(searchText) {
     var prefectureDropdown = document.getElementById('prefectureDropdown');
 
     // GeoJSONファイルからデータを読み込む
-    $.getJSON("DistributionRecord.geojson", function (data) {
+    $.getJSON("DistributionRecord_web.geojson", function (data) {
         var features = data.features;
         var uniquePrefectures = new Set();
 
@@ -455,9 +413,51 @@ function updatePrefectureDropdownList(searchText) {
     });
 }
 
+// 島嶼のドロップダウンリストを更新する関数
+function updateIslandDropdownList(searchText) {
+    var islandDropdown = document.getElementById('islandDropdown');
+
+    // GeoJSONファイルからデータを読み込む
+    $.getJSON("DistributionRecord_web.geojson", function (data) {
+        var features = data.features;
+        var uniqueIslands = new Set();
+
+        // 各フィーチャーから学名、和名、島、都道府県を取得してフィルタリング
+        features.forEach(function (feature) {
+            var properties = feature.properties;
+            var sciName = properties["学名"];
+            var japName = properties["和名"];
+            var islandName = properties["島_jp"];
+            var prefectureName = properties["都道府県_jp"];
+            
+            // 検索テキストと一致する島嶼をセットに追加
+            if (((sciName && (searchText === "" || sciName.includes(searchText))) ||
+                (japName && (searchText === "" || japName.includes(searchText)))) &&
+                (selectedName === '' || sciName === selectedName) &&
+                (selectedIsland === '' || islandName === selectedIsland) &&
+                (selectedPrefecture === '' || prefectureName === selectedPrefecture)) {
+                    uniqueIslands.add(islandName);
+            }
+        });
+
+        // "-" および "" を除外し、islands の順序で並び替える
+        var islandArray = Array.from(islands);
+        var sortedIslands = Array.from(uniqueIslands)
+            .filter(island => island !== "-" && island !== "" && island !== null)
+            .sort((a, b) => islandArray.indexOf(a) - islandArray.indexOf(b));
+
+        // ソートされた島嶼をドロップダウンリストに追加
+        islandDropdown.innerHTML = 
+        `<option value="">島を選択</option>` +
+        sortedIslands.map(name => 
+            `<option value="${name}">${name}</option>`
+        ).join('');
+    });
+}
+
 // 文献データの絞り込みと表示
 function loadLiteratureData() {
-    $.getJSON("DistributionRecord.geojson", function (data) {
+    $.getJSON("DistributionRecord_web.geojson", function (data) {
         allFeatures = data.features;
             
         // 選択された学名によって表示するマーカーをフィルタリング
