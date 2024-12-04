@@ -67,6 +67,49 @@ header h1 {
   width: 200px;       /* 幅を指定 */
 }
 
+/* 検索コンテナの基本スタイル */
+.search-container {
+  position: relative;
+  padding: 20px;
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
+  width: 100%;
+  max-width: 200px;
+  margin: 20px auto;
+  transition: max-height 0.5s ease-out; /* アニメーション */
+  max-height: 500px; /* 初期の最大高さ */
+  overflow: hidden;
+}
+
+/* searchContainerが閉じられた時のスタイル */
+.search-container.closed {
+  max-height: 0; /* 閉じると高さを0に */
+  padding: 0; /* パディングも0に */
+}
+
+/* toggle-button（三角形）のスタイル */
+.toggle-button {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.5s ease; /* 回転アニメーション */
+}
+
+/* 三角印が回転した状態 */
+.toggle-button.rotate {
+  transform: rotate(180deg); /* 180度回転 */
+}
+
+/* searchContainerが閉じられている時のスタイル */
+.search-container.closed {
+  max-height: 20px; /* 高さを0にして隠す */
+  overflow: hidden;
+}
+
 .maplibregl-popup {
   z-index: 100;  /* ポップアップを前面に表示 */
 }

@@ -9,6 +9,28 @@ let searchActive = false; // 検索窓が有効かどうか
 let markers = []; // マーカーを追跡する配列
 let literatureMap = new Map(); // 文献データを保持するマップ
 
+// 検索部分の開閉
+const searchContainer = document.getElementById('searchContainer');
+const toggleButton = document.getElementById('toggle-button');
+
+// 最初にsearchContainerが開いている状態とする
+let isOpen = true;
+
+// toggleButtonにクリックイベントを追加
+toggleButton.addEventListener('click', () => {
+  if (isOpen) {
+    // searchContainerを閉じる
+    searchContainer.classList.add('closed');
+    toggleButton.classList.add('rotate');  // 三角形を回転
+  } else {
+    // searchContainerを再表示
+    searchContainer.classList.remove('closed');
+    toggleButton.classList.remove('rotate');  // 三角形を元に戻す
+  }
+  // isOpenの状態を切り替え
+  isOpen = !isOpen;
+});
+
 // セレクトボックスの選択をリセットする関数
 const resetSelectBoxes = () => {
   const dropdowns = [
