@@ -2,6 +2,23 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Times New Roman';
+  background-color: #f0f0f0; /* 背景色 */
+}
+
+/* ヘッダー部分のスタイル */
+header {
+  text-align: center; /* タイトルをセンターに配置 */
+  margin-top: 20px; /* 上部の余白 */
+  padding: 20px;
+  width: 100%; /* 幅を100%に設定 */
+}
+
+/* タイトルのフォントサイズを調整 */
+header h1 {
+  font-size: 2em; /* 文字サイズを調整 */
+  color: #333; /* 文字色 */
+  line-height: 1.4;
+  margin: 0;
 }
 
 #mapid {
