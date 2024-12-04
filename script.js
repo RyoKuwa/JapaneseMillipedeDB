@@ -325,23 +325,15 @@ const updateLiteratureList = (titles) => {
   const ol = document.createElement('ol');
   orderedLiterature.forEach(item => {
       const li = document.createElement('li');
-
-      // 文献タイトルをliタグの中に挿入
-      const listItem = document.createElement('span');
-      listItem.textContent = item.label; // 文献タイトルをテキストとして設定
+      let listItem = item.label; // 文献タイトル
 
       // URLがある場合、リンクを追加
       if (item.link) {
-          const link = document.createElement('a');
-          link.href = item.link;
-          link.target = "_blank";
-          link.textContent = item.link;  // リンクテキストをリンクURLに設定
-          listItem.appendChild(document.createTextNode(' '));  // 半角スペースを追加
-          listItem.appendChild(link);  // リンクを文献タイトルの後に追加
+          listItem += ` <a href="${item.link}" target="_blank">${item.link}</a>`;
       }
 
-      li.appendChild(listItem); // liタグに文献タイトルとリンクを追加
-      ol.appendChild(li); // olタグにliタグを追加
+      li.innerHTML = listItem; // HTMLタグを含むタイトルをそのまま挿入
+      ol.appendChild(li);
   });
 
   listContainer.appendChild(ol);
