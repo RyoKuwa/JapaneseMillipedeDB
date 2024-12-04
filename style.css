@@ -1,0 +1,241 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Times New Roman';
+}
+
+#mapid {
+  position: relative; /* 地図を基準とする */
+  top: 0;
+  bottom: 0;
+  width: 90%;
+  height: 800px;
+  z-index: 0;
+  margin: 0 auto; /* ページ中央揃え */
+}
+
+#searchContainer {
+  position: absolute; /* mapid を基準に配置 */
+  top: 10px;          /* mapid の上から 10px */
+  left: 10px;         /* mapid の左から 10px */
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 10;        /* 常に地図の上に表示 */
+  display: flex;
+  flex-direction: column; /* 子要素を縦並びに配置 */
+  gap: 10px;         /* 各セクション間の間隔を調整 */
+}
+
+#searchContainer .search-controls {
+  display: flex;
+  align-items: center; /* 垂直方向を中央揃え */
+  gap: 5px;           /* 各要素間の間隔 */
+}
+
+#searchContainer input#search-all {
+  flex: 1;            /* 幅を柔軟に調整 */
+  height: 21.2px;       /* 高さを固定 */
+}
+
+#searchContainer button#search-button,
+#searchContainer button#reset-button {
+  height: 21.2px;       /* 検索窓と高さを一致 */
+  padding: 0 10px;    /* 内側の余白を設定 */
+  cursor: pointer;    /* ポインタを表示 */
+}
+
+#searchContainer select {
+  width: 200px;       /* 幅を指定 */
+}
+
+.maplibregl-popup {
+  z-index: 100;  /* ポップアップを前面に表示 */
+}
+
+.maplibregl-popup-content {
+  border: 1px solid black;
+  box-shadow: 1px 1px 5px black;
+  z-index: 20;
+}
+
+/* ポップアップ内のリンクを折り返し表示するためのスタイル */
+.maplibregl-popup-content a.popup-link {
+  word-wrap: break-word;      /* 長いURLを折り返す */
+  white-space: normal;        /* 折り返しを有効にする */
+  word-break: break-all;      /* 必要に応じて単語を途中で改行 */
+}
+
+#searchContainer label {
+  display: block;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#searchContainer input[type="checkbox"] {
+  margin-right: 5px;
+}
+
+.legend {
+  position: absolute; /* 地図内の相対位置 */
+  bottom: 25px;       /* 地図の下端から10px */
+  right: 10px;        /* 地図の右端から10px */
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  z-index: 5;
+  max-width: calc(100% - 20px); /* はみ出し防止 */
+  box-sizing: border-box;      /* パディングを含めてサイズ計算 */
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.legend-item span {
+  margin-right: 5px;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+}
+
+/* マーカーのスタイル */
+.marker {
+  width: 20px;
+  height: 20px;
+  background-color: gray;
+}
+
+/* 星のマーカー（サイズを大きくする） */
+.marker-star {
+  width: 25px;
+  height: 25px;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  background-color: pink;
+  border: none;
+}
+
+/* バツ印のマーカー */
+.marker-cross {
+  width: 14px;
+  height: 14px;
+  clip-path: polygon(
+    0% 12%, 12% 0%, 50% 38%, 88% 0%, 100% 12%, 62% 50%, 
+    100% 88%, 88% 100%, 50% 62%, 12% 100%, 0% 88%, 38% 50%
+  );
+  background-color: pink;
+  border: none;
+}
+
+/* 丸のマーカー */
+.marker-circle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 3px solid black;
+}
+
+/* 四角形のマーカー */
+.marker-square {
+  width: 10px;
+  height: 10px;
+  border-radius: 0;
+  background-color: gray;
+  border: 3px solid black;
+}
+
+/* カラーバリエーション */
+.marker.blue {
+  background-color: blue;
+}
+
+.marker.purple {
+  background-color: purple;
+}
+
+.marker.pink {
+  background-color: pink;
+}
+
+.marker.red {
+  background-color: red;
+}
+
+.marker.white {
+  background-color: white;
+  border: 3px solid red; /* 文献記録用の縁取り */
+}
+
+#loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+/* クリック可能なマーカーのホバー時のポインタ変更 */
+.marker-clickable {
+  cursor: pointer; /* マウスの形状をポインタに変更 */
+}
+
+#literature-list {
+  display: none; /* 初期状態で非表示 */
+  position: relative;
+  width: 100%; /* 横幅を少し狭める */
+  max-width: 90%; /* 最大幅を調整 */
+  margin: 0 auto; /* 中央寄せ */
+  padding: 10px;
+  box-sizing: border-box; /* パディング含む幅計算 */
+}
+
+#literature-list ol li {
+  font-size: 13px; /* フォントを小さくする */
+  line-height: 1.4; /* 行間を狭くする */
+  padding: 3px 0; /* 項目の間隔を縮小 */
+}
+
+#checkbox-container {
+  display: flex;
+  flex-direction: column; /* チェックボックスを縦に並べる */
+  gap: 5px; /* 各ラベル間の間隔を調整 */
+}
+
+#checkbox-container label {
+  display: flex;
+  align-items: center; /* チェックボックスとテキストを垂直方向に揃える */
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#checkbox-container input[type="checkbox"] {
+  margin: 2px 4px 2px 4px; /* 上下2px、左右4pxに設定して幅を減少 */
+  width: auto; /* 必要に応じて幅を調整 */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
