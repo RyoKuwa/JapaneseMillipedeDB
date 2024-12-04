@@ -426,7 +426,6 @@ const setupDropdownListeners = () => {
 
     // ドロップダウンから値が選択されたとき
     element.addEventListener("change", () => {
-      clearSearch(); // 検索窓をクリア
       applyFilters(); // 地図を更新
     });
 
