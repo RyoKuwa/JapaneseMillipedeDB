@@ -281,9 +281,6 @@ const displayMarkers = (filteredData) => {
         markers.push(marker);
     });
 
-    // 表示されるマーカーの数をコンソールに出力
-    console.log(`表示されるマーカーの数: ${markers.length}`);
-
     // 文献リストを更新
     updateLiteratureList(literatureTitles);
 
