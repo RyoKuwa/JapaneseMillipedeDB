@@ -254,16 +254,11 @@ const displayMarkers = (filteredData) => {
         let popupContent;
 
         // 文献情報がある場合はリンクを表示
-        if (literatureLink) {
-            popupContent = `
-                <strong>${row.japaneseName} ${row.scientificName}</strong><br>
-                文献中の和名: ${row.originalJapaneseName || "不明"}<br>
-                文献中の学名: ${row.originalScientificName || "不明"}<br>
-                ページ: ${row.page || "不明"}<br>
-                場所: ${row.location || "不明"}<br>
-                採集日: ${row.date || "不明"}<br><br>
-                文献: ${literatureTitle} <a href="${literatureLink}" target="_blank" class="popup-link">${literatureLink}</a>
-            `;
+        if (!row.literatureID || row.literatureID === "-") {
+          popupContent = `
+            <strong>${row.japaneseName} ${row.scientificName}</strong><br>
+            未公表データ Unpublished Data
+          `;
         } else {
             popupContent = `
                 <strong>${row.japaneseName} ${row.scientificName}</strong><br>
