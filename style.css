@@ -56,9 +56,14 @@ header h1 {
   height: 21.2px;       /* 高さを固定 */
 }
 
-#searchContainer button#search-button,
 #searchContainer button#reset-button {
   height: 21.2px;       /* 検索窓と高さを一致 */
+  padding: 0 10px;    /* 内側の余白を設定 */
+  cursor: pointer;    /* ポインタを表示 */
+}
+
+#searchContainer button#search-button{
+  height: 42.4px;       /* 検索窓と高さを一致 */
   padding: 0 10px;    /* 内側の余白を設定 */
   cursor: pointer;    /* ポインタを表示 */
 }
