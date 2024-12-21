@@ -194,6 +194,12 @@ const clearSearch = () => {
   document.getElementById("search-all").value = "";
 };
 
+// レコード数と地点数を更新する関数
+const updateRecordInfo = (recordCount, locationCount) => {
+  document.getElementById("record-count").textContent = recordCount;
+  document.getElementById("location-count").textContent = locationCount;
+};
+
 // recordTypeに基づいてマーカーのスタイルを設定
 const getMarkerStyle = (recordType) => {
   switch (recordType) {
@@ -522,7 +528,13 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
     // フィルタがすべて未選択の場合
     const allFiltersEmpty = Object.values(filters).every(value => value === "");
     if (allFiltersEmpty) {
-      clearMarkers(); // マーカーをクリア
+      // すべてのレコード数と地点数を表示
+      const totalRecordCount = rows.length;
+      const totalLocationCount = new Set(rows.map(row => `${row.latitude},${row.longitude}`)).size;
+      updateRecordInfo(totalRecordCount, totalLocationCount);
+
+      // マーカーを表示しない
+      clearMarkers();
       updateLiteratureList([]); // 文献リストをクリア
       updateFilters(rows, filters); // フィルタ状態を更新
       return;
@@ -544,12 +556,17 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
         (filters.order === "" || row.order === filters.order) &&
         (filters.prefecture === "" || row.prefecture === filters.prefecture) &&
         (filters.island === "" || row.island === filters.island) &&
-        (filters.literature === "" || row.literatureID === filters.literature) // 文献フィルタリング
+        (filters.literature === "" || row.literatureID === filters.literature)
       );
     });
 
     // 各セレクトボックスを更新
     updateFilters(filteredRows, filters);
+
+    // レコード数と地点数を更新
+    const recordCount = filteredRows.length;
+    const locationCount = new Set(filteredRows.map(row => `${row.latitude},${row.longitude}`)).size;
+    updateRecordInfo(recordCount, locationCount);
 
     // 地図のマーカーを更新
     if (updateMap) {
@@ -604,8 +621,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadLiteratureCSV(); // Literature.csvをロード
     await loadGeoJSON(); // DistributionRecord_web.geojsonをロード
 
-    // 初期フィルタを適用（初期状態でフィルタリングを実行）
-    applyFilters(null, true);
+    // 初期データを使用して記録数と地点数を表示
+    const initialRecordCount = rows.length;
+    const initialLocationCount = new Set(rows.map(row => `${row.latitude},${row.longitude}`)).size;
+    updateRecordInfo(initialRecordCount, initialLocationCount);
 
     // ドロップダウンのリスナーを設定
     setupDropdownListeners();
