@@ -604,8 +604,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadLiteratureCSV(); // Literature.csvをロード
     await loadGeoJSON(); // DistributionRecord_web.geojsonをロード
 
-    // 文献セレクトボックスを生成
-    createLiteratureSelect(literatureMap, rows);
+    // 初期フィルタを適用（初期状態でフィルタリングを実行）
+    applyFilters(null, true);
 
     // ドロップダウンのリスナーを設定
     setupDropdownListeners();
