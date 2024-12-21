@@ -31,28 +31,6 @@ toggleButton.addEventListener('click', () => {
   isOpen = !isOpen;
 });
 
-// セレクトボックスの選択をリセットする関数
-const resetSelectBoxes = () => {
-  const dropdowns = [
-    "filter-species",
-    "filter-genus",
-    "filter-family",
-    "filter-order",
-    "filter-prefecture",
-    "filter-island",
-    "filter-literature"
-  ];
-
-  dropdowns.forEach((id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.selectedIndex = 0; // セレクトボックスを未選択状態にする
-    } else {
-      console.warn(`ドロップダウン ${id} が見つかりません`);
-    }
-  });
-};
-
 // 地図の初期設定
 const initMap = () => {
   map = new maplibregl.Map({
@@ -184,23 +162,22 @@ const loadOrderCSV = (fileName, arrayStorage) => {
   });
 };
 
-// セレクトボックスを初期化
+// セレクトボックスを初期化し該当件数をセレクトボックスのデフォルト表示に反映
 const populateSelect = (id, options, defaultText, selectedValue) => {
   const select = document.getElementById(id);
+
+  // 該当件数を計算
+  const optionCount = options.length;
+
+  // 選択肢を生成
   const optionsHTML = options.map(option => {
     // ラベルから <i> タグを削除
     const sanitizedLabel = option.label.replace(/<i>(.*?)<\/i>/g, '$1');
     return `<option value="${option.value}" ${option.value === selectedValue ? "selected" : ""}>${sanitizedLabel}</option>`;
   }).join("");
 
-  select.innerHTML = `<option value="">${defaultText}</option>` + optionsHTML;
-
-  // 該当件数を表示
-  const optionCount = options.length;
-  const label = document.querySelector(`label[for="${id}"]`);
-  if (label) {
-    label.innerHTML = `${label.innerHTML.replace(/（\d+件該当）/, "")}（${optionCount}件該当）`;
-  }
+  // デフォルト選択肢を該当件数付きで追加
+  select.innerHTML = `<option value="">${defaultText}（${optionCount}件）</option>` + optionsHTML;
 };
 
 // 値が "-" の場合、リストの最後に配置
@@ -539,7 +516,7 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
       order: document.getElementById("filter-order").value,
       prefecture: document.getElementById("filter-prefecture").value,
       island: document.getElementById("filter-island").value,
-      literature: document.getElementById("filter-literature").value, // 文献フィルターを追加
+      literature: document.getElementById("filter-literature").value,
     };
 
     // フィルタがすべて未選択の場合
@@ -638,8 +615,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 実行ボタンのクリックイベントを設定
     document.getElementById("search-button").addEventListener("click", () => {
-      resetSelectBoxes();
       applyFilters(); // 実行ボタンがクリックされたときにフィルタリングを実行
+    });
+
+    // 検索テキストを消去するボタンのイベントリスナー
+    document.getElementById("clear-search-button").addEventListener("click", () => {
+      // 検索窓の値をクリア
+      clearSearch();
+
+      // 現在のフィルタ状態で再度フィルタリングを適用
+      applyFilters(null, true);
     });
 
     // チェックボックスのイベントリスナーを設定

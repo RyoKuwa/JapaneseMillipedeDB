@@ -57,13 +57,19 @@ header h1 {
 }
 
 #searchContainer button#reset-button {
-  height: 21.2px;       /* 検索窓と高さを一致 */
+  height: 25.2px;       /* 検索窓と高さを一致 */
   padding: 0 10px;    /* 内側の余白を設定 */
   cursor: pointer;    /* ポインタを表示 */
 }
 
 #searchContainer button#search-button{
-  height: 42.4px;       /* 検索窓と高さを一致 */
+  height: 25.2px;       /* 検索窓と高さを一致 */
+  padding: 0 10px;    /* 内側の余白を設定 */
+  cursor: pointer;    /* ポインタを表示 */
+}
+
+#searchContainer button#search-button{
+  height: 25.2px;       /* 検索窓と高さを一致 */
   padding: 0 10px;    /* 内側の余白を設定 */
   cursor: pointer;    /* ポインタを表示 */
 }
@@ -144,7 +150,7 @@ header h1 {
 
 .legend {
   position: absolute; /* 地図内の相対位置 */
-  bottom: 25px;       /* 地図の下端から10px */
+  bottom: 40px;       /* 地図の下端から10px */
   right: 10px;        /* 地図の右端から10px */
   background-color: rgba(255, 255, 255, 0.8);
   padding: 10px;
