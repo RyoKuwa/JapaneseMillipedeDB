@@ -509,8 +509,6 @@ const setupResetButton = () => {
   });
 };
 
-
-
 // 全フィルタリングを適用
 const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
   try {
@@ -525,15 +523,32 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
       literature: document.getElementById("filter-literature").value,
     };
 
+    // チェックボックスの状態を取得
+    const excludeUnpublished = document.getElementById("exclude-unpublished").checked;
+    const excludeDubious = document.getElementById("exclude-dubious").checked;
+
     // フィルタがすべて未選択の場合
     const allFiltersEmpty = Object.values(filters).every(value => value === "");
     if (allFiltersEmpty) {
-      // すべてのレコード数と地点数を表示
-      const totalRecordCount = rows.length;
-      const totalLocationCount = new Set(rows.map(row => `${row.latitude},${row.longitude}`)).size;
+      // チェックボックスを考慮してすべてのレコードをフィルタリング
+      const filteredRows = rows.filter(row => {
+        const isUnpublished = row.literatureID === "-" || row.literatureID === "";
+        const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
+
+        if (excludeUnpublished && isUnpublished) return false; // 未公表データを除外
+        if (excludeDubious && isDubious) return false; // 疑わしいデータを除外
+
+        return true; // 除外条件を満たさないデータを保持
+      });
+
+      // フィルタリング後のレコード数と地点数を計算
+      const totalRecordCount = filteredRows.length;
+      const totalLocationCount = new Set(filteredRows.map(row => `${row.latitude},${row.longitude}`)).size;
+
+      // レコード数と地点数を更新
       updateRecordInfo(totalRecordCount, totalLocationCount);
 
-      // マーカーを表示しない
+      // マーカーは表示しない
       clearMarkers();
       updateLiteratureList([]); // 文献リストをクリア
       updateFilters(rows, filters); // フィルタ状態を更新
@@ -546,8 +561,8 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
       const isUnpublished = row.literatureID === "-" || row.literatureID === "";
       const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
 
-      if (document.getElementById("exclude-unpublished").checked && isUnpublished) return false; // 未公表データを除外
-      if (document.getElementById("exclude-dubious").checked && isDubious) return false; // 疑わしいデータを除外
+      if (excludeUnpublished && isUnpublished) return false; // 未公表データを除外
+      if (excludeDubious && isDubious) return false; // 疑わしいデータを除外
 
       return (
         (filters.species === "" || combinedName === filters.species) &&
