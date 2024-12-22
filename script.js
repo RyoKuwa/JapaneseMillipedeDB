@@ -650,6 +650,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 実行ボタンのクリックイベントを設定
     document.getElementById("search-button").addEventListener("click", () => {
       applyFilters(); // 実行ボタンがクリックされたときにフィルタリングを実行
+      applyFilters(); //セレクトボックスの選択をクリア後再実行
     });
 
     // 検索テキストを消去するボタンのイベントリスナー
