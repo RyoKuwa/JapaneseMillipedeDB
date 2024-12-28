@@ -271,7 +271,9 @@ const displayMarkers = (filteredData) => {
                 ページ: ${row.page || "不明"}<br>
                 場所: ${row.location || "不明"}<br>
                 採集日: ${row.date || "不明"}<br><br>
-                文献: ${literatureTitle}
+                備考: ${row.note}<br>
+                文献: ${literatureTitle}<br>
+                記入: ${row.registrant}, ${row.registrationDate}
             `;
         }
 
