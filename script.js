@@ -248,7 +248,6 @@ const displayMarkers = (filteredData) => {
         // 文献IDを取得
         const literatureItem = literatureMap.find(item => item.id === row.literatureID);
         const literatureTitle = literatureItem ? literatureItem.label : "不明";
-        const literatureLink = literatureItem && literatureItem.link ? literatureItem.link : null;
 
         // 文献タイトルを配列に追加（重複排除）
         if (literatureTitle !== "不明" && !literatureTitles.includes(literatureTitle)) {
@@ -329,14 +328,18 @@ const updateFilters = (filteredData, filters) => {
   // チェックボックスの状態を取得
   const excludeUnpublished = document.getElementById("exclude-unpublished").checked;
   const excludeDubious = document.getElementById("exclude-dubious").checked;
+  const excludeCitation = document.getElementById("exclude-citation").checked;
 
   // チェックボックスでの絞り込みを適用
   const checkboxFilteredData = filteredData.filter(row => {
     const isUnpublished = row.literatureID === "-" || row.literatureID === "";
     const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
+    //console.log(rows.map(row => row.original));
+    const isCitation = row.original === "-";
 
     if (excludeUnpublished && isUnpublished) return false;
     if (excludeDubious && isDubious) return false;
+    if (excludeCitation && isCitation) return false;
 
     return true; // チェックボックスで除外されないデータを保持
   });
@@ -526,6 +529,7 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
     // チェックボックスの状態を取得
     const excludeUnpublished = document.getElementById("exclude-unpublished").checked;
     const excludeDubious = document.getElementById("exclude-dubious").checked;
+    const excludeCitation = document.getElementById("exclude-citation").checked;
 
     // フィルタがすべて未選択の場合
     const allFiltersEmpty = Object.values(filters).every(value => value === "");
@@ -534,9 +538,11 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
       const filteredRows = rows.filter(row => {
         const isUnpublished = row.literatureID === "-" || row.literatureID === "";
         const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
+        const isCitation = row.original === "no";
 
         if (excludeUnpublished && isUnpublished) return false; // 未公表データを除外
         if (excludeDubious && isDubious) return false; // 疑わしいデータを除外
+        if (excludeCitation && isCitation) return false; // 引用記録を除外
 
         return true; // 除外条件を満たさないデータを保持
       });
@@ -560,9 +566,11 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
       const isUnpublished = row.literatureID === "-" || row.literatureID === "";
       const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
+      const isCitation = row.original === "no";
 
       if (excludeUnpublished && isUnpublished) return false; // 未公表データを除外
       if (excludeDubious && isDubious) return false; // 疑わしいデータを除外
+      if (excludeCitation && isCitation) return false; // 引用記録を除外
 
       return (
         (filters.species === "" || combinedName === filters.species) &&
@@ -599,24 +607,35 @@ const loadGeoJSON = async () => {
     if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
     const geojson = await response.json();
 
-    rows = geojson.features.map(feature => ({
-      recordType: feature.properties["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"]?.trim() || "-",
-      japaneseName: feature.properties["和名"]?.trim() || "-",
-      scientificName: feature.properties["学名"]?.trim() || "-",
-      latitude: feature.properties["Latitude_assumed"] || null,
-      longitude: feature.properties["Longitude_assumed"] || null,
-      date: feature.properties["日付"]?.trim() || "-",
-      prefecture: feature.properties["都道府県_jp"]?.trim() || "-",
-      island: feature.properties["島_jp"]?.trim() || "-",
-      genus: feature.properties["Genus"]?.trim() || "-",
-      family: feature.properties["Family"]?.trim() || "-",
-      order: feature.properties["Order"]?.trim() || "-",
-      literatureID: feature.properties["文献ID"]?.trim() || "-",
-      page: feature.properties["掲載ページ"]?.trim() || "-",
-      originalJapaneseName: feature.properties["文献中の和名"]?.trim() || "-",
-      originalScientificName: feature.properties["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"]?.trim() || "-",
-      location: feature.properties["場所（原文ママ）"]?.trim() || "-"
-    }));
+    rows = geojson.features.map(feature => {
+      const props = feature.properties;
+      return {
+        recordType: typeof props["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] === "string" ? props["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"].trim() : "-",
+        japaneseName: typeof props["和名"] === "string" ? props["和名"].trim() : "-",
+        scientificName: typeof props["学名"] === "string" ? props["学名"].trim() : "-",
+        latitude: props["Latitude_assumed"] || null,
+        longitude: props["Longitude_assumed"] || null,
+        date: typeof props["日付"] === "string" ? props["日付"].trim() : "-",
+        prefecture: typeof props["都道府県_jp"] === "string" ? props["都道府県_jp"].trim() : "-",
+        island: typeof props["島_jp"] === "string" ? props["島_jp"].trim() : "-",
+        genus: typeof props["Genus"] === "string" ? props["Genus"].trim() : "-",
+        family: typeof props["Family"] === "string" ? props["Family"].trim() : "-",
+        order: typeof props["Order"] === "string" ? props["Order"].trim() : "-",
+        literatureID: typeof props["文献ID"] === "string" ? props["文献ID"].trim() : "-",
+        page: typeof props["掲載ページ"] === "string" ? props["掲載ページ"].trim() : "-",
+        original: typeof props["オリジナル"] === "string" ? props["オリジナル"].trim() : "-",
+        originalJapaneseName: typeof props["文献中の和名"] === "string" ? props["文献中の和名"].trim() : "-",
+        originalScientificName: typeof props["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"] === "string" ? props["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"].trim() : "-",
+        location: typeof props["場所（原文ママ）"] === "string" ? props["場所（原文ママ）"].trim() : "-",
+        identiferJp: typeof props["同定者_jp"] === "string" ? props["同定者_jp"].trim() : "-",
+        identiferEn: typeof props["同定者_en"] === "string" ? props["同定者_en"].trim() : "-",
+        reidentiferJp: typeof props["再同定者_jp"] === "string" ? props["再同定者_jp"].trim() : "-",
+        reidentiferEn: typeof props["再同定者_en"] === "string" ? props["再同定者_en"].trim() : "-",
+        note: typeof props["メモ"] === "string" ? props["メモ"].trim() : "-",
+        registrant: typeof props["記入者"] === "string" ? props["記入者"].trim() : "-",
+        registrationDate: typeof props["記入日付"] === "string" ? props["記入日付"].trim() : "-"
+      };
+    });
 
     updateFilters(rows, {}); // 初期フィルタを適用
   } catch (error) {
@@ -665,6 +684,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // チェックボックスのイベントリスナーを設定
     document.getElementById("exclude-unpublished").addEventListener("change", applyFilters); // 未公表データを除外
     document.getElementById("exclude-dubious").addEventListener("change", applyFilters); // 疑わしい記録を除外
+    document.getElementById("exclude-citation").addEventListener("change", applyFilters); // 引用記録を除外
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
   }
