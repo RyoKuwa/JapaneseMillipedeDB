@@ -290,6 +290,10 @@ header h1 {
   padding: 3px 0; /* 項目の間隔を縮小 */
 }
 
+#literature-list ol li a {
+  overflow-wrap: break-word; /* 長いURLを折り返し */
+}
+
 #checkbox-container {
   display: flex;
   flex-direction: column; /* チェックボックスを縦に並べる */
