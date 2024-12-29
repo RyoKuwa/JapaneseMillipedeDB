@@ -38,30 +38,30 @@ const initMap = () => {
     style: {
       "version": 8,
       "sources": {
-          "japan": {
-              "type": "geojson",
-              "data": "Japan.geojson",
-              attribution: "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
-          }
+        "japan": {
+          "type": "geojson", // GeoJSON形式で読み込むため変換後のデータを使用
+          "data": null,      // 後でTopoJSONをGeoJSONに変換してセット
+          attribution: "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
+        }
       },
       "layers": [
-          {
-              "id": "background",
-              "type": "background",
-              "paint": { "background-color": "rgba(173, 216, 230, 1)" }
-          },
-          {
-              "id": "japan",
-              "type": "fill",
-              "source": "japan",
-              "paint": { "fill-color": "rgba(255, 255, 255, 1)", "fill-outline-color": "rgba(0, 0, 0, 1)" }
-          },
-          {
-              "id": "japan-outline",
-              "type": "line",
-              "source": "japan",
-              "paint": { "line-color": "rgba(0, 0, 0, 1)", "line-width": 1 }
-          }
+        {
+          "id": "background",
+          "type": "background",
+          "paint": { "background-color": "rgba(173, 216, 230, 1)" }
+        },
+        {
+          "id": "japan",
+          "type": "fill",
+          "source": "japan",
+          "paint": { "fill-color": "rgba(255, 255, 255, 1)", "fill-outline-color": "rgba(0, 0, 0, 1)" }
+        },
+        {
+          "id": "japan-outline",
+          "type": "line",
+          "source": "japan",
+          "paint": { "line-color": "rgba(0, 0, 0, 1)", "line-width": 1 }
+        }
       ]
     },
     center: [136, 35.7],
@@ -70,9 +70,31 @@ const initMap = () => {
     minZoom: 4
   });
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
-  // 地図にスケールを追加
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
 };
+
+// TopoJSONをGeoJSONに変換してマップに追加
+const loadTopoJSON = async () => {
+  try {
+    const response = await fetch("Japan.json"); // TopoJSONファイルを読み込む
+    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
+    const topojsonData = await response.json();
+
+    // TopoJSONをGeoJSONに変換
+    const geojsonData = topojson.feature(topojsonData, topojsonData.objects[Object.keys(topojsonData.objects)[0]]);
+
+    // マップにGeoJSONデータをセット
+    map.getSource('japan').setData(geojsonData);
+  } catch (error) {
+    console.error("TopoJSONの読み込みエラー:", error);
+  }
+};
+
+// DOMContentLoaded後に地図とデータをロード
+document.addEventListener("DOMContentLoaded", async () => {
+  initMap();      // 地図を初期化
+  await loadTopoJSON(); // TopoJSONデータをロード
+});
 
 // CSVファイルを読み込む関数
 const loadCSV = async (url, callback) => {
