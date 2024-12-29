@@ -130,6 +130,11 @@ header h1 {
   border: 1px solid black;
   box-shadow: 1px 1px 5px black;
   z-index: 20;
+  max-width: 300px; /* ポップアップの最大幅を設定 */
+  overflow-wrap: break-word; /* 長い単語を折り返す */
+  word-wrap: break-word; /* 長い単語を折り返す */
+  word-break: break-word; /* 必要に応じて単語を途中で改行 */
+  white-space: normal; /* 折り返しを有効にする */
 }
 
 /* ポップアップ内のリンクを折り返し表示するためのスタイル */
