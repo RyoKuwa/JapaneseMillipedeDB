@@ -271,8 +271,8 @@ const displayMarkers = (filteredData) => {
                 ページ: ${row.page || "不明"}<br>
                 場所: ${row.location || "不明"}<br>
                 採集日: ${row.date || "不明"}<br><br>
+                文献: ${literatureTitle}<br><br>
                 備考: ${row.note}<br>
-                文献: ${literatureTitle}<br>
                 記入: ${row.registrant}, ${row.registrationDate}
             `;
         }
@@ -629,10 +629,6 @@ const loadGeoJSON = async () => {
         originalJapaneseName: typeof props["文献中の和名"] === "string" ? props["文献中の和名"].trim() : "-",
         originalScientificName: typeof props["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"] === "string" ? props["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"].trim() : "-",
         location: typeof props["場所（原文ママ）"] === "string" ? props["場所（原文ママ）"].trim() : "-",
-        identiferJp: typeof props["同定者_jp"] === "string" ? props["同定者_jp"].trim() : "-",
-        identiferEn: typeof props["同定者_en"] === "string" ? props["同定者_en"].trim() : "-",
-        reidentiferJp: typeof props["再同定者_jp"] === "string" ? props["再同定者_jp"].trim() : "-",
-        reidentiferEn: typeof props["再同定者_en"] === "string" ? props["再同定者_en"].trim() : "-",
         note: typeof props["メモ"] === "string" ? props["メモ"].trim() : "-",
         registrant: typeof props["記入者"] === "string" ? props["記入者"].trim() : "-",
         registrationDate: typeof props["記入日付"] === "string" ? props["記入日付"].trim() : "-"
