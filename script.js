@@ -1,34 +1,21 @@
 let map; // 地図オブジェクトをグローバル変数として宣言
 // データの初期化
 let rows = [];
-let combinedNames = [];
 let taxonMap = {}; // TaxonName.csvから取得したマッピング
 let prefectureOrder = [];
 let islandOrder = [];
-let searchActive = false; // 検索窓が有効かどうか
 let markers = []; // マーカーを追跡する配列
-let literatureMap = new Map(); // 文献データを保持するマップ
+let literatureArray = []; // 文献データを保持する配列
+let useSearch = false; // 検索窓のフィルタリングのオン・オフ制御
 
 // 検索部分の開閉
 const searchContainer = document.getElementById('searchContainer');
 const toggleButton = document.getElementById('toggle-button');
 
-// 最初にsearchContainerが開いている状態とする
-let isOpen = true;
-
 // toggleButtonにクリックイベントを追加
 toggleButton.addEventListener('click', () => {
-  if (isOpen) {
-    // searchContainerを閉じる
-    searchContainer.classList.add('closed');
-    toggleButton.classList.add('rotate');  // 三角形を回転
-  } else {
-    // searchContainerを再表示
-    searchContainer.classList.remove('closed');
-    toggleButton.classList.remove('rotate');  // 三角形を元に戻す
-  }
-  // isOpenの状態を切り替え
-  isOpen = !isOpen;
+  searchContainer.classList.toggle('closed');
+  toggleButton.classList.toggle('rotate');
 });
 
 // 地図の初期設定
@@ -93,12 +80,12 @@ const loadLiteratureCSV = async () => {
       if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
       const csvText = await response.text();
 
-      // グローバルスコープの literatureMap を初期化
-      literatureMap = [];
+      // グローバルスコープの literatureArray を初期化
+      literatureArray = [];
 
       const lines = csvText.split("\n").filter(line => line.trim());
 
-      // データ解析（URL情報を追加）
+      // データ解析
       lines.forEach((line, index) => {
           if (index === 0) return; // ヘッダーをスキップ
 
@@ -126,7 +113,7 @@ const loadLiteratureCSV = async () => {
           const [order, id, litList, link] = columns;
 
           if (id && litList) {
-              literatureMap.push({ 
+              literatureArray.push({ 
                   id, 
                   label: litList.trim(), 
                   link: link ? link.trim() : null, // LINKがあれば格納
@@ -162,6 +149,11 @@ const loadOrderCSV = (fileName, arrayStorage) => {
   });
 };
 
+// 検索窓の値を取得する関数
+const getSearchValue = () => {
+  return document.getElementById("search-all").value.toLowerCase();
+};
+
 // セレクトボックスを初期化し該当件数をセレクトボックスのデフォルト表示に反映
 const populateSelect = (id, options, defaultText, selectedValue) => {
   const select = document.getElementById(id);
@@ -178,15 +170,6 @@ const populateSelect = (id, options, defaultText, selectedValue) => {
 
   // デフォルト選択肢を該当件数付きで追加
   select.innerHTML = `<option value="">${defaultText}（${optionCount}件）</option>` + optionsHTML;
-};
-
-// 値が "-" の場合、リストの最後に配置
-const sortOptions = (options) => {
-  return options.sort((a, b) => {
-    if (a.value === "-") return 1;
-    if (b.value === "-") return -1;
-    return a.value.localeCompare(b.value);
-  });
 };
 
 // 検索窓を消去する関数
@@ -228,7 +211,7 @@ const clearMarkers = () => {
   markers = [];
 };
 
-/// フィルタリングされたデータをマーカーとして表示
+// フィルタリングされたデータをマーカーとして表示
 const displayMarkers = (filteredData) => {
 
     clearMarkers(); // 古いマーカーを削除
@@ -246,9 +229,9 @@ const displayMarkers = (filteredData) => {
         if (borderColor) el.style.borderColor = borderColor;
 
         // 文献IDを取得
-        const literatureItem = literatureMap.find(item => item.id === row.literatureID);
+        const literatureItem = literatureArray.find(item => item.id === row.literatureID);
         const literatureTitle = literatureItem ? literatureItem.label : "不明";
-        const literatureLink = literatureItem?.link ? `<a href="${literatureItem.link}" target="_blank">${literatureItem.link}</a>` : "リンクなし";
+        const literatureLink = literatureItem?.link ? `<a href="${literatureItem.link}" target="_blank">${literatureItem.link}</a>` : "";
 
         // 文献タイトルを配列に追加（重複排除）
         if (literatureTitle !== "不明" && !literatureTitles.includes(literatureTitle)) {
@@ -280,10 +263,16 @@ const displayMarkers = (filteredData) => {
 
         popupContent = popupContent.replace(/<i>(.*?)<\/i>/g, (_, match) => `<i>${match}</i>`);
 
+        // マーカーを生成し、ポップアップを設定
         const marker = new maplibregl.Marker(el)
             .setLngLat([row.longitude, row.latitude])
-            .setPopup(new maplibregl.Popup().setHTML(popupContent))
+            .setPopup(new maplibregl.Popup({ focusAfterOpen: false }).setHTML(popupContent))
             .addTo(map);
+
+        // ポップアップが開閉された際の画面移動を防止
+        marker.getElement().addEventListener('click', (e) => {
+          e.preventDefault();
+        });
 
         markers.push(marker);
     });
@@ -305,7 +294,7 @@ const updateLiteratureList = (titles) => {
   listContainer.innerHTML = "<h3>引用文献 Reference</h3>";
 
   // 文献リストをCSV順序で並べ替え
-  const orderedLiterature = literatureMap.filter(item => titles.includes(item.label));
+  const orderedLiterature = literatureArray.filter(item => titles.includes(item.label));
 
   const ol = document.createElement('ol');
   orderedLiterature.forEach(item => {
@@ -324,20 +313,11 @@ const updateLiteratureList = (titles) => {
   listContainer.appendChild(ol);
 };
 
-// フィルタ選択肢を更新
-const updateFilters = (filteredData, filters) => {
-  const searchValue = document.getElementById("search-all").value.toLowerCase();
-
-  // チェックボックスの状態を取得
-  const excludeUnpublished = document.getElementById("exclude-unpublished").checked;
-  const excludeDubious = document.getElementById("exclude-dubious").checked;
-  const excludeCitation = document.getElementById("exclude-citation").checked;
-
-  // チェックボックスでの絞り込みを適用
-  const checkboxFilteredData = filteredData.filter(row => {
+// チェックボックスによるフィルタリング
+const filterByCheckbox = (data, excludeUnpublished, excludeDubious, excludeCitation) => {
+  return data.filter(row => {
     const isUnpublished = row.literatureID === "-" || row.literatureID === "";
     const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
-    //console.log(rows.map(row => row.original));
     const isCitation = row.original === "-";
 
     if (excludeUnpublished && isUnpublished) return false;
@@ -346,57 +326,47 @@ const updateFilters = (filteredData, filters) => {
 
     return true; // チェックボックスで除外されないデータを保持
   });
+};
 
-  // 文献セレクトボックスのフィルタリング
-  const literatureOptions = literatureMap
+// 検索窓によるフィルタリング
+const filterBySearch = (data, searchValue) => {
+  // 検索値を小文字に変換（大文字小文字を区別しない検索のため）useSearch が false の場合、検索窓の値を無視
+  const lowercaseSearch = useSearch ? searchValue.toLowerCase() : "";
+
+  // 文献オプションをフィルタリング
+  const literatureOptions = literatureArray
     .filter(item =>
-      checkboxFilteredData.some(row => row.literatureID === item.id) && // データ中に存在する文献IDのみ
-      item.label.toLowerCase().includes(searchValue) // 検索窓のテキストが含まれる場合
+      // data の中に一致する文献IDがあるかつ文献タイトルに検索値が含まれるか確認
+      data.some(row => row.literatureID === item.id) &&
+      (useSearch ? item.label.toLowerCase().includes(lowercaseSearch) : true)
     )
     .map(item => ({
+      // フィルタリングされた文献データをオプション形式に変換
       value: item.id,
       label: item.label
     }));
 
-  // 文献セレクトボックスを更新
-  populateSelect("filter-literature", literatureOptions, "文献を選択", filters.literature);
+  // 種の学名/和名を結合してフィルタリング
+  const combinedNames = [...new Set(data.map(row => `${row.scientificName} / ${row.japaneseName}`))]
+    .filter(name => useSearch ? name.toLowerCase().includes(lowercaseSearch) : true) // 検索値が含まれている名前のみを保持
+    .sort(); // 結果をソート
 
-  // 検索窓の内容に基づいて他の選択肢を更新
-  combinedNames = [...new Set(checkboxFilteredData.map(row => `${row.scientificName} / ${row.japaneseName}`))]
-    .filter(name => name.toLowerCase().includes(searchValue))
-    .sort();
-
-  const selectedPrefecture = filters.prefecture;
-  const selectedIsland = filters.island;
-
-  const prefectureOptions = prefectureOrder.map(prefecture => ({
-    value: prefecture,
-    label: prefecture
-  })).filter(option => {
-    return checkboxFilteredData.some(row =>
-      row.prefecture === option.value &&
-      option.label.toLowerCase().includes(searchValue)
-    );
-  });
-
-  const islandOptions = islandOrder.map(island => ({
-    value: island,
-    label: island
-  })).filter(option => {
-    return checkboxFilteredData.some(row =>
-      row.island === option.value &&
-      option.label.toLowerCase().includes(searchValue)
-    );
-  });
-
-  const getOptions = (key, dataKey) => {
-    const options = [...new Map(checkboxFilteredData.map(row => [
+  // 特定のデータキー（属、科、目など）ごとにオプションを生成する関数
+  const getOptions = (dataKey) => {
+    // 一意の値をマッピングして重複を排除
+    const options = [...new Map(data.map(row => [
       row[dataKey],
-      { value: row[dataKey], label: `${row[dataKey]} / ${taxonMap[row[dataKey]] || "-"}` } // 和名がない場合"-"を表示
+      {
+        value: row[dataKey],
+        // 該当する和名が存在しない場合は "-" を設定
+        label: `${row[dataKey]} / ${taxonMap[row[dataKey]] || "-"}`
+      }
     ])).values()];
 
     return options
-      .filter(option => option.label.toLowerCase().includes(searchValue))
+      // 検索値が含まれるオプションのみを保持
+      .filter(option => useSearch ? option.label.toLowerCase().includes(lowercaseSearch) : true)
+      // 特殊値（"-"）は最後にソート、それ以外はアルファベット順
       .sort((a, b) => {
         if (a.value === "-") return 1;
         if (b.value === "-") return -1;
@@ -404,13 +374,81 @@ const updateFilters = (filteredData, filters) => {
       });
   };
 
-  // 各セレクトボックスを更新
-  populateSelect("filter-species", combinedNames.map(name => ({ value: name, label: name })), "種を選択", filters.species);
-  populateSelect("filter-genus", getOptions("genus", "genus"), "属を選択", filters.genus);
-  populateSelect("filter-family", getOptions("family", "family"), "科を選択", filters.family);
-  populateSelect("filter-order", getOptions("order", "order"), "目を選択", filters.order);
-  populateSelect("filter-prefecture", prefectureOptions, "都道府県を選択", selectedPrefecture);
-  populateSelect("filter-island", islandOptions, "島を選択", selectedIsland);
+  // **都道府県と島のオプションに useSearch を適用**
+  const getPrefectureIslandOptions = (dataKey, referenceArray) => {
+    return referenceArray.map(item => ({
+      value: item,
+      label: item
+    })).filter(option =>
+      data.some(row => row[dataKey] === option.value) &&
+      (useSearch ? option.label.toLowerCase().includes(lowercaseSearch) : true)
+    );
+  };
+
+  // フィルタリング結果を返す
+  return {
+    literatureOptions, // フィルタされた文献オプション
+    combinedNames, // 学名/和名の結合リスト
+    genusOptions: getOptions("genus"), // 属のオプション
+    familyOptions: getOptions("family"), // 科のオプション
+    orderOptions: getOptions("order"), // 目のオプション
+    prefectureOptions: getPrefectureIslandOptions("prefecture", prefectureOrder),
+    islandOptions: getPrefectureIslandOptions("island", islandOrder)
+  };
+};
+
+// セレクトボックスを更新する関数
+// filteredData: フィルタリングされたデータのリスト
+// filters: 現在適用されているフィルタ情報
+// searchResults: 検索結果として得られたオプションリスト
+const updateSelectBoxes = (filteredData, filters, searchResults) => {
+  const {
+    literatureOptions,
+    combinedNames,
+    genusOptions,
+    familyOptions,
+    orderOptions,
+    prefectureOptions,
+    islandOptions
+  } = searchResults;
+
+  // 文献セレクトボックスを更新
+  populateSelect("filter-literature", literatureOptions, "文献を選択", filters.literature);
+
+  // 種のセレクトボックスを更新
+  populateSelect("filter-species",
+    combinedNames.map(name => ({ value: name, label: name })),
+    "種を選択",
+    filters.species
+  );
+
+  // 属のセレクトボックスを更新
+  populateSelect("filter-genus", genusOptions, "属を選択", filters.genus);
+  // 科のセレクトボックスを更新
+  populateSelect("filter-family", familyOptions, "科を選択", filters.family);
+  // 目のセレクトボックスを更新
+  populateSelect("filter-order", orderOptions, "目を選択", filters.order);
+  // **都道府県のセレクトボックスを更新**
+  populateSelect("filter-prefecture", prefectureOptions, "都道府県を選択", filters.prefecture);
+  // **島のセレクトボックスを更新**
+  populateSelect("filter-island", islandOptions, "島を選択", filters.island);
+};
+
+// フィルターをアップデート
+const updateFilters = (filteredData, filters) => {
+  const searchValue = getSearchValue();
+  const excludeUnpublished = document.getElementById("exclude-unpublished").checked;
+  const excludeDubious = document.getElementById("exclude-dubious").checked;
+  const excludeCitation = document.getElementById("exclude-citation").checked;
+
+  // チェックボックスによるフィルタリング
+  const checkboxFilteredData = filterByCheckbox(filteredData, excludeUnpublished, excludeDubious, excludeCitation);
+
+  // 検索窓によるフィルタリング
+  const searchResults = filterBySearch(checkboxFilteredData, searchValue);
+
+  // セレクトボックスの更新
+  updateSelectBoxes(checkboxFilteredData, { ...filters, searchValue }, searchResults);
 };
 
 // ドロップダウンの選択時のリスナー
@@ -428,30 +466,23 @@ const setupDropdownListeners = () => {
   dropdowns.forEach((id) => {
     const element = document.getElementById(id);
 
-    // ドロップダウンがクリックされたとき
+    // セレクトボックスがクリックされたとき
     element.addEventListener("mousedown", () => {
-      // previousValue = element.value; // 現在の値を記録
       element.value = ""; // 選択値を空にする
-      applyFilters(); // 地図を更新
+      applyFilters("", false, useSearch); // フィルタリングを実行：フィルタリングは""による，地図に反映無効，検索窓によるフィルタリング無効
+    });
+
+    // セレクトボックスがフォーカスを失った場合（例: 外部をクリックした場合）
+    element.addEventListener("blur", () => {
+      applyFilters("", true, useSearch); // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング無効
     });
 
     // ドロップダウンから値が選択されたとき
     element.addEventListener("change", () => {
-      applyFilters(); // 地図を更新
+      useSearch = false; // 検索窓のフィルタリングを無効化
+      applyFilters("", true, false); // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング無効
     });
-
   });
-};
-
-// 文献セレクト要素を動的に作成
-const createLiteratureSelect = () => {
-  const options = literatureMap.map(item => ({
-    value: item.id,
-    label: item.label
-  }));
-
-  // セレクトボックスを初期化
-  populateSelect("filter-literature", options, "文献を選択", "");
 };
 
 // ドロップダウンを未選択にリセットする関数
@@ -515,24 +546,34 @@ const setupResetButton = () => {
   });
 };
 
-// 全フィルタリングを適用
-const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
-  try {
-    // 各セレクトボックスの現在の選択値を取得
-    const filters = {
-      species: document.getElementById("filter-species").value,
-      genus: document.getElementById("filter-genus").value,
-      family: document.getElementById("filter-family").value,
-      order: document.getElementById("filter-order").value,
-      prefecture: document.getElementById("filter-prefecture").value,
-      island: document.getElementById("filter-island").value,
-      literature: document.getElementById("filter-literature").value,
-    };
+// フィルタの選択状態を取得
+const getFilterStates = () => {
+  // セレクトボックスの現在の選択値を取得
+  const filters = {
+    species: document.getElementById("filter-species").value,
+    genus: document.getElementById("filter-genus").value,
+    family: document.getElementById("filter-family").value,
+    order: document.getElementById("filter-order").value,
+    prefecture: document.getElementById("filter-prefecture").value,
+    island: document.getElementById("filter-island").value,
+    literature: document.getElementById("filter-literature").value,
+  };
 
-    // チェックボックスの状態を取得
-    const excludeUnpublished = document.getElementById("exclude-unpublished").checked;
-    const excludeDubious = document.getElementById("exclude-dubious").checked;
-    const excludeCitation = document.getElementById("exclude-citation").checked;
+  // チェックボックスの状態を取得
+  const checkboxes = {
+    excludeUnpublished: document.getElementById("exclude-unpublished").checked,
+    excludeDubious: document.getElementById("exclude-dubious").checked,
+    excludeCitation: document.getElementById("exclude-citation").checked,
+  };
+
+  return { filters, checkboxes };
+};
+
+// 全フィルタリングを適用
+const applyFilters = async (searchValue = "", updateMap = true, useSearch = false) => {
+  try {
+    // 現在のフィルタ状態を取得
+    const { filters, checkboxes } = getFilterStates();
 
     // フィルタがすべて未選択の場合
     const allFiltersEmpty = Object.values(filters).every(value => value === "");
@@ -543,9 +584,9 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
         const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
         const isCitation = row.original === "no";
 
-        if (excludeUnpublished && isUnpublished) return false; // 未公表データを除外
-        if (excludeDubious && isDubious) return false; // 疑わしいデータを除外
-        if (excludeCitation && isCitation) return false; // 引用記録を除外
+        if (checkboxes.excludeUnpublished && isUnpublished) return false; // 未公表データを除外
+        if (checkboxes.excludeDubious && isDubious) return false; // 疑わしいデータを除外
+        if (checkboxes.excludeCitation && isCitation) return false; // 引用記録を除外
 
         return true; // 除外条件を満たさないデータを保持
       });
@@ -571,9 +612,9 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
       const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
       const isCitation = row.original === "no";
 
-      if (excludeUnpublished && isUnpublished) return false; // 未公表データを除外
-      if (excludeDubious && isDubious) return false; // 疑わしいデータを除外
-      if (excludeCitation && isCitation) return false; // 引用記録を除外
+      if (checkboxes.excludeUnpublished && isUnpublished) return false; // 未公表データを除外
+      if (checkboxes.excludeDubious && isDubious) return false; // 疑わしいデータを除外
+      if (checkboxes.excludeCitation && isCitation) return false; // 引用記録を除外
 
       return (
         (filters.species === "" || combinedName === filters.species) &&
@@ -586,8 +627,19 @@ const applyFilters = async (excludeDropdownId = null, updateMap = true) => {
       );
     });
 
+    // 検索窓によるフィルタリングは useSearch が true の場合のみ実行
+    const searchResults = useSearch
+      ? filterBySearch(filteredRows, searchValue)
+      : {
+          literatureOptions: [],
+          combinedNames: [],
+          genusOptions: [],
+          familyOptions: [],
+          orderOptions: []
+        };
+
     // 各セレクトボックスを更新
-    updateFilters(filteredRows, filters);
+    updateFilters(filteredRows, { ...filters, searchValue }, searchResults);
 
     // レコード数と地点数を更新
     const recordCount = filteredRows.length;
@@ -636,7 +688,7 @@ const loadGeoJSON = async () => {
       };
     });
 
-    updateFilters(rows, {}); // 初期フィルタを適用
+    updateFilters(rows, getFilterStates().filters); // 初期フィルタを適用
   } catch (error) {
     console.error("GeoJSONの読み込みエラー:", error);
   }
@@ -667,19 +719,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 実行ボタンのクリックイベントを設定
     document.getElementById("search-button").addEventListener("click", () => {
-      applyFilters(); // 実行ボタンがクリックされたときにフィルタリングを実行
-      applyFilters(); //セレクトボックスの選択をクリア後再実行
+      useSearch = true; // 検索窓のフィルタリングを有効化
+      const searchValue = getSearchValue(); // 検索窓の値を取得
+      clearDropdowns(); // セレクトボックスの選択を解除
+      applyFilters(searchValue, true, true); // フィルタリングを実行：フィルタリングはsearchValueによる，地図に反映有効，検索窓によるフィルタリング有効
     });
-
+    
     // 検索テキストを消去するボタンのイベントリスナー
     document.getElementById("clear-search-button").addEventListener("click", () => {
-      // 検索窓の値をクリア
-      clearSearch();
-
-      // 現在のフィルタ状態で再度フィルタリングを適用
-      applyFilters(null, true);
+      clearSearch(); // 検索窓の値をクリア
+      applyFilters("", true, true); // // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング有効
     });
-
+    
     // チェックボックスのイベントリスナーを設定
     document.getElementById("exclude-unpublished").addEventListener("change", applyFilters); // 未公表データを除外
     document.getElementById("exclude-dubious").addEventListener("change", applyFilters); // 疑わしい記録を除外
