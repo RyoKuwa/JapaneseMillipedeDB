@@ -15,17 +15,55 @@
   </header>
   </div>
   <div id="mapid">
+    <!-- 選択中のセレクトボックスのラベル -->
+    <div id="selected-labels" class="selected-labels"></div>
+    <!-- 検索とセレクトボックス -->
     <div id="searchContainer" class="search-container">
       <input type="text" id="search-all" placeholder="検索">
       <button id="search-button">検索を実行</button>
       <button id="clear-search-button">検索をクリア</button>
-      <select id="filter-species"></select>
-      <select id="filter-genus"></select>
-      <select id="filter-family"></select>
-      <select id="filter-order"></select>
-      <select id="filter-prefecture"></select>
-      <select id="filter-island"></select>
-      <select id="filter-literature"></select>
+      <!-- 各セレクトボックスにナビゲーションボタンを追加 -->
+      <div class="select-container">
+        <select id="filter-species"></select>
+        <button class="nav-button" id="prev-species">&lt;</button>
+        <button class="nav-button" id="next-species">&gt;</button>
+      </div>
+      
+      <div class="select-container">
+        <select id="filter-genus"></select>
+        <button class="nav-button" id="prev-genus">&lt;</button>
+        <button class="nav-button" id="next-genus">&gt;</button>
+      </div>
+      
+      <div class="select-container">
+        <select id="filter-family"></select>
+        <button class="nav-button" id="prev-family">&lt;</button>
+        <button class="nav-button" id="next-family">&gt;</button>
+      </div>
+      
+      <div class="select-container">
+        <select id="filter-order"></select>
+        <button class="nav-button" id="prev-order">&lt;</button>
+        <button class="nav-button" id="next-order">&gt;</button>
+      </div>
+      
+      <div class="select-container">
+        <select id="filter-prefecture"></select>
+        <button class="nav-button" id="prev-prefecture">&lt;</button>
+        <button class="nav-button" id="next-prefecture">&gt;</button>
+      </div>
+      
+      <div class="select-container">
+        <select id="filter-island"></select>
+        <button class="nav-button" id="prev-island">&lt;</button>
+        <button class="nav-button" id="next-island">&gt;</button>
+      </div>
+      
+      <div class="select-container">
+        <select id="filter-literature"></select>
+        <button class="nav-button" id="prev-literature">&lt;</button>
+        <button class="nav-button" id="next-literature">&gt;</button>
+      </div>
       <button id="reset-button">リセット</button>
       <div id="checkbox-container">
         <label>
@@ -40,6 +78,10 @@
       </div>
       <p>レコード数: <span id="record-count">0</span><br>地点数: <span id="location-count">0</span></p>
       <div id="toggle-button" class="toggle-button">&#9650;</div> <!-- 上向き三角形 -->
+    </div>
+    <div id="selected-labels">
+      <p>現在の選択:</p>
+      <ul id="selected-labels-list"></ul>
     </div>
     <div class="legend">
       <div class="legend-item"><span class="marker marker-star blue"></span>タイプ産地</div>

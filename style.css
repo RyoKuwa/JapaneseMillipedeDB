@@ -86,7 +86,7 @@ header h1 {
   background-color: #f8f8f8;
   border: 1px solid #ccc;
   width: 100%;
-  max-width: 200px;
+  max-width: 250px;
   margin: 0px auto;
   transition: max-height 0.5s ease-out; /* アニメーション */
   max-height: 500px; /* 初期の最大高さ */
@@ -310,6 +310,61 @@ header h1 {
 #checkbox-container input[type="checkbox"] {
   margin: 2px 4px 2px 4px; /* 上下2px、左右4pxに設定して幅を減少 */
   width: auto; /* 必要に応じて幅を調整 */
+}
+
+/* セレクトボックスとボタンを横並びに */
+.select-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 3px; /* ボタンとの間隔 */
+}
+
+/* セレクトボックスの幅と高さを統一 */
+.select-container select {
+  flex-grow: 1; /* 幅を一定にするために調整 */
+  width: 0px; /* 絶対幅を設定 */
+  max-width: 200px;
+  min-width: 200px;
+  height: 24px; /* 高さを適切に調整 */
+  font-size: 14px;
+  padding: 2px; /* 内部の余白を調整 */
+  box-sizing: border-box; /* 幅計算を内側の要素に含める */
+}
+
+/* 左右ボタンのスタイル */
+.nav-button {
+  width: 24px; /* コンパクトな幅 */
+  height: 24px; /* セレクトボックスと高さを統一 */
+  padding: 0;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: center;
+  line-height: 24px;
+  margin-left: 0; /* セレクトボックスと隙間を作らない */
+}
+
+/* ボタンのホバー時のスタイル */
+.nav-button:hover {
+  background-color: #ddd;
+}
+
+.selected-labels {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  max-width: 80%;
+  text-align: center;
+  z-index: 1000;
 }
 
 @keyframes spin {
