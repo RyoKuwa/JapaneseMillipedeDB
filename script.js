@@ -553,23 +553,22 @@ const navigateOption = async (selectId, direction) => {
 
 // ==================== 種の学名のフォーマット処理 ====================
 const formatSpeciesName = (name) => {
-  // "ord.", "fam.", "gen." が含まれる場合は全て立体 (非イタリック)
+  // "ord.", "fam.", "gen." が含まれる場合はすべて立体にする
   if (name.includes(" ord.") || name.includes(" fam.") || name.includes(" gen.")) {
-    return name; // そのまま表示（イタリックなし）
+    return `<span class="non-italic">${name}</span>`;
   }
 
-  // "sp." が含まれる場合、前を斜体・後を通常フォントにする
+  // "sp." の前をイタリック、以降は立体にする
   const regex = /(.*?)\s(sp\.)(.*)/;
   const match = name.match(regex);
 
   if (match) {
     const italicPart = `<i>${match[1]}</i>`; // 斜体部分
-    const nonItalicPart = match[2] + match[3]; // 非斜体部分
+    const nonItalicPart = `<span class="non-italic">${match[2]}${match[3]}</span>`; // 非イタリック部分
     return `${italicPart} ${nonItalicPart}`;
   }
 
-  // それ以外の種名は全てイタリック
-  return `<i>${name}</i>`;
+  return `<i>${name}</i>`; // それ以外はすべてイタリック
 };
 
 // ==================== UI操作関数 ====================
@@ -615,7 +614,7 @@ const updateSelectedLabels = () => {
     let labelText = selectedOption.text;
     if (labelText.includes(" / ")) {
       const parts = labelText.split(" / ");
-      labelText = `${parts[1]} / ${parts[0]}`; // 順序を逆にする
+      labelText = `<span class="non-italic">${parts[1]}</span> / ${parts[0]}`; // 和名を立体にする
     }
 
     // 種の学名のフォーマット処理
