@@ -366,6 +366,11 @@ header h1 {
   white-space: pre-line; /* 改行を有効化 */
 }
 
+/* 立体 (非イタリック) のスタイル */
+.non-italic {
+  font-style: normal;
+}
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
