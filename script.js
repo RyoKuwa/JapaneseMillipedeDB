@@ -763,12 +763,14 @@ const setupDropdownListeners = () => {
     // セレクトボックスがフォーカスを失った場合（例: 外部をクリックした場合）
     element.addEventListener("blur", () => {
       applyFilters("", true, useSearch); // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング無効
+      updateSelectedLabels(); // 選択ラベルを更新
     });
 
     // ドロップダウンから値が選択されたとき
     element.addEventListener("change", () => {
       useSearch = false; // 検索窓のフィルタリングを無効化
       applyFilters("", true, false); // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング無効
+      updateSelectedLabels(); // 選択ラベルを更新
     });
   });
 };
