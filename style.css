@@ -353,18 +353,17 @@ header h1 {
 }
 
 .selected-labels {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.8);
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 14px;
-  font-weight: bold;
-  max-width: 80%;
+  width: 80%;
+  max-width: 900px;
+  margin: 0 auto; /* 中央揃え */
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px 10px;
   text-align: center;
-  z-index: 1000;
+  font-size: 16px;
+  font-weight: bold;
+  border-bottom: 1px solid #ccc;
+  display: none; /* 初期状態は非表示 */
+  white-space: pre-line; /* 改行を有効化 */
 }
 
 @keyframes spin {

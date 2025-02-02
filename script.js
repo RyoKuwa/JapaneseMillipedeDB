@@ -45,7 +45,7 @@ const initMap = () => {
     center: [136, 35.7],
     zoom: 4,
     maxZoom: 9,
-    minZoom: 4
+    minZoom: 3
   });
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   // 地図にスケールを追加
@@ -551,6 +551,27 @@ const navigateOption = async (selectId, direction) => {
   await applyFilters("", true, false); // 再度フィルタリングを実行し、マップを更新
 };
 
+// ==================== 種の学名のフォーマット処理 ====================
+const formatSpeciesName = (name) => {
+  // "ord.", "fam.", "gen." が含まれる場合は全て立体 (非イタリック)
+  if (name.includes(" ord.") || name.includes(" fam.") || name.includes(" gen.")) {
+    return name; // そのまま表示（イタリックなし）
+  }
+
+  // "sp." が含まれる場合、前を斜体・後を通常フォントにする
+  const regex = /(.*?)\s(sp\.)(.*)/;
+  const match = name.match(regex);
+
+  if (match) {
+    const italicPart = `<i>${match[1]}</i>`; // 斜体部分
+    const nonItalicPart = match[2] + match[3]; // 非斜体部分
+    return `${italicPart} ${nonItalicPart}`;
+  }
+
+  // それ以外の種名は全てイタリック
+  return `<i>${name}</i>`;
+};
+
 // ==================== UI操作関数 ====================
 // 検索部分の開閉
 const searchContainer = document.getElementById('searchContainer');
@@ -588,11 +609,30 @@ const updateSelectedLabels = () => {
     if (!select) return "";
 
     const selectedOption = select.options[select.selectedIndex];
-    return selectedOption && selectedOption.value ? selectedOption.text : "";
+    if (!selectedOption || !selectedOption.value) return "";
+
+    // 「学名 / 和名」の順を「和名 / 学名」に変更
+    let labelText = selectedOption.text;
+    if (labelText.includes(" / ")) {
+      const parts = labelText.split(" / ");
+      labelText = `${parts[1]} / ${parts[0]}`; // 順序を逆にする
+    }
+
+    // 種の学名のフォーマット処理
+    if (id === "filter-species") {
+      labelText = formatSpeciesName(labelText);
+    }
+
+    // 属の学名のフォーマット処理
+    if (id === "filter-genus") {
+      labelText = `<i>${labelText}</i>`; // すべてイタリックにする
+    }
+
+    return labelText;
   }).filter(label => label !== ""); // 空のラベルを除外
 
   if (labels.length > 0) {
-    labelContainer.textContent = `${labels.join(" | ")}`;
+    labelContainer.innerHTML = labels.join("<br>"); // 改行を適用
     labelContainer.style.display = "block"; // 表示
   } else {
     labelContainer.style.display = "none"; // 非表示
