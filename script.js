@@ -639,11 +639,28 @@ const updateSelectedLabels = () => {
     return labelText;
   }).filter(label => label !== ""); // 空のラベルを除外
 
+  const previousHeight = labelContainer.offsetHeight; // 変更前の高さ
+
   if (labels.length > 0) {
     labelContainer.innerHTML = labels.join("<br>"); // 改行を適用
     labelContainer.style.display = "block"; // 表示
   } else {
     labelContainer.style.display = "none"; // 非表示
+  }
+
+  adjustScrollPosition(previousHeight);
+};
+
+// スクロール位置を調整
+const adjustScrollPosition = (previousHeight) => {
+  const labelContainer = document.getElementById("selected-labels");
+  if (!labelContainer) return;
+
+  const newHeight = labelContainer.offsetHeight; // 更新後の高さ
+  const heightDifference = newHeight - previousHeight; // 高さの変化量
+
+  if (heightDifference !== 0) {
+    window.scrollBy(0, heightDifference); // 高さの増減に応じてスクロール
   }
 };
 
