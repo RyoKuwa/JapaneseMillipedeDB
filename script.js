@@ -713,17 +713,11 @@ const setupDropdownListeners = () => {
 
   dropdowns.forEach((id) => {
     const element = document.getElementById(id);
-    let isDropdownOpen = false; // ドロップダウンの開閉状態を管理
 
     // セレクトボックスがクリックされたとき
     element.addEventListener("mousedown", () => {
-      if (isDropdownOpen) {
-        applyFilters("", false, useSearch); // フィルタリングを実行：フィルタリングは""による，地図に反映無効，検索窓によるフィルタリング無効
-      } else {
-        element.value = ""; // 選択値を空にする
-        applyFilters("", false, useSearch); // フィルタリングを実行：フィルタリングは""による，地図に反映無効，検索窓によるフィルタリング無効
-      }
-      isDropdownOpen = !isDropdownOpen;
+      element.value = ""; // 選択値を空にする
+      applyFilters("", false, useSearch); // フィルタリングを実行：フィルタリングは""による，地図に反映無効，検索窓によるフィルタリング無効
     });
 
     // セレクトボックスがフォーカスを失った場合（例: 外部をクリックした場合）
@@ -733,12 +727,8 @@ const setupDropdownListeners = () => {
 
     // ドロップダウンから値が選択されたとき
     element.addEventListener("change", () => {
-      if (isDropdownOpen) {
-        isDropdownOpen = false;
-        useSearch = false; // 検索窓のフィルタリングを無効化
-        applyFilters("", true, false); // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング無効
-        isDropdownOpen = false;
-      }
+      useSearch = false; // 検索窓のフィルタリングを無効化
+      applyFilters("", true, false); // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング無効
     });
   });
 };
