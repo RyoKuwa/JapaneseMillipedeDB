@@ -553,28 +553,27 @@ const navigateOption = async (selectId, direction) => {
 
 // ==================== 種の学名のフォーマット処理 ====================
 const formatSpeciesName = (name) => {
-  // 和名部分と学名部分を分離
-  let parts = name.split(" / ");
-  let japaneseName = parts[0]; // 和名部分
-  let scientificName = parts.length > 1 ? parts[1] : "";
+  if (!name.includes(" / ")) return name; // 「/」が含まれていなければそのまま返す
 
-  // ord. fam. gen. を含む場合はすべて立体にする
-  if (scientificName.match(/\b(ord\.|fam\.|gen\.)\b/)) {
-    return `${japaneseName} / ${scientificName}`; // すべて立体（斜体なし）
+  let [japaneseName, scientificName] = name.split(" / "); // 和名と学名を分割
+  let formattedScientificName = scientificName;
+
+  // 「(」と「)」を通常フォントにする
+  formattedScientificName = formattedScientificName.replace(/\(/g, '<span class="non-italic">(</span>');
+  formattedScientificName = formattedScientificName.replace(/\)/g, '<span class="non-italic">)</span>');
+
+  // ord. / fam. / gen. を含む場合はすべて立体（斜体なし）
+  if (formattedScientificName.match(/ord\.|fam\.|gen\./)) {
+    return `${japaneseName} / <span class="non-italic">${formattedScientificName}</span>`;
   }
 
-  // sp. を含む場合、「sp.」の前を斜体、以降は立体
-  const regex = /(.*?)\s(sp\.)(.*)/;
-  const match = scientificName.match(regex);
-
-  if (match) {
-    const italicPart = `<i>${match[1]}</i>`; // 斜体部分
-    const nonItalicPart = match[2] + match[3]; // 非斜体部分
-    return `${japaneseName} / ${italicPart} ${nonItalicPart}`;
+  // sp. を含み、ord. / fam. / gen. が含まれない場合
+  if (formattedScientificName.includes("sp.") && !formattedScientificName.match(/ord\.|fam\.|gen\./)) {
+    return `${japaneseName} / ` + formattedScientificName.replace(/(.*?)(sp\..*)/, '<i>$1</i><span class="non-italic">$2</span>');
   }
 
-  // 通常の場合はすべて斜体
-  return `${japaneseName} / <i>${scientificName}</i>`;
+  // それ以外の場合はすべて斜体
+  return `${japaneseName} / <i>${formattedScientificName}</i>`;
 };
 
 // ==================== UI操作関数 ====================
@@ -616,8 +615,9 @@ const updateSelectedLabels = () => {
     const selectedOption = select.options[select.selectedIndex];
     if (!selectedOption || !selectedOption.value) return "";
 
-    // 「学名 / 和名」の順を「和名 / 学名」に変更
     let labelText = selectedOption.text;
+
+    // 和名と学名の順序を修正
     if (labelText.includes(" / ")) {
       const parts = labelText.split(" / ");
       labelText = `${parts[1]} / ${parts[0]}`; // 順序を逆にする
