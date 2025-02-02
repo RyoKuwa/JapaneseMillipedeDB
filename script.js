@@ -553,23 +553,27 @@ const navigateOption = async (selectId, direction) => {
 
 // ==================== 種の学名のフォーマット処理 ====================
 const formatSpeciesName = (name) => {
-  // 「和名 / 学名」の形式なので、学名部分のみ処理する
-  if (!name.includes(" / ")) return name;
-  
-  let [japaneseName, scientificName] = name.split(" / ");
-  
-  // ルール適用: 「ord.」「fam.」「gen.」が含まれる場合 → 立体のまま
-  if (scientificName.includes(" ord.") || scientificName.includes(" fam.") || scientificName.includes(" gen.")) {
-    return `${japaneseName} / ${scientificName}`;
-  }
-  
-  // ルール適用: 「sp.」が含まれる場合
-  if (scientificName.includes(" sp.")) {
-    const parts = scientificName.split(" sp.");
-    return `${japaneseName} / <i>${parts[0]}</i> sp.${parts[1] ? parts[1] : ""}`;
+  // 和名部分と学名部分を分離
+  let parts = name.split(" / ");
+  let japaneseName = parts[0]; // 和名部分
+  let scientificName = parts.length > 1 ? parts[1] : "";
+
+  // ord. fam. gen. を含む場合はすべて立体にする
+  if (scientificName.match(/\b(ord\.|fam\.|gen\.)\b/)) {
+    return `${japaneseName} / ${scientificName}`; // すべて立体（斜体なし）
   }
 
-  // 基本ルール: 種の学名はすべてイタリック
+  // sp. を含む場合、「sp.」の前を斜体、以降は立体
+  const regex = /(.*?)\s(sp\.)(.*)/;
+  const match = scientificName.match(regex);
+
+  if (match) {
+    const italicPart = `<i>${match[1]}</i>`; // 斜体部分
+    const nonItalicPart = match[2] + match[3]; // 非斜体部分
+    return `${japaneseName} / ${italicPart} ${nonItalicPart}`;
+  }
+
+  // 通常の場合はすべて斜体
   return `${japaneseName} / <i>${scientificName}</i>`;
 };
 
@@ -624,9 +628,12 @@ const updateSelectedLabels = () => {
       labelText = formatSpeciesName(labelText);
     }
 
-    // 属の学名のフォーマット処理
-    if (id === "filter-genus") {
-      labelText = `<i>${labelText}</i>`; // すべてイタリックにする
+    // 属の学名のフォーマット処理（和名部分を除いてイタリックに）
+    if (id === "filter-genus" && labelText.includes(" / ")) {
+      const parts = labelText.split(" / ");
+      labelText = `${parts[0]} / <i>${parts[1]}</i>`; // 和名部分は立体、学名部分は斜体
+    } else if (id === "filter-genus") {
+      labelText = `<i>${labelText}</i>`; // 属の学名全体を斜体にする
     }
 
     return labelText;
