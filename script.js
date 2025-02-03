@@ -8,6 +8,7 @@ let islandOrder = [];
 let markers = []; // マーカーを追跡する配列
 let literatureArray = []; // 文献データを保持する配列
 let useSearch = false; // 検索窓のフィルタリングのオン・オフ制御
+let clusterGroup; // クラスタリング用の変数
 
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
@@ -15,6 +16,7 @@ const initMap = () => {
     container: 'mapid',
     style: {
       "version": 8,
+      "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
       "sources": {
           "japan": {
               "type": "geojson",
@@ -50,6 +52,8 @@ const initMap = () => {
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   // 地図にスケールを追加
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
+  map.on('moveend', () => applyFilters("", true, false)); // 地図の移動やズーム時にフィルタを適用
+  map.on('zoomend', () => applyFilters("", true, false)); // 地図の移動やズーム時にフィルタを適用
   updateSelectedLabels(); // 選択ラベルを更新
 };
 
@@ -213,7 +217,7 @@ const filterBySearch = (data, searchValue) => {
   // 文献オプションをフィルタリング
   const literatureOptions = literatureArray
     .filter(item =>
-      // data の中に一致する文献IDがあるかつ文献タイトルに検索値が含まれるか確認
+      // data の中に一致する文献IDがあるかつ文献名称に検索値が含まれるか確認
       data.some(row => row.literatureID === item.id) &&
       (useSearch ? item.label.toLowerCase().includes(lowercaseSearch) : true)
     )
@@ -295,36 +299,6 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
     // 現在のフィルタ状態を取得
     const { filters, checkboxes } = getFilterStates();
 
-    // フィルタがすべて未選択の場合
-    const allFiltersEmpty = Object.values(filters).every(value => value === "");
-    if (allFiltersEmpty) {
-      // チェックボックスを考慮してすべてのレコードをフィルタリング
-      const filteredRows = rows.filter(row => {
-        const isUnpublished = row.literatureID === "-" || row.literatureID === "";
-        const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
-        const isCitation = row.original === "no";
-
-        if (checkboxes.excludeUnpublished && isUnpublished) return false; // 未公表データを除外
-        if (checkboxes.excludeDubious && isDubious) return false; // 疑わしいデータを除外
-        if (checkboxes.excludeCitation && isCitation) return false; // 引用記録を除外
-
-        return true; // 除外条件を満たさないデータを保持
-      });
-
-      // フィルタリング後のレコード数と地点数を計算
-      const totalRecordCount = filteredRows.length;
-      const totalLocationCount = new Set(filteredRows.map(row => `${row.latitude},${row.longitude}`)).size;
-
-      // レコード数と地点数を更新
-      updateRecordInfo(totalRecordCount, totalLocationCount);
-
-      // マーカーは表示しない
-      clearMarkers();
-      updateLiteratureList([]); // 文献リストをクリア
-      updateFilters(rows, filters); // フィルタ状態を更新
-      return;
-    }
-
     // フィルタリング条件を満たす行を抽出
     const filteredRows = rows.filter(row => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
@@ -368,9 +342,13 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
     const locationCount = new Set(filteredRows.map(row => `${row.latitude},${row.longitude}`)).size;
     updateRecordInfo(recordCount, locationCount);
 
+    generateLiteratureList(filteredRows); //文献リストを更新（filteredRows 内のユニークな文献をリスト化）
+
+    const visibleRecords = getVisibleRecords(filteredRows); // 地図の範囲内のレコードを取得
+
     // 地図のマーカーを更新
     if (updateMap) {
-      displayMarkers(filteredRows);
+      updateMarkers(visibleRecords);
       }
     } catch (error) {
       console.error("applyFilters中にエラーが発生:", error);
@@ -391,7 +369,15 @@ const updateFilters = (filteredData, filters) => {
   const searchResults = filterBySearch(checkboxFilteredData, searchValue);
 
   // セレクトボックスの更新
-  updateSelectBoxes(checkboxFilteredData, { ...filters, searchValue }, searchResults);
+  updateSelectBoxes({ ...filters, searchValue }, searchResults);
+};
+
+const updateMarkers = (visibleRecords) => {
+  if (visibleRecords.length >= 3000) {
+    clusterMarkers(visibleRecords);
+  } else {
+    displayMarkers(visibleRecords);
+  }
 };
 
 // ==================== 値の取得と操作 ====================
@@ -440,7 +426,7 @@ const updateLiteratureList = (titles) => {
   const ol = document.createElement('ol');
   orderedLiterature.forEach(item => {
       const li = document.createElement('li');
-      let listItem = item.label; // 文献タイトル
+      let listItem = item.label; // 文献名称
 
       // URLがある場合、リンクを追加
       if (item.link) {
@@ -455,7 +441,7 @@ const updateLiteratureList = (titles) => {
 };
 
 // セレクトボックスを更新する関数
-const updateSelectBoxes = (filteredData, filters, searchResults) => {
+const updateSelectBoxes = (filters, searchResults) => {
   const {
     literatureOptions,
     combinedNames,
@@ -551,6 +537,41 @@ const navigateOption = async (selectId, direction) => {
   await applyFilters("", true, false); // 再度フィルタリングを実行し、マップを更新
 };
 
+// 地図の描画範囲内のレコードを取得
+const getVisibleRecords = (filteredData) => {
+  const bounds = map.getBounds(); // 地図の表示範囲を取得
+  return filteredData.filter(row => {
+    return row.latitude && row.longitude &&
+           row.latitude >= bounds.getSouth() &&
+           row.latitude <= bounds.getNorth() &&
+           row.longitude >= bounds.getWest() &&
+           row.longitude <= bounds.getEast();
+  });
+};
+
+// 文献情報を取得する関数
+const getLiteratureInfo = (literatureID) => {
+  const literatureItem = literatureArray.find(item => item.id === literatureID);
+  const literatureName = literatureItem ? literatureItem.label : "不明";
+  const literatureLink = literatureItem?.link ? `<a href="${literatureItem.link}" target="_blank">${literatureItem.link}</a>` : "";
+  return { literatureName, literatureLink };
+};
+
+// 文献一覧を作成する関数
+const generateLiteratureList = (filteredData) => {
+  const literatureNames = new Set(); // 重複を排除するためSetを使用
+
+  filteredData.forEach(row => {
+      if (!row.literatureID || row.literatureID === "-") return;
+      const { literatureName } = getLiteratureInfo(row.literatureID);
+      if (literatureName !== "不明") {
+          literatureNames.add(literatureName);
+      }
+  });
+
+  updateLiteratureList([...literatureNames]); // Setを配列に変換して渡す
+};
+
 // ==================== 種の学名のフォーマット処理 ====================
 const formatSpeciesName = (name) => {
   if (!name.includes(" / ")) return name; // 「/」が含まれていなければそのまま返す
@@ -574,6 +595,86 @@ const formatSpeciesName = (name) => {
 
   // それ以外の場合はすべて斜体
   return `${japaneseName} / <i>${formattedScientificName}</i>`;
+};
+
+// マーカーをクラスタリングして表示
+const clusterMarkers = (filteredData) => {
+  clearMarkers(); // 既存のマーカーとクラスタを削除
+
+  // Mapboxのクラスタリング用ソースを作成
+  const geojson = {
+    type: "FeatureCollection",
+    features: filteredData.map(row => ({
+      type: "Feature",
+      properties: {
+        recordType: row.recordType,
+        popupContent: preparePopupContent([row]).popupContents[0].popupContent
+      },
+      geometry: {
+        type: "Point",
+        coordinates: [row.longitude, row.latitude]
+      }
+    }))
+  };
+
+  if (!map.getSource("clusters")) {
+    map.addSource("clusters", {
+      type: "geojson",
+      data: geojson,
+      cluster: true,
+      clusterRadius: 10, // 半径10px以内のポイントをクラスタ化
+      clusterMaxZoom: 8
+    });
+
+    // クラスタリングレイヤーを追加
+    map.addLayer({
+      id: "clusters",
+      type: "circle",
+      source: "clusters",
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": "#ff8000",
+        "circle-radius": [
+          "step",
+          ["get", "point_count"],
+          10,  // 10個未満
+          100, 15,  // 100個未満
+          750, 20  // 750個未満
+        ],
+        "circle-opacity": 0.8
+      }
+    });
+
+    // クラスタのカウントを表示
+    map.addLayer({
+      id: "cluster-count",
+      type: "symbol",
+      source: "clusters",
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": "{point_count_abbreviated}",
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        "text-size": 12
+      }
+    });
+
+    // 非クラスタ化ポイントのレイヤーを追加
+    map.addLayer({
+      id: "unclustered-point",
+      type: "circle",
+      source: "clusters",
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-color": "#f28cb1",
+        "circle-radius": 5,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff"
+      }
+    });
+  } else {
+    // 既存のソースを更新
+    map.getSource("clusters").setData(geojson);
+  }
 };
 
 // ==================== UI操作関数 ====================
@@ -691,77 +792,84 @@ const getMarkerStyle = (recordType) => {
 const clearMarkers = () => {
   markers.forEach(marker => marker.remove());
   markers = [];
+
+  if (map.getSource("clusters")) {
+    map.removeLayer("clusters");
+    map.removeLayer("cluster-count");
+    map.removeLayer("unclustered-point");
+    map.removeSource("clusters");
+  }
 };
 
-// フィルタリングされたデータをマーカーとして表示
+// フィルターされたデータをマーカーとして表示
 const displayMarkers = (filteredData) => {
+  // 既存のマーカーをクリア（前回のデータを削除）
+  clearMarkers();
 
-    clearMarkers(); // 古いマーカーを削除
+  // ポップアップデータを準備（filteredData からポップアップ情報を取得）
+  const { popupContents } = preparePopupContent(filteredData);
 
-    // 文献タイトルリストを準備
-    const literatureTitles = [];
+  // 各データポイントに対してマーカーを作成し、ポップアップを設定
+  popupContents.forEach(({ row, popupContent }) => {
+      // マーカーのスタイルを取得（記録の種類に応じて色や形を決定）
+      const { className, color, borderColor } = getMarkerStyle(row.recordType);
+      
+      // マーカー要素（HTML div）を作成し、スタイルを適用
+      const el = document.createElement('div');
+      el.className = `${className} marker-clickable`; // クリック可能なクラスを追加
+      el.style.backgroundColor = color;
+      if (borderColor) el.style.borderColor = borderColor;
 
-    filteredData.forEach(row => {
-        if (!row.latitude || !row.longitude) return; // 緯度・経度がない場合はスキップ
+      // マーカーを作成し、指定した座標に配置
+      const marker = new maplibregl.Marker(el)
+          .setLngLat([row.longitude, row.latitude]) // 緯度・経度を設定
+          .setPopup(new maplibregl.Popup({ focusAfterOpen: false }).setHTML(popupContent)) // ポップアップを設定
+          .addTo(map); // 地図に追加
 
-        const { className, color, borderColor } = getMarkerStyle(row.recordType);
-        const el = document.createElement('div');
-        el.className = `${className} marker-clickable`; // クリック可能なクラスを追加
-        el.style.backgroundColor = color;
-        if (borderColor) el.style.borderColor = borderColor;
+      // ポップアップが開いたときに自動スクロールしないように防止
+      marker.getElement().addEventListener('click', (e) => {
+          e.preventDefault(); // 既定のクリック動作をキャンセル
+      });
 
-        // 文献IDを取得
-        const literatureItem = literatureArray.find(item => item.id === row.literatureID);
-        const literatureTitle = literatureItem ? literatureItem.label : "不明";
-        const literatureLink = literatureItem?.link ? `<a href="${literatureItem.link}" target="_blank">${literatureItem.link}</a>` : "";
+      // マーカーリストに追加（後で削除するために管理）
+      markers.push(marker);
+  });
+};
 
-        // 文献タイトルを配列に追加（重複排除）
-        if (literatureTitle !== "不明" && !literatureTitles.includes(literatureTitle)) {
-            literatureTitles.push(literatureTitle);
-        }
+// ポップアップを準備
+const preparePopupContent = (filteredData) => {
+  const popupContents = filteredData.map(row => {
+      if (!row.latitude || !row.longitude) return null; // 緯度・経度がない場合はスキップ
 
-        // ポップアップの内容を動的に生成
-        let popupContent;
+      const { literatureName, literatureLink } = getLiteratureInfo(row.literatureID);
 
-        // 文献情報がある場合はリンクを表示
-        if (!row.literatureID || row.literatureID === "-") {
+      // ポップアップの内容を生成
+      let popupContent;
+      if (!row.literatureID || row.literatureID === "-") {
           popupContent = `
-            <strong>${row.japaneseName} ${row.scientificName}</strong><br>
-            未公表データ Unpublished Data
+              <strong>${row.japaneseName} ${row.scientificName}</strong><br>
+              未公表データ Unpublished Data
           `;
-        } else {
-            popupContent = `
-                <strong>${row.japaneseName} ${row.scientificName}</strong><br>
-                文献中の和名: ${row.originalJapaneseName || "不明"}<br>
-                文献中の学名: ${row.originalScientificName || "不明"}<br>
-                ページ: ${row.page || "不明"}<br>
-                場所: ${row.location || "不明"}<br>
-                採集日: ${row.date || "不明"}<br><br>
-                文献: ${literatureTitle} ${literatureLink}<br><br>
-                備考: ${row.note}<br>
-                記入: ${row.registrant}, ${row.registrationDate}
-            `;
-        }
+      } else {
+          popupContent = `
+              <strong>${row.japaneseName} ${row.scientificName}</strong><br>
+              文献中の和名: ${row.originalJapaneseName || "不明"}<br>
+              文献中の学名: ${row.originalScientificName || "不明"}<br>
+              ページ: ${row.page || "不明"}<br>
+              場所: ${row.location || "不明"}<br>
+              採集日: ${row.date || "不明"}<br><br>
+              文献: ${literatureName} ${literatureLink}<br><br>
+              備考: ${row.note}<br>
+              記入: ${row.registrant}, ${row.registrationDate}
+          `;
+      }
 
-        popupContent = popupContent.replace(/<i>(.*?)<\/i>/g, (_, match) => `<i>${match}</i>`);
+      popupContent = popupContent.replace(/<i>(.*?)<\/i>/g, (_, match) => `<i>${match}</i>`);
 
-        // マーカーを生成し、ポップアップを設定
-        const marker = new maplibregl.Marker(el)
-            .setLngLat([row.longitude, row.latitude])
-            .setPopup(new maplibregl.Popup({ focusAfterOpen: false }).setHTML(popupContent))
-            .addTo(map);
+      return { row, popupContent };
+  }).filter(item => item !== null);
 
-        // ポップアップが開閉された際の画面移動を防止
-        marker.getElement().addEventListener('click', (e) => {
-          e.preventDefault();
-        });
-
-        markers.push(marker);
-    });
-
-    // 文献リストを更新
-    updateLiteratureList(literatureTitles);
-
+  return { popupContents };
 };
 
 // ドロップダウンの選択時のリスナー
@@ -904,6 +1012,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("exclude-dubious").addEventListener("change", applyFilters); // 疑わしい記録を除外
     document.getElementById("exclude-citation").addEventListener("change", applyFilters); // 引用記録を除外
     setupNavButtonListeners(); // 前・次ボタンのイベントリスナーを設定
+    await applyFilters("", true, false); // ページ読み込み時に全データを表示
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
   }
