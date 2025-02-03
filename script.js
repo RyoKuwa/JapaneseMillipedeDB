@@ -299,6 +299,36 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
     // 現在のフィルタ状態を取得
     const { filters, checkboxes } = getFilterStates();
 
+    // フィルタがすべて未選択の場合
+    const allFiltersEmpty = Object.values(filters).every(value => value === "");
+    if (allFiltersEmpty) {
+      // チェックボックスを考慮してすべてのレコードをフィルタリング
+      const filteredRows = rows.filter(row => {
+        const isUnpublished = row.literatureID === "-" || row.literatureID === "";
+        const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
+        const isCitation = row.original === "no";
+
+        if (checkboxes.excludeUnpublished && isUnpublished) return false; // 未公表データを除外
+        if (checkboxes.excludeDubious && isDubious) return false; // 疑わしいデータを除外
+        if (checkboxes.excludeCitation && isCitation) return false; // 引用記録を除外
+
+        return true; // 除外条件を満たさないデータを保持
+      });
+
+      // フィルタリング後のレコード数と地点数を計算
+      const totalRecordCount = filteredRows.length;
+      const totalLocationCount = new Set(filteredRows.map(row => `${row.latitude},${row.longitude}`)).size;
+
+      // レコード数と地点数を更新
+      updateRecordInfo(totalRecordCount, totalLocationCount);
+      
+      // マーカーは表示しない
+      clearMarkers();
+      updateLiteratureList([]); // 文献リストをクリア
+      updateFilters(rows, filters); // フィルタ状態を更新
+      return;
+    }
+
     // フィルタリング条件を満たす行を抽出
     const filteredRows = rows.filter(row => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
@@ -1012,7 +1042,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("exclude-dubious").addEventListener("change", applyFilters); // 疑わしい記録を除外
     document.getElementById("exclude-citation").addEventListener("change", applyFilters); // 引用記録を除外
     setupNavButtonListeners(); // 前・次ボタンのイベントリスナーを設定
-    await applyFilters("", true, false); // ページ読み込み時に全データを表示
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
   }
