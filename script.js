@@ -299,36 +299,6 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
     // 現在のフィルタ状態を取得
     const { filters, checkboxes } = getFilterStates();
 
-    // フィルタがすべて未選択の場合
-    const allFiltersEmpty = Object.values(filters).every(value => value === "");
-    if (allFiltersEmpty) {
-      // チェックボックスを考慮してすべてのレコードをフィルタリング
-      const filteredRows = rows.filter(row => {
-        const isUnpublished = row.literatureID === "-" || row.literatureID === "";
-        const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
-        const isCitation = row.original === "no";
-
-        if (checkboxes.excludeUnpublished && isUnpublished) return false; // 未公表データを除外
-        if (checkboxes.excludeDubious && isDubious) return false; // 疑わしいデータを除外
-        if (checkboxes.excludeCitation && isCitation) return false; // 引用記録を除外
-
-        return true; // 除外条件を満たさないデータを保持
-      });
-
-      // フィルタリング後のレコード数と地点数を計算
-      const totalRecordCount = filteredRows.length;
-      const totalLocationCount = new Set(filteredRows.map(row => `${row.latitude},${row.longitude}`)).size;
-
-      // レコード数と地点数を更新
-      updateRecordInfo(totalRecordCount, totalLocationCount);
-      
-      // マーカーは表示しない
-      clearMarkers();
-      updateLiteratureList([]); // 文献リストをクリア
-      updateFilters(rows, filters); // フィルタ状態を更新
-      return;
-    }
-
     // フィルタリング条件を満たす行を抽出
     const filteredRows = rows.filter(row => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
@@ -545,7 +515,7 @@ const navigateOption = async (selectId, direction) => {
 
   // **② フィルタリングを実行 (対象セレクトボックスの選択を "" にする)**
   select.value = ""; // まず、選択を解除
-  await applyFilters("", true, false); // フィルタリングを実行し、マップを更新
+  await applyFilters("", false, false); // フィルタリングを実行し、マップを更新
 
   // **③ フィルタリング後の選択肢を取得**
   const updatedOptions = Array.from(select.options).map(option => option.value).filter(value => value !== "");
@@ -729,6 +699,10 @@ const updateSelectedLabels = () => {
   const labelContainer = document.getElementById("selected-labels");
   if (!labelContainer) return;
 
+  // **更新前の高さを取得**
+  const previousHeight = labelContainer.getBoundingClientRect().height;
+  const previousScrollY = window.scrollY;
+
   const selectIds = [
     "filter-species",
     "filter-genus",
@@ -751,26 +725,15 @@ const updateSelectedLabels = () => {
     // 和名と学名の順序を修正
     if (labelText.includes(" / ")) {
       const parts = labelText.split(" / ");
-      labelText = `${parts[1]} / ${parts[0]}`; // 順序を逆にする
+      labelText = `${parts[1]} / ${parts[0]}`;
     }
 
-    // 種の学名のフォーマット処理
     if (id === "filter-species") {
       labelText = formatSpeciesName(labelText);
     }
 
-    // 属の学名のフォーマット処理（和名部分を除いてイタリックに）
-    if (id === "filter-genus" && labelText.includes(" / ")) {
-      const parts = labelText.split(" / ");
-      labelText = `${parts[0]} / <i>${parts[1]}</i>`; // 和名部分は立体、学名部分は斜体
-    } else if (id === "filter-genus") {
-      labelText = `<i>${labelText}</i>`; // 属の学名全体を斜体にする
-    }
-
     return labelText;
   }).filter(label => label !== ""); // 空のラベルを除外
-
-  const previousHeight = labelContainer.offsetHeight; // 変更前の高さ
 
   if (labels.length > 0) {
     labelContainer.innerHTML = labels.join("<br>"); // 改行を適用
@@ -779,20 +742,12 @@ const updateSelectedLabels = () => {
     labelContainer.style.display = "none"; // 非表示
   }
 
-  adjustScrollPosition(previousHeight);
-};
+  // **更新後の高さを取得**
+  const newHeight = labelContainer.getBoundingClientRect().height;
 
-// スクロール位置を調整
-const adjustScrollPosition = (previousHeight) => {
-  const labelContainer = document.getElementById("selected-labels");
-  if (!labelContainer) return;
-
-  const newHeight = labelContainer.offsetHeight; // 更新後の高さ
-  const heightDifference = newHeight - previousHeight; // 高さの変化量
-
-  if (heightDifference !== 0) {
-    window.scrollBy(0, heightDifference); // 高さの増減に応じてスクロール
-  }
+  // **高さの変化量に応じてスクロール位置を調整**
+  const heightDifference = newHeight - previousHeight;
+  window.scrollTo({ top: previousScrollY + heightDifference, behavior: "instant" });
 };
 
 // ==================== マーカー操作 ====================
@@ -1023,6 +978,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // リセットボタンの動作を設定
     setupResetButton();
 
+    applyFilters("", true, false); // 全レコードを表示
+
     // 実行ボタンのクリックイベントを設定
     document.getElementById("search-button").addEventListener("click", () => {
       useSearch = true; // 検索窓のフィルタリングを有効化
@@ -1046,3 +1003,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("初期化中にエラーが発生:", error);
   }
 });
+
