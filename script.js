@@ -553,7 +553,7 @@ const getVisibleRecords = (filteredData) => {
 const getLiteratureInfo = (literatureID) => {
   const literatureItem = literatureArray.find(item => item.id === literatureID);
   const literatureName = literatureItem ? literatureItem.label : "不明";
-  const literatureLink = literatureItem?.link ? `<a href="${literatureItem.link}" target="_blank">${literatureItem.link}</a>` : "";
+  const literatureLink = literatureItem?.link ? literatureItem.link : null;
   return { literatureName, literatureLink };
 };
 
@@ -728,8 +728,21 @@ const updateSelectedLabels = () => {
       labelText = `${parts[1]} / ${parts[0]}`;
     }
 
+    // 種の学名のフォーマットを適用
     if (id === "filter-species") {
       labelText = formatSpeciesName(labelText);
+    }
+
+    // 属の学名部分を斜体にする
+    if (id === "filter-genus") {
+      labelText = formatGenusName(labelText);
+    }
+
+    // 文献の表記をポップアップと統一
+    if (id === "filter-literature") {
+      const literatureID = selectedOption.value;
+      const { literatureName, literatureLink } = getLiteratureInfo(literatureID);
+      labelText = literatureLink ? `${literatureName} <a href="${literatureLink}" target="_blank">${literatureLink}</a>` : literatureName;
     }
 
     return labelText;
@@ -748,6 +761,16 @@ const updateSelectedLabels = () => {
   // **高さの変化量に応じてスクロール位置を調整**
   const heightDifference = newHeight - previousHeight;
   window.scrollTo({ top: previousScrollY + heightDifference, behavior: "instant" });
+};
+
+// 属の学名部分を斜体にする関数
+const formatGenusName = (name) => {
+  if (!name.includes(" / ")) return name; // 「/」が含まれていなければそのまま返す
+
+  let [japaneseName, scientificName] = name.split(" / "); // 和名と学名を分割
+
+  // 学名部分を斜体にする
+  return `${japaneseName} / <i>${scientificName}</i>`;
 };
 
 // ==================== マーカー操作 ====================
