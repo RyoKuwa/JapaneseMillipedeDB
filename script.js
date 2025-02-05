@@ -9,6 +9,7 @@ let markers = []; // マーカーを追跡する配列
 let literatureArray = []; // 文献データを保持する配列
 let useSearch = false; // 検索窓のフィルタリングのオン・オフ制御
 let clusterGroup; // クラスタリング用の変数
+let filteredRows = []; // フィルタリングされたデータを保持
 
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
@@ -52,8 +53,8 @@ const initMap = () => {
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   // 地図にスケールを追加
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
-  map.on('moveend', () => applyFilters("", true, false)); // 地図の移動やズーム時にフィルタを適用
-  map.on('zoomend', () => applyFilters("", true, false)); // 地図の移動やズーム時にフィルタを適用
+  map.on('moveend', updateVisibleMarkers); // 地図の移動やズーム時にフィルタを適用
+  map.on('zoomend', updateVisibleMarkers); // 地図の移動やズーム時にフィルタを適用
   updateSelectedLabels(); // 選択ラベルを更新
 };
 
@@ -300,7 +301,7 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
     const { filters, checkboxes } = getFilterStates();
 
     // フィルタリング条件を満たす行を抽出
-    const filteredRows = rows.filter(row => {
+    filteredRows = rows.filter(row => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
       const isUnpublished = row.literatureID === "-" || row.literatureID === "";
       const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
@@ -348,7 +349,7 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
 
     // 地図のマーカーを更新
     if (updateMap) {
-      updateMarkers(visibleRecords);
+      updateVisibleMarkers();
       }
     } catch (error) {
       console.error("applyFilters中にエラーが発生:", error);
@@ -378,6 +379,17 @@ const updateMarkers = (visibleRecords) => {
   } else {
     displayMarkers(visibleRecords);
   }
+};
+
+// 地図の移動やズーム時の処理
+const updateVisibleMarkers = () => {
+  if (!map || filteredRows.length === 0) return;
+
+  // 地図の範囲内のレコードを取得
+  const visibleRecords = getVisibleRecords(filteredRows);
+  
+  // マーカーを更新
+  updateMarkers(visibleRecords);
 };
 
 // ==================== 値の取得と操作 ====================
