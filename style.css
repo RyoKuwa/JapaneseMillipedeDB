@@ -39,7 +39,7 @@ header h1 {
   padding: 10px;
   border: 1px solid #ccc;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  z-index: 30;        /* 常に地図の上に表示 */
+  z-index: 10;        /* 常に地図の上に表示 */
   display: flex;
   flex-direction: column; /* 子要素を縦並びに配置 */
   gap: 10px;         /* 各セクション間の間隔を調整 */
@@ -81,11 +81,15 @@ header h1 {
 
 /* 検索コンテナの基本スタイル */
 .search-container {
+  position: relative;
+  padding: 20px;
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
   width: 100%;
   max-width: 250px;
   margin: 0px auto;
   transition: max-height 0.5s ease-out; /* アニメーション */
-  max-height: 520px; /* 初期の最大高さ */
+  max-height: 500px; /* 初期の最大高さ */
   overflow: hidden;
 }
 
@@ -118,13 +122,6 @@ header h1 {
   overflow: hidden;
 }
 
-/* 検索ボックスとクリアボタンを横並びに */
-.search-box-container {
-  display: flex;
-  align-items: center;
-  gap: 5px; /* 間隔を調整 */
-}
-
 .maplibregl-popup {
   z-index: 100;  /* ポップアップを前面に表示 */
 }
@@ -132,7 +129,7 @@ header h1 {
 .maplibregl-popup-content {
   border: 1px solid black;
   box-shadow: 1px 1px 5px black;
-  z-index: 50;
+  z-index: 20;
   max-width: 300px; /* ポップアップの最大幅を設定 */
   overflow-wrap: break-word; /* 長い単語を折り返す */
   word-wrap: break-word; /* 長い単語を折り返す */
@@ -157,12 +154,6 @@ header h1 {
   margin-right: 5px;
 }
 
-/* 文献のセレクトボックスと検索窓の間の区切り線 */
-.select-box-divider {
-  border-top: 2px solid #909090; /* 2pxのグレーの線 */
-  margin: 0; /* 上下の余白を適度に */
-}
-
 .legend {
   position: absolute; /* 地図内の相対位置 */
   bottom: 40px;       /* 地図の下端から10px */
@@ -171,7 +162,7 @@ header h1 {
   padding: 10px;
   font-size: 14px;
   border: 1px solid #ccc;
-  z-index: 30;
+  z-index: 5;
   max-width: calc(100% - 20px); /* はみ出し防止 */
   box-sizing: border-box;      /* パディングを含めてサイズ計算 */
 }
@@ -328,18 +319,6 @@ header h1 {
   justify-content: space-between;
   width: 100%;
   gap: 3px; /* ボタンとの間隔 */
-}
-
-/* セレクトボックスの見出し */
-.select-box-title {
-  background-color: #ffffff; /* 視認性を高める薄い青 */
-  color: #333; /* 文字色 */
-  font-size: 14px; /* フォントサイズを大きく */
-  font-weight: bold; /* 太字 */
-  text-align: center; /* 中央揃え */
-  padding: 0; /* 上下の余白を適度に */
-  margin: 0; /* 上下のマージンをなくす */
-  border-bottom: 2px solid #909090; /* 見出しの下に区切り線 */
 }
 
 /* セレクトボックスの幅と高さを統一 */
