@@ -21,32 +21,30 @@
   <div id="mapid">
     <!-- 検索とセレクトボックス -->
     <div id="searchContainer" class="search-container">
-      <input type="text" id="search-all" placeholder="検索">
-      <button id="search-button">テキストで下の選択肢を検索</button>
-      <button id="clear-search-button">検索をクリア</button>
-      <!-- 各セレクトボックスにナビゲーションボタンを追加 -->
+      <h2 class="select-box-title">セレクトボックス</h2>
+      <!-- 各セレクトボックスにナビゲーションボタンを追加 -->      
       <div class="select-container">
-        <select id="filter-species"></select>
-        <button class="nav-button" id="prev-species">&lt;</button>
-        <button class="nav-button" id="next-species">&gt;</button>
+        <select id="filter-order"></select>
+        <button class="nav-button" id="prev-order">&lt;</button>
+        <button class="nav-button" id="next-order">&gt;</button>
       </div>
-      
-      <div class="select-container">
-        <select id="filter-genus"></select>
-        <button class="nav-button" id="prev-genus">&lt;</button>
-        <button class="nav-button" id="next-genus">&gt;</button>
-      </div>
-      
+
       <div class="select-container">
         <select id="filter-family"></select>
         <button class="nav-button" id="prev-family">&lt;</button>
         <button class="nav-button" id="next-family">&gt;</button>
       </div>
-      
+
       <div class="select-container">
-        <select id="filter-order"></select>
-        <button class="nav-button" id="prev-order">&lt;</button>
-        <button class="nav-button" id="next-order">&gt;</button>
+        <select id="filter-genus"></select>
+        <button class="nav-button" id="prev-genus">&lt;</button>
+        <button class="nav-button" id="next-genus">&gt;</button>
+      </div>
+
+      <div class="select-container">
+        <select id="filter-species"></select>
+        <button class="nav-button" id="prev-species">&lt;</button>
+        <button class="nav-button" id="next-species">&gt;</button>
       </div>
       
       <div class="select-container">
@@ -66,6 +64,12 @@
         <button class="nav-button" id="prev-literature">&lt;</button>
         <button class="nav-button" id="next-literature">&gt;</button>
       </div>
+      <div class="select-box-divider"></div>
+      <div class="search-box-container">
+        <input type="text" id="search-all" placeholder="検索">
+        <button id="clear-search-button">✖</button>
+      </div>
+      <button id="search-button">セレクトボックスを検索</button>
       <button id="reset-button">リセット</button>
       <div id="checkbox-container">
         <label>

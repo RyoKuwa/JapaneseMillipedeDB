@@ -9,8 +9,12 @@ let markers = []; // マーカーを追跡する配列
 let literatureArray = []; // 文献データを保持する配列
 let useSearch = false; // 検索窓のフィルタリングのオン・オフ制御
 let clusterGroup; // クラスタリング用の変数
-let filteredRows = []; // フィルタリングされたデータを保持
-
+// ==================== ポップアップ制御 ====================
+// 現在開いているポップアップデータ
+let currentPopupIndex = 0;
+let nearbyRecords = [];
+let activePopup = null;
+let filteredRows = []; // フィルタリングされたデータを格納
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   map = new maplibregl.Map({
@@ -53,8 +57,6 @@ const initMap = () => {
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   // 地図にスケールを追加
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
-  map.on('moveend', updateVisibleMarkers); // 地図の移動やズーム時にフィルタを適用
-  map.on('zoomend', updateVisibleMarkers); // 地図の移動やズーム時にフィルタを適用
   updateSelectedLabels(); // 選択ラベルを更新
 };
 
@@ -301,7 +303,7 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
     const { filters, checkboxes } = getFilterStates();
 
     // フィルタリング条件を満たす行を抽出
-    filteredRows = rows.filter(row => {
+    const filteredRows = rows.filter(row => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
       const isUnpublished = row.literatureID === "-" || row.literatureID === "";
       const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
@@ -345,11 +347,9 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
 
     generateLiteratureList(filteredRows); //文献リストを更新（filteredRows 内のユニークな文献をリスト化）
 
-    const visibleRecords = getVisibleRecords(filteredRows); // 地図の範囲内のレコードを取得
-
     // 地図のマーカーを更新
     if (updateMap) {
-      updateVisibleMarkers();
+      displayMarkers(filteredRows);
       }
     } catch (error) {
       console.error("applyFilters中にエラーが発生:", error);
@@ -371,25 +371,6 @@ const updateFilters = (filteredData, filters) => {
 
   // セレクトボックスの更新
   updateSelectBoxes({ ...filters, searchValue }, searchResults);
-};
-
-const updateMarkers = (visibleRecords) => {
-  if (visibleRecords.length >= 3000) {
-    clusterMarkers(visibleRecords);
-  } else {
-    displayMarkers(visibleRecords);
-  }
-};
-
-// 地図の移動やズーム時の処理
-const updateVisibleMarkers = () => {
-  if (!map || filteredRows.length === 0) return;
-
-  // 地図の範囲内のレコードを取得
-  const visibleRecords = getVisibleRecords(filteredRows);
-  
-  // マーカーを更新
-  updateMarkers(visibleRecords);
 };
 
 // ==================== 値の取得と操作 ====================
@@ -549,18 +530,6 @@ const navigateOption = async (selectId, direction) => {
   await applyFilters("", true, false); // 再度フィルタリングを実行し、マップを更新
 };
 
-// 地図の描画範囲内のレコードを取得
-const getVisibleRecords = (filteredData) => {
-  const bounds = map.getBounds(); // 地図の表示範囲を取得
-  return filteredData.filter(row => {
-    return row.latitude && row.longitude &&
-           row.latitude >= bounds.getSouth() &&
-           row.latitude <= bounds.getNorth() &&
-           row.longitude >= bounds.getWest() &&
-           row.longitude <= bounds.getEast();
-  });
-};
-
 // 文献情報を取得する関数
 const getLiteratureInfo = (literatureID) => {
   const literatureItem = literatureArray.find(item => item.id === literatureID);
@@ -582,6 +551,74 @@ const generateLiteratureList = (filteredData) => {
   });
 
   updateLiteratureList([...literatureNames]); // Setを配列に変換して渡す
+};
+
+// クリックされたマーカーの周囲5px以内の記録を取得
+const getNearbyRecords = (clickedRecord) => {
+  const proximityThreshold = 5; // 5px以内の記録を対象
+  const mapBounds = map.getBounds();
+  const mapWidth = map.getContainer().offsetWidth;
+  const pixelRatio = Math.abs(mapBounds._ne.lng - mapBounds._sw.lng) / mapWidth; // 1pxあたりの緯度経度変換
+  const thresholdDegrees = proximityThreshold * pixelRatio; // 5pxを緯度経度に変換
+
+  return filteredRows.filter(record => {
+      if (!record.latitude || !record.longitude) return false;
+
+      const distance = Math.sqrt(
+          Math.pow(record.latitude - clickedRecord.latitude, 2) +
+          Math.pow(record.longitude - clickedRecord.longitude, 2)
+      );
+      return distance <= thresholdDegrees;
+  });
+};
+
+// ポップアップを表示
+const showPopup = (index) => {
+  if (!nearbyRecords.length) return;
+
+  const record = nearbyRecords[index];
+  const totalRecords = nearbyRecords.length;
+
+  // 既存のポップアップを閉じる
+  if (activePopup) activePopup.remove();
+
+  const { popupContent } = preparePopupContent([record]).popupContents[0];
+
+  const popupHtml = `
+      <div>
+          <div>${popupContent}</div>
+          <div style="margin-top: 5px; text-align: center;">
+              <button id="prev-popup">前へ</button>
+              <span>${index + 1} / ${totalRecords}</span>
+              <button id="next-popup">次へ</button>
+          </div>
+      </div>
+  `;
+
+  // 新しいポップアップを作成
+  activePopup = new maplibregl.Popup({ focusAfterOpen: false, closeOnClick: false })
+      .setLngLat([record.longitude, record.latitude])
+      .setHTML(popupHtml)
+      .addTo(map);
+
+  // 「前へ」ボタンの処理
+  document.getElementById("prev-popup").addEventListener("click", () => {
+      currentPopupIndex = (currentPopupIndex - 1 + totalRecords) % totalRecords;
+      showPopup(currentPopupIndex);
+  });
+
+  // 「次へ」ボタンの処理
+  document.getElementById("next-popup").addEventListener("click", () => {
+      currentPopupIndex = (currentPopupIndex + 1) % totalRecords;
+      showPopup(currentPopupIndex);
+  });
+};
+
+// マーカークリック時の処理
+const handleMarkerClick = (marker, record) => {
+  nearbyRecords = getNearbyRecords(record);
+  currentPopupIndex = nearbyRecords.findIndex(r => r === record);
+  showPopup(currentPopupIndex);
 };
 
 // ==================== 種の学名のフォーマット処理 ====================
@@ -607,86 +644,6 @@ const formatSpeciesName = (name) => {
 
   // それ以外の場合はすべて斜体
   return `${japaneseName} / <i>${formattedScientificName}</i>`;
-};
-
-// マーカーをクラスタリングして表示
-const clusterMarkers = (filteredData) => {
-  clearMarkers(); // 既存のマーカーとクラスタを削除
-
-  // Mapboxのクラスタリング用ソースを作成
-  const geojson = {
-    type: "FeatureCollection",
-    features: filteredData.map(row => ({
-      type: "Feature",
-      properties: {
-        recordType: row.recordType,
-        popupContent: preparePopupContent([row]).popupContents[0].popupContent
-      },
-      geometry: {
-        type: "Point",
-        coordinates: [row.longitude, row.latitude]
-      }
-    }))
-  };
-
-  if (!map.getSource("clusters")) {
-    map.addSource("clusters", {
-      type: "geojson",
-      data: geojson,
-      cluster: true,
-      clusterRadius: 10, // 半径10px以内のポイントをクラスタ化
-      clusterMaxZoom: 8
-    });
-
-    // クラスタリングレイヤーを追加
-    map.addLayer({
-      id: "clusters",
-      type: "circle",
-      source: "clusters",
-      filter: ["has", "point_count"],
-      paint: {
-        "circle-color": "#ff8000",
-        "circle-radius": [
-          "step",
-          ["get", "point_count"],
-          10,  // 10個未満
-          100, 15,  // 100個未満
-          750, 20  // 750個未満
-        ],
-        "circle-opacity": 0.8
-      }
-    });
-
-    // クラスタのカウントを表示
-    map.addLayer({
-      id: "cluster-count",
-      type: "symbol",
-      source: "clusters",
-      filter: ["has", "point_count"],
-      layout: {
-        "text-field": "{point_count_abbreviated}",
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
-        "text-size": 12
-      }
-    });
-
-    // 非クラスタ化ポイントのレイヤーを追加
-    map.addLayer({
-      id: "unclustered-point",
-      type: "circle",
-      source: "clusters",
-      filter: ["!", ["has", "point_count"]],
-      paint: {
-        "circle-color": "#f28cb1",
-        "circle-radius": 5,
-        "circle-stroke-width": 1,
-        "circle-stroke-color": "#fff"
-      }
-    });
-  } else {
-    // 既存のソースを更新
-    map.getSource("clusters").setData(geojson);
-  }
 };
 
 // ==================== UI操作関数 ====================
@@ -716,10 +673,10 @@ const updateSelectedLabels = () => {
   const previousScrollY = window.scrollY;
 
   const selectIds = [
-    "filter-species",
-    "filter-genus",
-    "filter-family",
     "filter-order",
+    "filter-family",
+    "filter-genus",
+    "filter-species",
     "filter-prefecture",
     "filter-island",
     "filter-literature"
@@ -823,70 +780,93 @@ const clearMarkers = () => {
 
 // フィルターされたデータをマーカーとして表示
 const displayMarkers = (filteredData) => {
-  // 既存のマーカーをクリア（前回のデータを削除）
   clearMarkers();
+  filteredRows = filteredData; // フィルタリングされたデータを更新
 
-  // ポップアップデータを準備（filteredData からポップアップ情報を取得）
-  const { popupContents } = preparePopupContent(filteredData);
+  const priority = {
+      "1_タイプ産地": 7,
+      "2_統合された種のタイプ産地": 6,
+      "3_疑わしいタイプ産地": 5,
+      "4_疑わしい統合された種のタイプ産地": 4,
+      "5_標本記録": 3,
+      "6_文献記録": 2,
+      "7_疑わしい文献記録": 1
+  };
 
-  // 各データポイントに対してマーカーを作成し、ポップアップを設定
-  popupContents.forEach(({ row, popupContent }) => {
-      // マーカーのスタイルを取得（記録の種類に応じて色や形を決定）
+  const selectedMarkers = {};
+
+  // 位置ごとに優先度の高いデータを選択
+  filteredData.forEach(row => {
+      if (!row.latitude || !row.longitude) return;
+
+      const key = `${Math.round(row.latitude * 10000)}_${Math.round(row.longitude * 10000)}`;
+
+      if (!selectedMarkers[key] || priority[row.recordType] > priority[selectedMarkers[key].recordType]) {
+          selectedMarkers[key] = row;
+      }
+  });
+
+  // **優先順位の高いものを後に追加する**
+  const sortedMarkers = Object.values(selectedMarkers).sort((a, b) => priority[a.recordType] - priority[b.recordType]);
+
+  sortedMarkers.forEach(row => {
       const { className, color, borderColor } = getMarkerStyle(row.recordType);
-      
-      // マーカー要素（HTML div）を作成し、スタイルを適用
+
       const el = document.createElement('div');
-      el.className = `${className} marker-clickable`; // クリック可能なクラスを追加
+      el.className = `${className} marker-clickable`;
       el.style.backgroundColor = color;
       if (borderColor) el.style.borderColor = borderColor;
 
-      // マーカーを作成し、指定した座標に配置
       const marker = new maplibregl.Marker(el)
-          .setLngLat([row.longitude, row.latitude]) // 緯度・経度を設定
-          .setPopup(new maplibregl.Popup({ focusAfterOpen: false }).setHTML(popupContent)) // ポップアップを設定
-          .addTo(map); // 地図に追加
+          .setLngLat([row.longitude, row.latitude])
+          .addTo(map);
 
-      // ポップアップが開いたときに自動スクロールしないように防止
-      marker.getElement().addEventListener('click', (e) => {
-          e.preventDefault(); // 既定のクリック動作をキャンセル
-      });
+      marker.getElement().addEventListener("click", () => handleMarkerClick(marker, row));
 
-      // マーカーリストに追加（後で削除するために管理）
       markers.push(marker);
   });
 };
 
 // ポップアップを準備
 const preparePopupContent = (filteredData) => {
+  const recordTypeMapping = {
+    "1_タイプ産地": "タイプ産地",
+    "2_統合された種のタイプ産地": "統合された種のタイプ産地",
+    "3_疑わしいタイプ産地": "疑わしいタイプ産地",
+    "4_疑わしい統合された種のタイプ産地": "疑わしい統合された種のタイプ産地",
+    "5_標本記録": "標本記録",
+    "6_文献記録": "文献記録",
+    "7_疑わしい文献記録": "疑わしい文献記録"
+  };
+
   const popupContents = filteredData.map(row => {
-      if (!row.latitude || !row.longitude) return null; // 緯度・経度がない場合はスキップ
+    if (!row.latitude || !row.longitude) return null; // 緯度・経度がない場合はスキップ
 
-      const { literatureName, literatureLink } = getLiteratureInfo(row.literatureID);
+    const { literatureName, literatureLink } = getLiteratureInfo(row.literatureID);
+    const recordType = recordTypeMapping[row.recordType] || "不明";
 
-      // ポップアップの内容を生成
-      let popupContent;
-      if (!row.literatureID || row.literatureID === "-") {
-          popupContent = `
-              <strong>${row.japaneseName} ${row.scientificName}</strong><br>
-              未公表データ Unpublished Data
-          `;
-      } else {
-          popupContent = `
-              <strong>${row.japaneseName} ${row.scientificName}</strong><br>
-              文献中の和名: ${row.originalJapaneseName || "不明"}<br>
-              文献中の学名: ${row.originalScientificName || "不明"}<br>
-              ページ: ${row.page || "不明"}<br>
-              場所: ${row.location || "不明"}<br>
-              採集日: ${row.date || "不明"}<br><br>
-              文献: ${literatureName} ${literatureLink}<br><br>
-              備考: ${row.note}<br>
-              記入: ${row.registrant}, ${row.registrationDate}
-          `;
-      }
+    // ポップアップの内容を生成
+    let popupContent = `
+      <strong>${row.japaneseName} ${row.scientificName}</strong><br>
+      記録の種類: ${recordType}<br>
+    `;
 
-      popupContent = popupContent.replace(/<i>(.*?)<\/i>/g, (_, match) => `<i>${match}</i>`);
+    if (!row.literatureID || row.literatureID === "-") {
+      popupContent += `未公表データ Unpublished Data`;
+    } else {
+      popupContent += `
+        文献中の和名: ${row.originalJapaneseName || "不明"}<br>
+        文献中の学名: ${row.originalScientificName || "不明"}<br>
+        ページ: ${row.page || "不明"}<br>
+        場所: ${row.location || "不明"}<br>
+        採集日: ${row.date || "不明"}<br><br>
+        文献: ${literatureName} ${literatureLink ? `<a href="${literatureLink}" target="_blank">${literatureLink}</a>` : ""}<br><br>
+        備考: ${row.note}<br>
+        記入: ${row.registrant}, ${row.registrationDate}
+      `;
+    }
 
-      return { row, popupContent };
+    return { row, popupContent };
   }).filter(item => item !== null);
 
   return { popupContents };
@@ -1034,6 +1014,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("exclude-dubious").addEventListener("change", applyFilters); // 疑わしい記録を除外
     document.getElementById("exclude-citation").addEventListener("change", applyFilters); // 引用記録を除外
     setupNavButtonListeners(); // 前・次ボタンのイベントリスナーを設定
+    
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
   }
