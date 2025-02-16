@@ -475,4 +475,16 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   .legend {
     bottom: 40px;
   }
+
+  #mapid {
+    width: calc(100% - 5%); /* 右側の空白を確保しつつ最大幅 */
+    margin: 0; /* 左端に寄せる */
+    position: relative; /* 絶対配置を避ける */
+    left: 0; /* 左端に固定 */
+  }
+
+  /* 右側の空白を作る */
+  body {
+    padding-right: 5%; /* 右側にスペースを確保 */
+  }
 }
