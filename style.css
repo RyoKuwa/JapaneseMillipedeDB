@@ -79,6 +79,15 @@ header h1 {
   gap: 5px; /* 間隔を調整 */
 }
 
+/* 検索窓 */
+#search-all {
+  flex-grow: 1; /* 検索窓をコンテナ幅いっぱいに広げる */
+  padding: 5px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 #search-button, #reset-button {
   height: 60px;  /* ボタンの高さを60pxに設定 */
   font-size: 14px;

@@ -566,13 +566,13 @@ const generateLiteratureList = (filteredData) => {
   updateLiteratureList([...literatureNames]); // Setを配列に変換して渡す
 };
 
-// クリックされたマーカーの周囲5px以内の記録を取得
+// クリックされたマーカーの周囲10px以内の記録を取得
 const getNearbyRecords = (clickedRecord) => {
-  const proximityThreshold = 5; // 5px以内の記録を対象
+  const proximityThreshold = 10; // 10px以内の記録を対象
   const mapBounds = map.getBounds();
   const mapWidth = map.getContainer().offsetWidth;
   const pixelRatio = Math.abs(mapBounds._ne.lng - mapBounds._sw.lng) / mapWidth; // 1pxあたりの緯度経度変換
-  const thresholdDegrees = proximityThreshold * pixelRatio; // 5pxを緯度経度に変換
+  const thresholdDegrees = proximityThreshold * pixelRatio; // 10pxを緯度経度に変換
 
   return filteredRows.filter(record => {
       if (!record.latitude || !record.longitude) return false;
@@ -810,21 +810,51 @@ const displayMarkers = (filteredData) => {
       "7_疑わしい文献記録": 1
   };
 
-  const selectedMarkers = {};
+  const selectedMarkers = [];
 
-  // 位置ごとに優先度の高いデータを選択
+  // 地図の表示範囲から 1px あたりの緯度・経度変換比率を計算
+  const mapBounds = map.getBounds();
+  const mapWidth = map.getContainer().offsetWidth;
+  const mapHeight = map.getContainer().offsetHeight;
+
+  const pixelRatioLng = Math.abs(mapBounds._ne.lng - mapBounds._sw.lng) / mapWidth; // 1px あたりの経度変換比率
+  const pixelRatioLat = Math.abs(mapBounds._ne.lat - mapBounds._sw.lat) / mapHeight; // 1px あたりの緯度変換比率
+  const thresholdLng = pixelRatioLng * 5; // **5px 相当の経度の変化**
+  const thresholdLat = pixelRatioLat * 5; // **5px 相当の緯度の変化**
+
   filteredData.forEach(row => {
       if (!row.latitude || !row.longitude) return;
 
-      const key = `${Math.round(row.latitude * 10000)}_${Math.round(row.longitude * 10000)}`;
+      // すでに登録済みのマーカーと比較し、半径2px以内にあるか確認
+      let isNearby = false;
+      let nearbyIndex = -1;
 
-      if (!selectedMarkers[key] || priority[row.recordType] > priority[selectedMarkers[key].recordType]) {
-          selectedMarkers[key] = row;
+      for (let i = 0; i < selectedMarkers.length; i++) {
+          const existingMarker = selectedMarkers[i];
+
+          if (
+              Math.abs(existingMarker.latitude - row.latitude) <= thresholdLat &&
+              Math.abs(existingMarker.longitude - row.longitude) <= thresholdLng
+          ) {
+              isNearby = true;
+              nearbyIndex = i;
+              break;
+          }
+      }
+
+      if (isNearby) {
+          // 既存のマーカーと競合がある場合、優先度の高いものだけを残す
+          if (priority[row.recordType] > priority[selectedMarkers[nearbyIndex].recordType]) {
+              selectedMarkers[nearbyIndex] = row;
+          }
+      } else {
+          // 近くにない場合、新規登録
+          selectedMarkers.push(row);
       }
   });
 
   // **優先順位の高いものを後に追加する**
-  const sortedMarkers = Object.values(selectedMarkers).sort((a, b) => priority[a.recordType] - priority[b.recordType]);
+  const sortedMarkers = selectedMarkers.sort((a, b) => priority[a.recordType] - priority[b.recordType]);
 
   sortedMarkers.forEach(row => {
       const { className, color, borderColor } = getMarkerStyle(row.recordType);
@@ -1013,6 +1043,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     applyFilters("", true, false); // 全レコードを表示
 
+    // 地図のズームレベル変更時にマーカーを更新
+    map.on("zoomend", () => {
+      displayMarkers(filteredRows);
+    });
+
     // 実行ボタンのクリックイベントを設定
     document.getElementById("search-button").addEventListener("click", () => {
       useSearch = true; // 検索窓のフィルタリングを有効化
@@ -1035,16 +1070,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll(".marker-filter-checkbox").forEach(checkbox => {
       checkbox.addEventListener("change", applyFilters);
     });
+
+    const legend = document.querySelector(".legend");
+    const legendToggleButton = document.querySelector(".legend-toggle-button");
+  
+    legendToggleButton.addEventListener("click", function () {
+      legend.classList.toggle("collapsed");
+    });
+    
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
   }
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-  const legend = document.querySelector(".legend");
-  const legendToggleButton = document.querySelector(".legend-toggle-button");
-
-  legendToggleButton.addEventListener("click", function () {
-    legend.classList.toggle("collapsed");
-  });
 });
