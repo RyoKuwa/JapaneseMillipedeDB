@@ -511,7 +511,7 @@ const setupNavButtonListeners = () => {
   });
 };
 
-// 前・次の選択肢を求めて選択する関数
+// 前・次の選択肢を求めて選択する関数（ループ対応）
 const navigateOption = async (selectId, direction) => {
   const select = document.getElementById(selectId);
   if (!select) return;
@@ -526,17 +526,22 @@ const navigateOption = async (selectId, direction) => {
   // **③ フィルタリング後の選択肢を取得**
   const updatedOptions = Array.from(select.options).map(option => option.value).filter(value => value !== "");
 
-  // **④ 保存された値の前の値 or 次の値を求める**
-  const currentIndex = updatedOptions.indexOf(selectedValue);
-  let newValue = selectedValue; // デフォルトは保存された値
+  if (updatedOptions.length === 0) return; // 選択肢がない場合は何もしない
 
-  if (direction === "prev" && currentIndex > 0) {
-    newValue = updatedOptions[currentIndex - 1]; // 1つ前の値
-  } else if (direction === "next" && currentIndex < updatedOptions.length - 1) {
-    newValue = updatedOptions[currentIndex + 1]; // 1つ後の値
+  // **④ 保存された値の前の値 or 次の値を求める**
+  let currentIndex = updatedOptions.indexOf(selectedValue);
+  
+  if (direction === "prev") {
+    // **現在が最初の選択肢なら最後にループ、それ以外なら1つ前へ**
+    newValue = updatedOptions[(currentIndex - 1 + updatedOptions.length) % updatedOptions.length];
+  } else if (direction === "next") {
+    // **現在が最後の選択肢なら最初にループ、それ以外なら1つ後へ**
+    newValue = updatedOptions[(currentIndex + 1) % updatedOptions.length];
+  } else {
+    newValue = selectedValue; // 方向が不明な場合は変更しない
   }
 
-  // **⑤ 新しい値を選択 (なければ保存された値を再選択)**
+  // **⑤ 新しい値を選択**
   select.value = newValue;
 
   // **⑥ マップを更新**
@@ -885,6 +890,8 @@ const displayMarkers = (filteredData) => {
       document.body.appendChild(tooltip);
   }
 
+  let isTouchDevice = false; // タッチデバイスかどうか判定
+
   sortedMarkers.forEach(row => {
       const { className, color, borderColor } = getMarkerStyle(row.recordType);
 
@@ -897,22 +904,32 @@ const displayMarkers = (filteredData) => {
           .setLngLat([row.longitude, row.latitude])
           .addTo(map);
 
-      // マーカーのホバー時にツールチップを表示
+      // マーカーのホバー時にツールチップを表示（タッチデバイスでは無効）
       el.addEventListener("mouseenter", (event) => {
-          tooltip.style.display = "block";
-          tooltip.style.left = `${event.pageX + 10}px`; // マウス位置の右側に表示
-          tooltip.style.top = `${event.pageY + 10}px`;
+          if (!isTouchDevice) { // タッチデバイスではない場合のみ表示
+              tooltip.style.display = "block";
+              tooltip.style.left = `${event.pageX + 10}px`; // マウス位置の右側に表示
+              tooltip.style.top = `${event.pageY + 10}px`;
+          }
       });
 
-      // マーカーのマウス移動時にツールチップの位置を更新
+      // マーカーのマウス移動時にツールチップの位置を更新（タッチデバイスでは無効）
       el.addEventListener("mousemove", (event) => {
-          tooltip.style.left = `${event.pageX + 10}px`;
-          tooltip.style.top = `${event.pageY + 10}px`;
+          if (!isTouchDevice) {
+              tooltip.style.left = `${event.pageX + 10}px`;
+              tooltip.style.top = `${event.pageY + 10}px`;
+          }
       });
 
       // マーカーからマウスが離れたらツールチップを非表示にする
       el.addEventListener("mouseleave", () => {
           tooltip.style.display = "none";
+      });
+
+      // タッチデバイスの場合、タップされたらホバーを無効化
+      el.addEventListener("touchstart", () => {
+          isTouchDevice = true; // タッチデバイスと判定
+          tooltip.style.display = "none"; // ツールチップを非表示
       });
 
       // クリックイベントの追加
