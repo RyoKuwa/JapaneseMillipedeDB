@@ -21,33 +21,33 @@
   <div id="mapid">
     <!-- 検索とセレクトボックス -->
     <div id="searchContainer" class="search-container">
-      <input type="text" id="search-all" placeholder="検索">
-      <button id="search-button">テキストで下の選択肢を検索</button>
-      <button id="clear-search-button">検索をクリア</button>
-      <!-- 各セレクトボックスにナビゲーションボタンを追加 -->
-      <div class="select-container">
-        <select id="filter-species"></select>
-        <button class="nav-button" id="prev-species">&lt;</button>
-        <button class="nav-button" id="next-species">&gt;</button>
-      </div>
-      
-      <div class="select-container">
-        <select id="filter-genus"></select>
-        <button class="nav-button" id="prev-genus">&lt;</button>
-        <button class="nav-button" id="next-genus">&gt;</button>
-      </div>
-      
-      <div class="select-container">
-        <select id="filter-family"></select>
-        <button class="nav-button" id="prev-family">&lt;</button>
-        <button class="nav-button" id="next-family">&gt;</button>
-      </div>
-      
+      <h2 class="select-box-title">セレクトボックス</h2>
+      <!-- 各セレクトボックスにナビゲーションボタンを追加 -->      
       <div class="select-container">
         <select id="filter-order"></select>
         <button class="nav-button" id="prev-order">&lt;</button>
         <button class="nav-button" id="next-order">&gt;</button>
       </div>
+
+      <div class="select-container">
+        <select id="filter-family"></select>
+        <button class="nav-button" id="prev-family">&lt;</button>
+        <button class="nav-button" id="next-family">&gt;</button>
+      </div>
+
+      <div class="select-container">
+        <select id="filter-genus"></select>
+        <button class="nav-button" id="prev-genus">&lt;</button>
+        <button class="nav-button" id="next-genus">&gt;</button>
+      </div>
+
+      <div class="select-container">
+        <select id="filter-species"></select>
+        <button class="nav-button" id="prev-species">&lt;</button>
+        <button class="nav-button" id="next-species">&gt;</button>
+      </div>
+
+      <div class="select-box-divider-one"></div>
       
       <div class="select-container">
         <select id="filter-prefecture"></select>
@@ -66,6 +66,12 @@
         <button class="nav-button" id="prev-literature">&lt;</button>
         <button class="nav-button" id="next-literature">&gt;</button>
       </div>
+      <div class="select-box-divider-two"></div>
+      <div class="search-box-container">
+        <input type="text" id="search-all" placeholder="検索">
+        <button id="clear-search-button">✖</button>
+      </div>
+      <button id="search-button">セレクトボックスを検索</button>
       <button id="reset-button">リセット</button>
       <div id="checkbox-container">
         <label>
@@ -86,13 +92,34 @@
       <ul id="selected-labels-list"></ul>
     </div>
     <div class="legend">
-      <div class="legend-item"><span class="marker marker-star blue"></span>タイプ産地</div>
-      <div class="legend-item"><span class="marker marker-square purple"></span>統合された種のタイプ産地</div>
-      <div class="legend-item"><span class="marker marker-star pink"></span>疑わしいタイプ産地</div>
-      <div class="legend-item"><span class="marker marker-square pink"></span>統合された種の疑わしいタイプ産地</div>
-      <div class="legend-item"><span class="marker marker-circle red"></span>標本記録</div>
-      <div class="legend-item"><span class="marker marker-circle white"></span>文献記録</div>
-      <div class="legend-item"><span class="marker marker-cross pink"></span>疑わしい文献記録</div>
+      <div class="legend-item">
+        <span class="marker marker-star blue"></span>タイプ産地
+        <input type="checkbox" id="filter-type" class="marker-filter-checkbox" checked>
+      </div>
+      <div class="legend-item">
+        <span class="marker marker-square purple"></span>統合された種のタイプ産地
+        <input type="checkbox" id="filter-integrated-type" class="marker-filter-checkbox" checked>
+      </div>
+      <div class="legend-item">
+        <span class="marker marker-star pink"></span>疑わしいタイプ産地
+        <input type="checkbox" id="filter-doubtful-type" class="marker-filter-checkbox" checked>
+      </div>
+      <div class="legend-item">
+        <span class="marker marker-square pink"></span>統合された種の疑わしいタイプ産地
+        <input type="checkbox" id="filter-doubtful-integrated-type" class="marker-filter-checkbox" checked>
+      </div>
+      <div class="legend-item">
+        <span class="marker marker-circle red"></span>標本記録
+        <input type="checkbox" id="filter-specimen" class="marker-filter-checkbox" checked>
+      </div>
+      <div class="legend-item">
+        <span class="marker marker-circle white"></span>文献記録
+        <input type="checkbox" id="filter-literature-record" class="marker-filter-checkbox" checked>
+      </div>
+      <div class="legend-item">
+        <span class="marker marker-cross pink"></span>疑わしい文献記録
+        <input type="checkbox" id="filter-doubtful-literature" class="marker-filter-checkbox" checked>
+      </div>
     </div>
   </div>
   <div id="literature-list">
