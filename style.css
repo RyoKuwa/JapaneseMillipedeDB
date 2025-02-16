@@ -31,7 +31,8 @@ header h1 {
   margin: 0 auto; /* ページ中央揃え */
 }
 
-#searchContainer {
+/* 検索コンテナの基本スタイル */
+.search-container {
   position: absolute; /* mapid を基準に配置 */
   top: 10px;          /* mapid の上から 10px */
   left: 10px;         /* mapid の左から 10px */
@@ -43,56 +44,15 @@ header h1 {
   display: flex;
   flex-direction: column; /* 子要素を縦並びに配置 */
   gap: 10px;         /* 各セクション間の間隔を調整 */
-}
-
-#searchContainer .search-controls {
-  display: flex;
-  align-items: center; /* 垂直方向を中央揃え */
-  gap: 5px;           /* 各要素間の間隔 */
-}
-
-#searchContainer input#search-all {
-  flex: 1;            /* 幅を柔軟に調整 */
-  height: 21.2px;       /* 高さを固定 */
-}
-
-#searchContainer button#reset-button {
-  height: 25.2px;       /* 検索窓と高さを一致 */
-  padding: 0 10px;    /* 内側の余白を設定 */
-  cursor: pointer;    /* ポインタを表示 */
-}
-
-#searchContainer button#search-button{
-  height: 25.2px;       /* 検索窓と高さを一致 */
-  padding: 0 10px;    /* 内側の余白を設定 */
-  cursor: pointer;    /* ポインタを表示 */
-}
-
-#searchContainer button#search-button{
-  height: 25.2px;       /* 検索窓と高さを一致 */
-  padding: 0 10px;    /* 内側の余白を設定 */
-  cursor: pointer;    /* ポインタを表示 */
-}
-
-#searchContainer select {
-  width: 200px;       /* 幅を指定 */
-  
-}
-
-/* 検索コンテナの基本スタイル */
-.search-container {
-  width: 100%;
-  max-width: 250px;
-  margin: 0px auto;
   transition: max-height 0.5s ease-out; /* アニメーション */
-  max-height: 520px; /* 初期の最大高さ */
+  max-height: 540px; /* 初期の最大高さ */
   overflow: hidden;
 }
 
-/* searchContainerが閉じられた時のスタイル */
+/* searchContainerが閉じられている時のスタイル */
 .search-container.closed {
-  max-height: 0; /* 閉じると高さを0に */
-  padding: 0; /* パディングも0に */
+  max-height: 20px; /* 高さを0にして隠す */
+  overflow: hidden;
 }
 
 /* toggle-button（三角形）のスタイル */
@@ -112,17 +72,20 @@ header h1 {
   transform: rotate(180deg); /* 180度回転 */
 }
 
-/* searchContainerが閉じられている時のスタイル */
-.search-container.closed {
-  max-height: 20px; /* 高さを0にして隠す */
-  overflow: hidden;
-}
-
 /* 検索ボックスとクリアボタンを横並びに */
 .search-box-container {
   display: flex;
   align-items: center;
   gap: 5px; /* 間隔を調整 */
+}
+
+#search-button, #reset-button {
+  height: 60px;  /* ボタンの高さを60pxに設定 */
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  display: block;
+  width: 100%;
 }
 
 .maplibregl-popup {
@@ -147,14 +110,12 @@ header h1 {
   word-break: break-all;      /* 必要に応じて単語を途中で改行 */
 }
 
-#searchContainer label {
-  display: block;
-  font-size: 14px;
-  cursor: pointer;
-}
-
 #searchContainer input[type="checkbox"] {
   margin-right: 5px;
+}
+
+ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right {
+  z-index: 31; /*attributionをlegendより手前に表示*/
 }
 
 /* 種と都道府県のセレクトボックスの間の区切り線 */
@@ -169,23 +130,68 @@ header h1 {
   margin: 0; /* 上下の余白を適度に */
 }
 
+/* Legendの基本スタイル */
 .legend {
-  position: absolute; /* 地図内の相対位置 */
-  bottom: 55px;       /* 地図の下端から10px */
-  right: 10px;        /* 地図の右端から10px */
-  background-color: rgba(255, 255, 255, 0.8);
+  position: absolute;
+  bottom: 30px;
+  right: 10px;
+  background-color: rgba(255, 255, 255, 1);
   padding: 10px;
+  width: 320px;
   font-size: 14px;
   border: 1px solid #ccc;
   z-index: 30;
-  max-width: calc(100% - 20px); /* はみ出し防止 */
-  box-sizing: border-box;      /* パディングを含めてサイズ計算 */
+  max-width: calc(100% - 20px);
+  box-sizing: border-box;
+  overflow: visible;
+  transition: max-height 0.3s ease-out; /* 高さの変化をスムーズに */
+  max-height: 300px; /* 初期状態では最大高さ */
+}
+
+/* Legend ヘッダー部分のスタイル */
+.legend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  padding-bottom: 5px;
+  cursor: pointer;
+}
+
+/* トグルボタンのスタイル */
+.legend-toggle-button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+/* 折りたたみ時のスタイル（高さを0に） */
+.legend.collapsed {
+  max-height: 38px; /* タイトル部分だけを表示 */
+  overflow: hidden;
+}
+
+.legend.collapsed .legend-toggle-button::after {
+  content: "▲"; /* 閉じているときは「▲」 */
+}
+
+.legend-toggle-button::after {
+  content: "▼"; /* 開いているときは「▼」 */
 }
 
 .legend-item {
   display: flex;
   align-items: center;
+  justify-content: space-between; /* チェックボックスを右側に配置 */
   margin-bottom: 5px;
+  position: relative;
+  cursor: pointer;
+}
+
+.legend-item input[type="checkbox"] {
+  margin-left: auto;
 }
 
 .legend-item span {
@@ -193,6 +199,33 @@ header h1 {
   display: inline-block;
   width: 20px;
   height: 20px;
+}
+
+.legend-item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin: auto;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 8px;
+  font-size: 12px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 200px;
+  border-radius: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  z-index: 50; /* 地図より前面に表示 */
+}
+
+.legend-item:hover::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* マーカーのスタイル */

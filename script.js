@@ -17,6 +17,9 @@ let activePopup = null;
 let filteredRows = []; // フィルタリングされたデータを格納
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
+  // 画面幅を取得し、デフォルトのズームレベルを決定
+  const defaultZoom = window.innerWidth <= 600 ? 3 : 4;
+
   map = new maplibregl.Map({
     container: 'mapid',
     style: {
@@ -50,7 +53,7 @@ const initMap = () => {
       ]
     },
     center: [136, 35.7],
-    zoom: 4,
+    zoom: defaultZoom,
     maxZoom: 9,
     minZoom: 3
   });
@@ -984,6 +987,7 @@ const setupResetButton = () => {
 };
 
 // ==================== イベントリスナーの設定 ====================
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     // 地図を初期化
@@ -1036,3 +1040,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+  const legend = document.querySelector(".legend");
+  const legendToggleButton = document.querySelector(".legend-toggle-button");
+
+  legendToggleButton.addEventListener("click", function () {
+    legend.classList.toggle("collapsed");
+  });
+});
