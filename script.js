@@ -574,15 +574,35 @@ const getNearbyRecords = (clickedRecord) => {
   const pixelRatio = Math.abs(mapBounds._ne.lng - mapBounds._sw.lng) / mapWidth; // 1pxあたりの緯度経度変換
   const thresholdDegrees = proximityThreshold * pixelRatio; // 10pxを緯度経度に変換
 
-  return filteredRows.filter(record => {
+  // クリックしたマーカーの周囲の記録を取得
+  let nearbyRecords = filteredRows.filter(record => {
       if (!record.latitude || !record.longitude) return false;
-
       const distance = Math.sqrt(
           Math.pow(record.latitude - clickedRecord.latitude, 2) +
           Math.pow(record.longitude - clickedRecord.longitude, 2)
       );
       return distance <= thresholdDegrees;
   });
+
+  // 記録の種類の優先順位
+  const priority = {
+      "1_タイプ産地": 7,
+      "2_統合された種のタイプ産地": 6,
+      "3_疑わしいタイプ産地": 5,
+      "4_疑わしい統合された種のタイプ産地": 4,
+      "5_標本記録": 3,
+      "6_文献記録": 2,
+      "7_疑わしい文献記録": 1
+  };
+
+  // クリックした記録を最優先にし、残りを優先順位順にソート
+  nearbyRecords = nearbyRecords.sort((a, b) => {
+      if (a === clickedRecord) return -1; // クリックした記録を1番目に
+      if (b === clickedRecord) return 1;
+      return (priority[b.recordType] || 0) - (priority[a.recordType] || 0); // 優先順位順にソート
+  });
+
+  return nearbyRecords;
 };
 
 // ポップアップを表示
@@ -633,9 +653,9 @@ const showPopup = (index) => {
 
 // マーカークリック時の処理
 const handleMarkerClick = (marker, record) => {
-  nearbyRecords = getNearbyRecords(record);
-  currentPopupIndex = nearbyRecords.findIndex(r => r === record);
-  showPopup(currentPopupIndex);
+  nearbyRecords = getNearbyRecords(record); // クリックしたマーカーの近くにある記録を取得
+  currentPopupIndex = 0; // クリックした記録を必ず1番目にする
+  showPopup(currentPopupIndex); // ポップアップを表示
 };
 
 // ==================== 種の学名のフォーマット処理 ====================
@@ -856,6 +876,15 @@ const displayMarkers = (filteredData) => {
   // **優先順位の高いものを後に追加する**
   const sortedMarkers = selectedMarkers.sort((a, b) => priority[a.recordType] - priority[b.recordType]);
 
+  // ツールチップ用の要素を作成（既に存在しない場合のみ）
+  let tooltip = document.querySelector(".marker-tooltip");
+  if (!tooltip) {
+      tooltip = document.createElement("div");
+      tooltip.className = "marker-tooltip";
+      tooltip.textContent = "クリックで詳細表示";
+      document.body.appendChild(tooltip);
+  }
+
   sortedMarkers.forEach(row => {
       const { className, color, borderColor } = getMarkerStyle(row.recordType);
 
@@ -868,7 +897,26 @@ const displayMarkers = (filteredData) => {
           .setLngLat([row.longitude, row.latitude])
           .addTo(map);
 
-      marker.getElement().addEventListener("click", () => handleMarkerClick(marker, row));
+      // マーカーのホバー時にツールチップを表示
+      el.addEventListener("mouseenter", (event) => {
+          tooltip.style.display = "block";
+          tooltip.style.left = `${event.pageX + 10}px`; // マウス位置の右側に表示
+          tooltip.style.top = `${event.pageY + 10}px`;
+      });
+
+      // マーカーのマウス移動時にツールチップの位置を更新
+      el.addEventListener("mousemove", (event) => {
+          tooltip.style.left = `${event.pageX + 10}px`;
+          tooltip.style.top = `${event.pageY + 10}px`;
+      });
+
+      // マーカーからマウスが離れたらツールチップを非表示にする
+      el.addEventListener("mouseleave", () => {
+          tooltip.style.display = "none";
+      });
+
+      // クリックイベントの追加
+      el.addEventListener("click", () => handleMarkerClick(marker, row));
 
       markers.push(marker);
   });
@@ -883,7 +931,7 @@ const preparePopupContent = (filteredData) => {
     "4_疑わしい統合された種のタイプ産地": "疑わしい統合された種のタイプ産地",
     "5_標本記録": "標本記録",
     "6_文献記録": "文献記録",
-    "7_疑わしい文献記録": "疑わしい文献記録"
+    "7_疑わしい文献記録": "疑わしい記録"
   };
 
   const popupContents = filteredData.map(row => {
@@ -1016,7 +1064,40 @@ const setupResetButton = () => {
   });
 };
 
+// ツールチップ用の要素を作成し、body に追加
+const tooltip = document.createElement("div");
+tooltip.className = "marker-tooltip";
+tooltip.textContent = "クリックで詳細表示";
+document.body.appendChild(tooltip);
+
 // ==================== イベントリスナーの設定 ====================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    // ... (既存のコード)
+
+    // 全選択チェックボックスの処理
+    const masterCheckbox = document.getElementById("legend-master-checkbox");
+    const allCheckboxes = document.querySelectorAll(".marker-filter-checkbox");
+
+    masterCheckbox.addEventListener("change", () => {
+      allCheckboxes.forEach(checkbox => {
+        checkbox.checked = masterCheckbox.checked;
+      });
+      applyFilters(); // チェックが変更されたら地図を更新
+    });
+
+    // 個別チェックボックスが変更されたときにマスターの状態を確認
+    allCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener("change", () => {
+        masterCheckbox.checked = [...allCheckboxes].every(cb => cb.checked);
+      });
+    });
+
+  } catch (error) {
+    console.error("初期化中にエラーが発生:", error);
+  }
+});
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
@@ -1078,6 +1159,27 @@ document.addEventListener("DOMContentLoaded", async () => {
       legend.classList.toggle("collapsed");
     });
     
+    // ポップアップの外をクリックしたときに閉じる
+    document.addEventListener("click", (event) => {
+      if (!activePopup) return; // ポップアップがない場合は何もしない
+
+      // クリックされた要素がポップアップの内部かどうかを判定
+      const popupElements = document.querySelectorAll(".maplibregl-popup");
+      let isInsidePopup = false;
+
+      popupElements.forEach(popup => {
+          if (popup.contains(event.target)) {
+              isInsidePopup = true;
+          }
+      });
+
+      // ポップアップ以外の場所をクリックした場合に閉じる
+      if (!isInsidePopup) {
+          activePopup.remove();
+          activePopup = null;
+      }
+    }, true); // ← `true` にすることでキャプチャフェーズで処理を行う
+
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
   }
