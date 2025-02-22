@@ -1222,3 +1222,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ページ読み込み時とリサイズ時に実行
 document.addEventListener("DOMContentLoaded", adjustSearchContainerPosition);
 window.addEventListener("resize", adjustSearchContainerPosition);
+
+document.getElementById("search-all").addEventListener("focus", (event) => {
+  event.preventDefault(); // デフォルト動作を防ぐ
+});
