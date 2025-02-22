@@ -1262,3 +1262,10 @@ document.getElementById("search-all").addEventListener("blur", function() {
 document.addEventListener("touchstart", function(event) {
   logDebug("タッチ開始: " + event.target.tagName);
 });
+
+document.getElementById("search-all").addEventListener("blur", function() {
+  logDebug("フォーカス復元を試行（遅延あり）");
+  setTimeout(() => {
+      this.focus();
+  }, 500); // 500ms 後にフォーカスを復元
+});
