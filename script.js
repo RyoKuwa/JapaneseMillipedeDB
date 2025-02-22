@@ -1193,10 +1193,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       legend.classList.toggle("collapsed");
     });
     
-    document.getElementById("search-all").addEventListener("mousedown", (event) => {
-      event.stopPropagation(); // 他のクリックイベントを阻止
-    });
-    
     // ポップアップの外をクリックしたときに閉じる
     document.addEventListener("click", (event) => {
       if (!activePopup) return; // ポップアップがない場合は何もしない
