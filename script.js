@@ -1246,5 +1246,5 @@ window.addEventListener("resize", adjustSearchContainer);
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
 
 document.getElementById("search-all").addEventListener("focus", function(event) {
-  console.log("フォーカス発生: ", event.target, "発生元: ", event.relatedTarget);
+  alert("フォーカス発生: ", event.target, "発生元: ", event.relatedTarget);
 });
