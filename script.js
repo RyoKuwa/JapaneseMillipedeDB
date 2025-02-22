@@ -932,6 +932,15 @@ const displayMarkers = (filteredData) => {
           tooltip.style.display = "none"; // ツールチップを非表示
       });
 
+      document.getElementById("search-all").addEventListener("focus", (event) => {
+        event.stopPropagation(); // イベントの伝播を停止
+    });
+    
+    map.getCanvas().addEventListener("touchstart", (event) => {
+        event.stopPropagation(); // タップ時の影響を防ぐ
+        event.preventDefault();
+    }, { passive: false });
+
       // クリックイベントの追加
       el.addEventListener("click", () => handleMarkerClick(marker, row));
 

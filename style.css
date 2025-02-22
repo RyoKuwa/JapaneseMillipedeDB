@@ -504,8 +504,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   }
 
   .search-container {
-    position: relative !important; /* .selected-labels の上に配置 */
-    overflow: visible !important;
+    position: relative; /* .selected-labels の上に配置 */
     width: calc(100% - 30px); /* 地図の幅と一致させる */
     box-sizing: border-box; /* padding を width に含める */
     margin-left: 0; /* 地図と揃えるため左に寄せる */
