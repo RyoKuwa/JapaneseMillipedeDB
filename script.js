@@ -1208,9 +1208,6 @@ const adjustSearchContainer = () => {
   const selectedLabels = document.getElementById("selected-labels");
   const legend = document.querySelector(".legend");
 
-  // 検索窓のフォーカスを保持するためのフラグ
-  let keepFocus = document.activeElement === document.getElementById("search-all");
-
   if (window.innerWidth <= 711) {
     // selected-labels の下、地図の上に配置
     selectedLabels.insertAdjacentElement("afterend", searchContainer);
@@ -1245,13 +1242,6 @@ const adjustSearchContainer = () => {
     legend.style.position = "absolute";
     legend.style.right = "10px";
     legend.style.bottom = "30px";
-  }
-
-  // 検索窓のフォーカスを保持
-  if (keepFocus) {
-    setTimeout(() => {
-      document.getElementById("search-all").focus();
-    }, 100); // 100ms 後にフォーカスを復元
   }
 };
 
