@@ -1087,6 +1087,23 @@ tooltip.className = "marker-tooltip";
 tooltip.textContent = "クリックで詳細表示";
 document.body.appendChild(tooltip);
 
+// ウィンドウ幅に応じて `.search-container` の位置を変更
+const adjustSearchContainerPosition = () => {
+  const mapContainer = document.getElementById("mapid");
+  const searchContainer = document.getElementById("searchContainer");
+  const selectedLabels = document.getElementById("selected-labels");
+
+  if (!mapContainer || !searchContainer || !selectedLabels) return;
+
+  if (window.innerWidth <= 711) {
+    // ウィンドウ幅が狭い場合、selected-labels の上に移動
+    mapContainer.parentNode.insertBefore(searchContainer, mapContainer);
+  } else {
+    // ウィンドウ幅が広い場合、mapid の中に戻す
+    mapContainer.insertBefore(searchContainer, mapContainer.firstChild);
+  }
+};
+
 // ==================== イベントリスナーの設定 ====================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -1201,3 +1218,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("初期化中にエラーが発生:", error);
   }
 });
+
+// ページ読み込み時とリサイズ時に実行
+document.addEventListener("DOMContentLoaded", adjustSearchContainerPosition);
+window.addEventListener("resize", adjustSearchContainerPosition);
