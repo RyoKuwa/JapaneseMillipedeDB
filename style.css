@@ -26,7 +26,7 @@ header h1 {
   top: 0;
   bottom: 0;
   width: 90%;
-  height: 900px;
+  height: 800px;
   z-index: 0;
   margin: 0 auto; /* ページ中央揃え */
 }
@@ -495,7 +495,14 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 @media (max-width: 711px) {
   .legend {
-    bottom: 40px;
+    position: relative;
+    width: calc(90% - 20px - 2px); /* paddingの影響を排除 */
+    max-width: calc(90% - 20px - 2px);
+    margin: 10px auto 0 auto;
+    box-sizing: border-box; /* paddingとborderを含めた幅計算 */
+    left: 0;
+    top: 0;
+    box-shadow: none;
   }
 
   .search-container {
@@ -517,5 +524,9 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
   .toggle-button.rotate{
     transform: rotate(360deg);
+  }
+
+  #mapid {
+    height: 400px;
   }
 }
