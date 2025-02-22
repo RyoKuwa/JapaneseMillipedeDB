@@ -1203,28 +1203,33 @@ const adjustSearchContainer = () => {
   const legend = document.querySelector(".legend");
 
   if (window.innerWidth <= 711) {
+    // selected-labels の下、地図の上に配置
     selectedLabels.insertAdjacentElement("afterend", searchContainer);
+    
+    // searchContainer の幅を調整（padding の影響を除外）
     searchContainer.style.width = "calc(90% - 20px)";
     searchContainer.style.maxWidth = "calc(90% - 20px)";
-    searchContainer.style.position = "absolute"; // 旧バージョンと統一
-    searchContainer.style.left = "10px";
-    searchContainer.style.top = "10px";
+    searchContainer.style.position = "relative";
     searchContainer.style.margin = "0 auto";
 
+    // legend を mapid の下部に配置
     mapElement.insertAdjacentElement("afterend", legend);
     legend.style.width = "90%";
     legend.style.maxWidth = "90%";
-    legend.style.position = "absolute";
-    legend.style.left = "10px";
-    legend.style.bottom = "30px";
+    legend.style.position = "relative";
+    legend.style.margin = "0px auto 0 auto";
   } else {
+    // もとの位置（地図の左上）に戻す
     mapElement.insertAdjacentElement("afterbegin", searchContainer);
+    
+    // searchContainer の幅を元に戻す
     searchContainer.style.width = "";
     searchContainer.style.maxWidth = "";
-    searchContainer.style.position = "absolute"; // 旧バージョンと統一
+    searchContainer.style.position = "absolute";
     searchContainer.style.left = "10px";
     searchContainer.style.top = "10px";
 
+    // legend を元の位置（右下）に戻す
     mapElement.appendChild(legend);
     legend.style.width = "";
     legend.style.maxWidth = "";
@@ -1232,14 +1237,9 @@ const adjustSearchContainer = () => {
     legend.style.right = "10px";
     legend.style.bottom = "30px";
   }
-
-  // 検索窓のフォーカスを維持
-  setTimeout(() => {
-    document.getElementById("search-all").focus();
-  }, 10);
 };
 
-// ウィンドウサイズ変更時に適用
+// ウィンドウサイズが変更されたときに適用
 window.addEventListener("resize", adjustSearchContainer);
 
 // ページ読み込み時にも適用
