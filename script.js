@@ -1192,13 +1192,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     legendToggleButton.addEventListener("click", function () {
       legend.classList.toggle("collapsed");
     });
-
-    document.getElementById("search-all").addEventListener("focus", () => {
-      map.getCanvas().style.touchAction = "none"; // 地図のタッチイベントを無効化
-    });
     
-    document.getElementById("search-all").addEventListener("blur", () => {
-      map.getCanvas().style.touchAction = ""; // 通常の挙動に戻す
+    document.getElementById("search-all").addEventListener("mousedown", (event) => {
+      event.stopPropagation(); // 他のクリックイベントを阻止
     });
     
     // ポップアップの外をクリックしたときに閉じる
