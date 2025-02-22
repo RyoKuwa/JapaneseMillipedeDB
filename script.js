@@ -1206,7 +1206,6 @@ const adjustSearchContainer = () => {
   const searchContainer = document.getElementById("searchContainer");
   const mapElement = document.getElementById("mapid");
   const selectedLabels = document.getElementById("selected-labels");
-  const legend = document.querySelector(".legend");
 
   if (window.innerWidth <= 711) {
     // selected-labels の下、地図の上に配置
@@ -1217,13 +1216,6 @@ const adjustSearchContainer = () => {
     searchContainer.style.maxWidth = "calc(90% - 20px)";
     searchContainer.style.position = "relative";
     searchContainer.style.margin = "0 auto";
-
-    // legend を mapid の下部に配置
-    mapElement.insertAdjacentElement("afterend", legend);
-    legend.style.width = "90%";
-    legend.style.maxWidth = "90%";
-    legend.style.position = "relative";
-    legend.style.margin = "0px auto 0 auto";
   } else {
     // もとの位置（地図の左上）に戻す
     mapElement.insertAdjacentElement("afterbegin", searchContainer);
@@ -1234,14 +1226,6 @@ const adjustSearchContainer = () => {
     searchContainer.style.position = "absolute";
     searchContainer.style.left = "10px";
     searchContainer.style.top = "10px";
-
-    // legend を元の位置（右下）に戻す
-    mapElement.appendChild(legend);
-    legend.style.width = "";
-    legend.style.maxWidth = "";
-    legend.style.position = "absolute";
-    legend.style.right = "10px";
-    legend.style.bottom = "30px";
   }
 };
 
