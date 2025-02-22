@@ -1239,7 +1239,7 @@ const adjustSearchContainer = () => {
   }, 10);
 };
 
-// ウィンドウサイズが変更されたときに適用
+// ウィンドウサイズ変更時に適用
 window.addEventListener("resize", adjustSearchContainer);
 
 // ページ読み込み時にも適用
