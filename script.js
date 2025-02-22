@@ -1144,7 +1144,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("search-button").addEventListener("click", () => {
       useSearch = true; // 検索窓のフィルタリングを有効化
       const searchValue = getSearchValue(); // 検索窓の値を取得
-      clearDropdowns(); // セレクトボックスの選択を解除
+      // clearDropdowns(); // セレクトボックスの選択を解除
       applyFilters(searchValue, true, true); // フィルタリングを実行：フィルタリングはsearchValueによる，地図に反映有効，検索窓によるフィルタリング有効
     });
     
@@ -1244,28 +1244,3 @@ window.addEventListener("resize", adjustSearchContainer);
 
 // ページ読み込み時にも適用
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
-
-function logDebug(message) {
-  const logElement = document.getElementById("debug-log");
-  logElement.innerHTML += message + "<br>";
-  logElement.scrollTop = logElement.scrollHeight;
-}
-
-document.getElementById("search-all").addEventListener("focus", function() {
-  logDebug("検索窓にフォーカスされた");
-});
-
-document.getElementById("search-all").addEventListener("blur", function() {
-  logDebug("検索窓のフォーカスが外れた");
-});
-
-document.addEventListener("touchstart", function(event) {
-  logDebug("タッチ開始: " + event.target.tagName);
-});
-
-document.getElementById("search-all").addEventListener("blur", function(event) {
-  event.preventDefault();
-  setTimeout(() => {
-      this.focus();
-  }, 100);
-});
