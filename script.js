@@ -1271,10 +1271,7 @@ document.getElementById("search-all").addEventListener("focus", function() {
 });
 
 document.getElementById("search-all").addEventListener("blur", function() {
-    console.log("検索窓のフォーカスが外れた");
-    if (!preventAutoFocus) {
-        setTimeout(() => {
-            this.focus();
-        }, 200);
-    }
+  setTimeout(() => {
+      console.log("フォーカスが外れた後のアクティブ要素:", document.activeElement);
+  }, 50);
 });
