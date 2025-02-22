@@ -45,7 +45,7 @@ header h1 {
   flex-direction: column; /* 子要素を縦並びに配置 */
   gap: 10px;         /* 各セクション間の間隔を調整 */
   transition: max-height 0.5s ease-out; /* アニメーション */
-  max-height: 550px; /* 初期の最大高さ */
+  max-height: 540px; /* 初期の最大高さ */
   overflow: hidden;
 }
 
@@ -439,7 +439,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 .select-container select {
   flex-grow: 1; /* 幅を一定にするために調整 */
   width: 0px; /* 絶対幅を設定 */
-  max-width: 600px;
+  max-width: 190px;
   min-width: 190px;
   height: 24px; /* 高さを適切に調整 */
   font-size: 14px;
@@ -468,10 +468,10 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 .selected-labels {
   width: 90%;
-  max-width: none;
+  max-width: 90%;
   margin: 0 auto; /* 中央揃え */
   background: rgba(255, 255, 255, 0.9);
-  padding: 8px 0px;
+  padding: 0px;
   text-align: center;
   font-size: 16px;
   font-weight: bold;
@@ -490,30 +490,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 @media (max-width: 711px) {
-  #mapid {
-    width: calc(100% - 30px);
-    margin-left: 0; /* 左に寄せる */
-    margin-right: auto; /* 右に余白を追加 */
+  .legend {
+    bottom: 40px;
   }
-
-  .selected-labels {
-    width: calc(100% - 30px); /* 地図（#mapid）の幅に合わせる */
-    box-sizing: border-box; /* padding を width に含める */
-    margin-left: 0; /* 左端に揃える */
-    margin-right: auto; /* 右に余白を追加 */
-  }
-
-  .search-container {
-    position: relative; /* .selected-labels の上に配置 */
-    width: calc(100% - 30px); /* 地図の幅と一致させる */
-    box-sizing: border-box; /* padding を width に含める */
-    margin-left: 0; /* 地図と揃えるため左に寄せる */
-    left: 0;
-    top: 0;
-    max-height: 590px;
-  }
-  
-  .search-container.closed {
-    max-height: 40px;
-}
 }
