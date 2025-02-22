@@ -506,7 +506,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   }
 
   .search-container {
-    position: fixed;
+    position: relative;
     width: (90% - 20px);
     max-width: (90% - 20px);
     margin: 0 auto;

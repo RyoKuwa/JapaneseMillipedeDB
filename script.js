@@ -1244,3 +1244,21 @@ window.addEventListener("resize", adjustSearchContainer);
 
 // ページ読み込み時にも適用
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
+
+function logDebug(message) {
+  const logElement = document.getElementById("debug-log");
+  logElement.innerHTML += message + "<br>";
+  logElement.scrollTop = logElement.scrollHeight;
+}
+
+document.getElementById("search-all").addEventListener("focus", function() {
+  logDebug("検索窓にフォーカスされた");
+});
+
+document.getElementById("search-all").addEventListener("blur", function() {
+  logDebug("検索窓のフォーカスが外れた");
+});
+
+document.addEventListener("touchstart", function(event) {
+  logDebug("タッチ開始: " + event.target.tagName);
+});
