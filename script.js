@@ -1245,10 +1245,6 @@ window.addEventListener("resize", adjustSearchContainer);
 // ページ読み込み時にも適用
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
 
-document.getElementById("search-all").addEventListener("focus", function() {
-  alert("検索窓がフォーカスされました");
-});
-
-document.getElementById("search-all").addEventListener("blur", function() {
-  alert("検索窓のフォーカスが外れました");
+document.getElementById("search-all").addEventListener("focus", function(event) {
+  console.log("フォーカス発生: ", event.target, "発生元: ", event.relatedTarget);
 });
