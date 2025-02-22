@@ -512,6 +512,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     top: 0;
     max-height: 590px;
     overflow: visible;
+    max-height: none;
   }
   
   .search-container.closed {
