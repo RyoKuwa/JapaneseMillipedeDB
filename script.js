@@ -1263,9 +1263,9 @@ document.addEventListener("touchstart", function(event) {
   logDebug("タッチ開始: " + event.target.tagName);
 });
 
-document.getElementById("search-all").addEventListener("pointerdown", function(event) {
+document.getElementById("search-all").addEventListener("blur", function(event) {
   event.preventDefault();
   setTimeout(() => {
       this.focus();
-  }, 300);
+  }, 100);
 });
