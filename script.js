@@ -1263,9 +1263,18 @@ document.addEventListener("touchstart", function(event) {
   logDebug("タッチ開始: " + event.target.tagName);
 });
 
+let preventAutoFocus = false;
+
+document.getElementById("search-all").addEventListener("focus", function() {
+    console.log("検索窓にフォーカスされた");
+    preventAutoFocus = true; // 一度フォーカスされたら自動復元を無効化
+});
+
 document.getElementById("search-all").addEventListener("blur", function() {
-  logDebug("フォーカス復元を試行（遅延あり）");
-  setTimeout(() => {
-      this.focus();
-  }, 500); // 500ms 後にフォーカスを復元
+    console.log("検索窓のフォーカスが外れた");
+    if (!preventAutoFocus) {
+        setTimeout(() => {
+            this.focus();
+        }, 200);
+    }
 });
