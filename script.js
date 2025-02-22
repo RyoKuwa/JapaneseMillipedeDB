@@ -1244,8 +1244,3 @@ window.addEventListener("resize", adjustSearchContainer);
 
 // ページ読み込み時にも適用
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
-
-document.getElementById("search-all").addEventListener("touchstart", function(event) {
-  event.preventDefault();
-  this.focus();
-});
