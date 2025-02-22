@@ -1271,7 +1271,9 @@ document.getElementById("search-all").addEventListener("focus", function() {
 });
 
 document.getElementById("search-all").addEventListener("pointerdown", function(event) {
-  event.preventDefault();
-  this.focus();
-  console.log("pointerdown でフォーカスを適用");
+  event.preventDefault(); // デフォルトの挙動を防ぐ（Android Chrome で `blur` を防ぐ）
+  
+  setTimeout(() => {
+      this.focus();
+  }, 300); // 300ms 後に `focus()` を適用
 });
