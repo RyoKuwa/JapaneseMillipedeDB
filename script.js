@@ -1270,10 +1270,6 @@ document.getElementById("search-all").addEventListener("focus", function() {
     preventAutoFocus = true; // 一度フォーカスされたら自動復元を無効化
 });
 
-document.getElementById("search-all").addEventListener("blur", function(event) {
-  event.preventDefault();
-  event.stopPropagation();
-  setTimeout(() => {
-      this.focus();
-  }, 100); // 100ms 後に再フォーカス
+document.getElementById("search-all").addEventListener("touchend", function(event) {
+  event.preventDefault(); // `blur()` させない
 });
