@@ -1263,9 +1263,9 @@ document.addEventListener("touchstart", function(event) {
   logDebug("タッチ開始: " + event.target.tagName);
 });
 
-let preventAutoFocus = false;
-
-document.getElementById("search-all").addEventListener("focus", function() {
-    console.log("検索窓にフォーカスされた");
-    preventAutoFocus = true; // 一度フォーカスされたら自動復元を無効化
+document.getElementById("search-all").addEventListener("click", function(event) {
+  event.preventDefault();
+  setTimeout(() => {
+      this.focus();
+  }, 200); // 200ms 遅延
 });
