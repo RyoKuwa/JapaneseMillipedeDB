@@ -1245,8 +1245,10 @@ window.addEventListener("resize", adjustSearchContainer);
 // ページ読み込み時にも適用
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
 
-document.getElementById("search-all").addEventListener("focus", function() {
-  setTimeout(() => {
-      this.setSelectionRange(this.value.length, this.value.length);
-  }, 50);
+document.getElementById("search-all").addEventListener("mousedown", function(event) {
+  event.preventDefault(); // クリック時のデフォルト動作を防ぐ
+});
+
+document.getElementById("search-all").addEventListener("touchstart", function(event) {
+  event.preventDefault(); // タッチ時のデフォルト動作を防ぐ
 });
