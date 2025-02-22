@@ -46,7 +46,7 @@ header h1 {
   gap: 10px;         /* 各セクション間の間隔を調整 */
   transition: max-height 0.5s ease-out; /* アニメーション */
   max-height: 550px; /* 初期の最大高さ */
-  overflow: visible;
+  overflow: hidden;
 }
 
 .search-container p {
