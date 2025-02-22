@@ -513,6 +513,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     left: 0;
     top: 0;
     box-shadow: none;
+    z-index: 30;
   }
 
   .toggle-button {
