@@ -1270,8 +1270,8 @@ document.getElementById("search-all").addEventListener("focus", function() {
     preventAutoFocus = true; // 一度フォーカスされたら自動復元を無効化
 });
 
-document.getElementById("search-all").addEventListener("blur", function() {
-  setTimeout(() => {
-      console.log("フォーカスが外れた後のアクティブ要素:", document.activeElement);
-  }, 50);
+document.getElementById("search-all").addEventListener("pointerdown", function(event) {
+  event.preventDefault();
+  this.focus();
+  console.log("pointerdown でフォーカスを適用");
 });
