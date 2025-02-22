@@ -1269,7 +1269,3 @@ document.getElementById("search-all").addEventListener("focus", function() {
     console.log("検索窓にフォーカスされた");
     preventAutoFocus = true; // 一度フォーカスされたら自動復元を無効化
 });
-
-document.getElementById("search-all").addEventListener("touchend", function(event) {
-  event.preventDefault(); // `blur()` させない
-});
