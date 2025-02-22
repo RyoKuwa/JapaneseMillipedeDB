@@ -1270,10 +1270,10 @@ document.getElementById("search-all").addEventListener("focus", function() {
     preventAutoFocus = true; // 一度フォーカスされたら自動復元を無効化
 });
 
-document.getElementById("search-all").addEventListener("pointerdown", function(event) {
-  event.preventDefault(); // デフォルトの挙動を防ぐ（Android Chrome で `blur` を防ぐ）
-  
+document.getElementById("search-all").addEventListener("blur", function(event) {
+  event.preventDefault();
+  event.stopPropagation();
   setTimeout(() => {
       this.focus();
-  }, 300); // 300ms 後に `focus()` を適用
+  }, 100); // 100ms 後に再フォーカス
 });
