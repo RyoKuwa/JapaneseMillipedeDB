@@ -511,8 +511,8 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     left: 0;
     top: 0;
     max-height: 590px;
-    overflow: visible;
-    max-height: none;
+    overflow: visible !important;
+    max-height: none !important;  /* 高さを制限しない */
   }
   
   .search-container.closed {
