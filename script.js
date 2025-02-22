@@ -1245,6 +1245,8 @@ window.addEventListener("resize", adjustSearchContainer);
 // ページ読み込み時にも適用
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
 
-document.getElementById("searchContainer").addEventListener("click", function() {
-  alert("searchContainer がクリックされました");
+document.getElementById("search-all").addEventListener("touchstart", function() {
+  setTimeout(() => {
+      this.focus();
+  }, 100);
 });
