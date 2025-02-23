@@ -1112,103 +1112,120 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    // 地図を初期化
-    initMap();
-
-    // 各種データをロード
-    await loadTaxonNameCSV(); // TaxonName.csvをロード
-    loadOrderCSV("Prefecture.csv", prefectureOrder); // Prefecture.csvをロード
-    loadOrderCSV("Island.csv", islandOrder); // Island.csvをロード
-    await loadLiteratureCSV(); // Literature.csvをロード
-    await loadGeoJSON(); // DistributionRecord_web.geojsonをロード
-
-    // 初期データを使用して記録数と地点数を表示
-    const initialRecordCount = rows.length;
-    const initialLocationCount = new Set(rows.map(row => `${row.latitude},${row.longitude}`)).size;
-    updateRecordInfo(initialRecordCount, initialLocationCount);
-
-    // ドロップダウンのリスナーを設定
-    setupDropdownListeners();
-
-    // リセットボタンの動作を設定
-    setupResetButton();
-
-    applyFilters("", true, false); // 全レコードを表示
-
-    // 地図のズームレベル変更時にマーカーを更新
-    map.on("zoomend", () => {
-      displayMarkers(filteredRows);
-    });
-
-    // 実行ボタンのクリックイベントを設定
-    document.getElementById("search-button").addEventListener("click", () => {
-      useSearch = true; // 検索窓のフィルタリングを有効化
-      const searchValue = getSearchValue(); // 検索窓の値を取得
-      clearDropdowns(); // セレクトボックスの選択を解除
-      applyFilters(searchValue, true, true); // フィルタリングを実行：フィルタリングはsearchValueによる，地図に反映有効，検索窓によるフィルタリング有効
-    });
-    
-    // 検索テキストを消去するボタンのイベントリスナー
-    document.getElementById("clear-search-button").addEventListener("click", () => {
-      clearSearch(); // 検索窓の値をクリア
-      applyFilters("", true, true); // // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング有効
-    });
-    
-    // チェックボックスのイベントリスナーを設定
-    document.getElementById("exclude-unpublished").addEventListener("change", applyFilters); // 未公表データを除外
-    document.getElementById("exclude-dubious").addEventListener("change", applyFilters); // 疑わしい記録を除外
-    document.getElementById("exclude-citation").addEventListener("change", applyFilters); // 引用記録を除外
-    setupNavButtonListeners(); // 前・次ボタンのイベントリスナーを設定
-    document.querySelectorAll(".marker-filter-checkbox").forEach(checkbox => {
-      checkbox.addEventListener("change", applyFilters);
-    });
-
-    const legend = document.querySelector(".legend");
-    const legendToggleButton = document.querySelector(".legend-toggle-button");
-    
-    const searchContainer = document.querySelector(".search-container");
-    const toggleButton = document.getElementById("toggle-button");
-  
-    // トグルボタンのクリックイベント
-    toggleButton.addEventListener("click", () => {
-      searchContainer.classList.toggle("closed");
-      toggleButton.classList.toggle("rotate");
-    });
-    
-    legendToggleButton.addEventListener("click", function () {
-      legend.classList.toggle("collapsed");
-    });
-    
-    // ポップアップの外をクリックしたときに閉じる
-    document.addEventListener("click", (event) => {
-      if (!activePopup) return; // ポップアップがない場合は何もしない
-
-      // クリックされた要素がポップアップの内部かどうかを判定
-      const popupElements = document.querySelectorAll(".maplibregl-popup");
-      let isInsidePopup = false;
-
-      popupElements.forEach(popup => {
-          if (popup.contains(event.target)) {
-              isInsidePopup = true;
-          }
-      });
-
-      // ポップアップ以外の場所をクリックした場合に閉じる
-      if (!isInsidePopup) {
-          activePopup.remove();
-          activePopup = null;
-      }
-    }, true); // ← `true` にすることでキャプチャフェーズで処理を行う
-
+    await initializeMap();
+    setupEventListeners();
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
   }
 });
 
-let preventResize = false; // 一時的に resize を防ぐフラグ
+// ==================== 地図の初期化とデータロード ====================
+const initializeMap = async () => {
+  initMap();
+
+  // 各種データをロード
+  await loadTaxonNameCSV();
+  loadOrderCSV("Prefecture.csv", prefectureOrder);
+  loadOrderCSV("Island.csv", islandOrder);
+  await loadLiteratureCSV();
+  await loadGeoJSON();
+
+  // 初期データの記録数と地点数を表示
+  updateRecordInfo(rows.length, new Set(rows.map(row => `${row.latitude},${row.longitude}`)).size);
+
+  // ドロップダウンとリセットボタンを設定
+  setupDropdownListeners();
+  setupResetButton();
+
+  // 地図のズームレベル変更時にマーカーを更新
+  map.on("zoomend", () => displayMarkers(filteredRows));
+
+  // 初期フィルタリング実行
+  applyFilters("", true, false);
+};
+
+// ==================== イベントリスナー設定 ====================
+const setupEventListeners = () => {
+  setupSearchListeners();
+  setupCheckboxListeners();
+  setupNavigationButtons();
+  setupLegendToggle();
+  setupPopupClose();
+  setupSearchContainerToggle();
+};
+
+// 検索ボタンとクリアボタンのイベントを設定
+const setupSearchListeners = () => {
+  document.getElementById("search-button").addEventListener("click", () => {
+    useSearch = true;
+    const searchValue = getSearchValue();
+    clearDropdowns();
+    applyFilters(searchValue, true, true);
+  });
+
+  document.getElementById("clear-search-button").addEventListener("click", () => {
+    clearSearch();
+    applyFilters("", true, true);
+  });
+};
+
+// チェックボックスのイベントを設定
+const setupCheckboxListeners = () => {
+  document.getElementById("exclude-unpublished").addEventListener("change", applyFilters);
+  document.getElementById("exclude-dubious").addEventListener("change", applyFilters);
+  document.getElementById("exclude-citation").addEventListener("change", applyFilters);
+
+  document.querySelectorAll(".marker-filter-checkbox").forEach(checkbox => {
+    checkbox.addEventListener("change", applyFilters);
+  });
+};
+
+// 前・次ボタンのイベントを設定
+const setupNavigationButtons = () => {
+  setupNavButtonListeners();
+};
+
+// 凡例 (Legend) のトグルボタンを設定
+const setupLegendToggle = () => {
+  const legend = document.querySelector(".legend");
+  const legendToggleButton = document.querySelector(".legend-toggle-button");
+
+  legendToggleButton.addEventListener("click", () => {
+    legend.classList.toggle("collapsed");
+  });
+};
+
+// ポップアップの外をクリックすると閉じる
+const setupPopupClose = () => {
+  document.addEventListener("click", (event) => {
+    if (!activePopup) return;
+
+    const popupElements = document.querySelectorAll(".maplibregl-popup");
+    const isInsidePopup = [...popupElements].some(popup => popup.contains(event.target));
+
+    if (!isInsidePopup) {
+      activePopup.remove();
+      activePopup = null;
+    }
+  }, true);
+};
+
+// サーチコンテナのトグル処理
+const setupSearchContainerToggle = () => {
+  const searchContainer = document.querySelector(".search-container");
+  const toggleButton = document.getElementById("toggle-button");
+
+  toggleButton.addEventListener("click", () => {
+    searchContainer.classList.toggle("closed");
+    toggleButton.classList.toggle("rotate");
+  });
+};
+
+// ==================== サーチコンテナの配置調整 ====================
+let preventResize = false;
 
 const adjustSearchContainer = () => {
-  if (preventResize) return; // フォーカス中は調整しない
+  if (preventResize) return;
 
   const searchContainer = document.querySelector(".search-container");
   const mapContainer = document.getElementById("mapid");
@@ -1216,11 +1233,8 @@ const adjustSearchContainer = () => {
 
   if (window.innerWidth <= 711) {
     searchContainer.style.position = "relative";
-    searchContainer.style.width = mapContainer.offsetWidth + "px";
-    
-    if (selectedLabels) {
-      selectedLabels.insertAdjacentElement("afterend", searchContainer);
-    }
+    searchContainer.style.width = `${mapContainer.offsetWidth}px`;
+    selectedLabels?.insertAdjacentElement("afterend", searchContainer);
   } else {
     searchContainer.style.position = "absolute";
     searchContainer.style.width = "auto";
@@ -1228,23 +1242,16 @@ const adjustSearchContainer = () => {
   }
 };
 
-// 検索窓のフォーカス時に resize イベントを一時的に無効化
+// 検索窓のフォーカス時にレイアウト変更を防ぐ
 document.getElementById("search-all").addEventListener("focus", () => {
   preventResize = true;
 });
 
-// フォーカスが外れたら resize を再開
 document.getElementById("search-all").addEventListener("blur", () => {
   preventResize = false;
-  adjustSearchContainer(); // フォーカス解除後にレイアウトを再調整
+  adjustSearchContainer();
 });
 
-// ウィンドウサイズ変更時に adjustSearchContainer を実行
+// ウィンドウサイズ変更時にサーチコンテナを調整
 window.addEventListener("resize", adjustSearchContainer);
-
-// 初回実行
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
-
-document.addEventListener("DOMContentLoaded", () => {
-
-});
