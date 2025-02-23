@@ -693,10 +693,20 @@ const formatSpeciesName = (name) => {
 const searchContainer = document.getElementById('searchContainer');
 const toggleButton = document.getElementById('toggle-button');
 
-// トグルボタンにクリックイベントを追加
-toggleButton.addEventListener('click', () => {
-  searchContainer.classList.toggle('closed');
-  toggleButton.classList.toggle('rotate');
+document.addEventListener("DOMContentLoaded", () => {
+  const searchContainer = document.querySelector(".search-container");
+  const toggleButton = document.getElementById("toggle-button");
+
+  if (!searchContainer) {
+    console.error("search-container が見つかりません。");
+    return;
+  }
+
+  // トグルボタンのクリックイベント
+  toggleButton.addEventListener("click", () => {
+    searchContainer.classList.toggle("closed");
+    toggleButton.classList.toggle("rotate");
+  });
 });
 
 // レコード数と地点数を更新する関数
