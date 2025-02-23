@@ -26,7 +26,7 @@ header h1 {
   top: 0;
   bottom: 0;
   width: 90%;
-  height: 900px;
+  height: 800px;
   z-index: 0;
   margin: 0 auto; /* ページ中央揃え */
 }
@@ -498,5 +498,9 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   }
   .toggle-button.rotate {
     transform: rotate(0deg); /* クリック時に元の向きに戻す */
+  }
+
+  #mapid {
+    height: 400px;
   }
 }
