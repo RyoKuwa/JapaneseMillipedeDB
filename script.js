@@ -1202,13 +1202,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+let preventResize = false; // 一時的に resize を防ぐフラグ
+
 const adjustSearchContainer = () => {
+  if (preventResize) return; // フォーカス中は調整しない
+
   const searchContainer = document.querySelector(".search-container");
   const mapContainer = document.getElementById("mapid");
   const selectedLabels = document.getElementById("selected-labels");
 
   if (window.innerWidth <= 711) {
-    // サーチコンテイナーを地図の外に移動
     searchContainer.style.position = "relative";
     searchContainer.style.width = mapContainer.offsetWidth + "px";
     
@@ -1216,44 +1219,26 @@ const adjustSearchContainer = () => {
       selectedLabels.insertAdjacentElement("afterend", searchContainer);
     }
   } else {
-    // サーチコンテイナーを従来の地図左上に戻す
     searchContainer.style.position = "absolute";
     searchContainer.style.width = "auto";
     mapContainer.appendChild(searchContainer);
   }
 };
 
-// ウィンドウサイズが変更されたら調整
+// 検索窓のフォーカス時に resize イベントを一時的に無効化
+document.getElementById("search-all").addEventListener("focus", () => {
+  preventResize = true;
+});
+
+// フォーカスが外れたら resize を再開
+document.getElementById("search-all").addEventListener("blur", () => {
+  preventResize = false;
+  adjustSearchContainer(); // フォーカス解除後にレイアウトを再調整
+});
+
+// ウィンドウサイズ変更時に adjustSearchContainer を実行
 window.addEventListener("resize", adjustSearchContainer);
 
 // 初回実行
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
 
-document.addEventListener("DOMContentLoaded", () => {
-  const searchInput = document.getElementById("search-all");
-  const searchContainer = document.querySelector(".search-container");
-  const toggleButton = document.getElementById("toggle-button");
-
-  // 検索窓がタップされたときに search-container を開いた状態にする
-  searchInput.addEventListener("focus", () => {
-    if (window.innerWidth <= 711) {
-      searchContainer.classList.remove("closed"); // 検索コンテナを開く
-    }
-  });
-
-  // フォーカスが外れたときに search-container を元の状態に戻す
-  searchInput.addEventListener("blur", () => {
-    setTimeout(() => {
-      if (!document.activeElement || document.activeElement !== searchInput) {
-        if (!searchContainer.matches(":hover")) {
-          searchContainer.classList.add("closed"); // タップ外で閉じる
-        }
-      }
-    }, 200);
-  });
-
-  // トグルボタンをタップしたときに search-container を閉じる
-  toggleButton.addEventListener("click", () => {
-    searchContainer.classList.toggle("closed");
-  });
-});
