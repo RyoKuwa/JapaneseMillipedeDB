@@ -18,7 +18,7 @@ let filteredRows = []; // フィルタリングされたデータを格納
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   // 画面幅を取得し、デフォルトのズームレベルを決定
-  const defaultZoom = window.innerWidth <= 600 ? 3 : 4;
+  const defaultZoom = window.innerWidth <= 711 ? 3 : 4;
 
   map = new maplibregl.Map({
     container: 'mapid',
