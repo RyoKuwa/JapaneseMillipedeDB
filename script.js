@@ -693,22 +693,6 @@ const formatSpeciesName = (name) => {
 const searchContainer = document.getElementById('searchContainer');
 const toggleButton = document.getElementById('toggle-button');
 
-document.addEventListener("DOMContentLoaded", () => {
-  const searchContainer = document.querySelector(".search-container");
-  const toggleButton = document.getElementById("toggle-button");
-
-  if (!searchContainer) {
-    console.error("search-container が見つかりません。");
-    return;
-  }
-
-  // トグルボタンのクリックイベント
-  toggleButton.addEventListener("click", () => {
-    searchContainer.classList.toggle("closed");
-    toggleButton.classList.toggle("rotate");
-  });
-});
-
 // レコード数と地点数を更新する関数
 const updateRecordInfo = (recordCount, locationCount) => {
   document.getElementById("record-count").textContent = recordCount;
@@ -1181,7 +1165,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const legend = document.querySelector(".legend");
     const legendToggleButton = document.querySelector(".legend-toggle-button");
+    
+    const searchContainer = document.querySelector(".search-container");
+    const toggleButton = document.getElementById("toggle-button");
   
+    // トグルボタンのクリックイベント
+    toggleButton.addEventListener("click", () => {
+      searchContainer.classList.toggle("closed");
+      toggleButton.classList.toggle("rotate");
+    });
+    
     legendToggleButton.addEventListener("click", function () {
       legend.classList.toggle("collapsed");
     });
@@ -1252,3 +1245,6 @@ window.addEventListener("resize", adjustSearchContainer);
 // 初回実行
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
 
+document.addEventListener("DOMContentLoaded", () => {
+
+});
