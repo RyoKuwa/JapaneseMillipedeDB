@@ -1202,11 +1202,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-let isResizing = false;
-let isTyping = false; // 入力中かどうかを判定
+let resizeTimeout = null;
+let isTouching = false; // タップ中かどうか
 
 const adjustSearchContainer = () => {
-  if (isTyping) return; // 入力中なら調整しない
+  if (isTouching) return; // タップ中は実行しない
 
   const searchContainer = document.querySelector(".search-container");
   const mapContainer = document.getElementById("mapid");
@@ -1215,7 +1215,7 @@ const adjustSearchContainer = () => {
   if (window.innerWidth <= 711) {
     searchContainer.style.position = "relative";
     searchContainer.style.width = mapContainer.offsetWidth + "px";
-    
+
     if (selectedLabels) {
       selectedLabels.insertAdjacentElement("afterend", searchContainer);
     }
@@ -1226,24 +1226,23 @@ const adjustSearchContainer = () => {
   }
 };
 
-// **リサイズイベントを制限**
+// **リサイズ時に `adjustSearchContainer()` を遅延実行**
 window.addEventListener("resize", () => {
-  if (isResizing) return;
-  isResizing = true;
+  clearTimeout(resizeTimeout); // 直前のタイマーをクリア
+  resizeTimeout = setTimeout(adjustSearchContainer, 500); // 0.5秒待ってから実行
+});
 
+// **タップ中は `adjustSearchContainer()` を実行しない**
+document.addEventListener("touchstart", () => {
+  isTouching = true;
+});
+
+// **タップ終了後、少し待って `adjustSearchContainer()` を再開**
+document.addEventListener("touchend", () => {
   setTimeout(() => {
-    adjustSearchContainer();
-    isResizing = false;
-  }, 200); // 200msごとに実行
-});
-
-// **入力中はレイアウト変更を無視**
-document.querySelector("#search-all").addEventListener("focus", () => {
-  isTyping = true;
-});
-
-document.querySelector("#search-all").addEventListener("blur", () => {
-  isTyping = false;
+    isTouching = false;
+    adjustSearchContainer(); // タップ終了後に一度実行
+  }, 500); // 0.5秒後に実行
 });
 
 // **初回実行**
