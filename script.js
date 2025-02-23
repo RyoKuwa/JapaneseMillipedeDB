@@ -689,14 +689,13 @@ const updateRecordInfo = (recordCount, locationCount) => {
   document.getElementById("location-count").textContent = locationCount;
 };
 
-// 選択中のラベルを更新する関数
+// 選択値を表示
 const updateSelectedLabels = () => {
   const labelContainer = document.getElementById("selected-labels");
   if (!labelContainer) return;
 
   // **更新前の位置と高さを取得**
-  const previousRect = labelContainer.getBoundingClientRect();
-  const previousHeight = labelContainer.offsetHeight;
+  const previousHeight = labelContainer.clientHeight; // clientHeight に変更
 
   const selectIds = [
     "filter-order",
@@ -745,6 +744,11 @@ const updateSelectedLabels = () => {
       labelText = literatureLink ? `${literatureName} <a href="${literatureLink}" target="_blank">${literatureLink}</a>` : literatureName;
     }
 
+    // **エスケープ処理（`-`, `[`, `]`）**
+    labelText = labelText.replace(/-/g, "&#8209;") // ノーブレークハイフン
+                         .replace(/\[/g, "&#91;")
+                         .replace(/\]/g, "&#93;");
+
     return labelText;
   }).filter(label => label !== ""); // 空のラベルを除外
 
@@ -756,17 +760,14 @@ const updateSelectedLabels = () => {
   }
 
   // **更新後の高さを取得**
-  const newHeight = labelContainer.offsetHeight;
-
-  // `selected-labels` が完全に画面外にある場合はスクロールしない
-  if (previousRect.bottom < 0 || previousRect.top > window.innerHeight) {
-    return;
-  }
-
-  // `selected-labels` の高さが変化した場合、スクロール調整
+  const newHeight = labelContainer.clientHeight; // clientHeight に変更
   const heightDifference = newHeight - previousHeight;
+
   if (heightDifference !== 0) {
-    window.scrollBy(0, heightDifference);
+    window.scrollTo({
+      top: window.scrollY + heightDifference,
+      behavior: "instant"
+    });
   }
 };
 
@@ -812,13 +813,13 @@ const formatSpeciesName = (name) => {
   // iタグなしのscientificNameを作成
   const cleanScientificName = scientificName.replace(/<\/?i>/g, "").trim();
 
-  // taxonMap からデータを取得
-  const taxonInfo = taxonMap[cleanScientificName] || { japaneseName: "-", authorYear: "-" };
+  // taxonMap から authorYear を取得
+  const taxonInfo = taxonMap[cleanScientificName] || { authorYear: "-" };
   const authorYear = taxonInfo.authorYear === "-" ? "" : ` <span class="non-italic">${taxonInfo.authorYear}</span>`;
 
   // ord. / fam. / gen. を含む場合は斜体なし
   if (formattedScientificName.match(/ord\.|fam\.|gen\./)) {
-    return `${taxonInfo.japaneseName} / <span class="non-italic">${formattedScientificName}</span>${authorYear}`;
+    return `${japaneseName} / <span class="non-italic">${formattedScientificName}</span>${authorYear}`;
   }
 
   // sp. を含み、ord. / fam. / gen. が含まれない場合
@@ -829,7 +830,7 @@ const formatSpeciesName = (name) => {
     formattedScientificName = `<i>${formattedScientificName}</i>`;
   }
 
-  return `${taxonInfo.japaneseName} / ${formattedScientificName}${authorYear}`;
+  return `${japaneseName} / ${formattedScientificName}${authorYear}`;
 };
 
 // ==================== マーカー操作 ====================
