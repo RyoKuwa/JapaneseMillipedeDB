@@ -1081,45 +1081,6 @@ tooltip.className = "marker-tooltip";
 tooltip.textContent = "クリックで詳細表示";
 document.body.appendChild(tooltip);
 
-// ==================== イベントリスナーの設定 ====================
-
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await initializeMap();
-    setupEventListeners();
-    adjustSearchContainer();
-
-    // 全選択チェックボックスの処理
-    const masterCheckbox = document.getElementById("legend-master-checkbox");
-    const allCheckboxes = document.querySelectorAll(".marker-filter-checkbox");
-
-    masterCheckbox.addEventListener("change", () => {
-      allCheckboxes.forEach(checkbox => {
-        checkbox.checked = masterCheckbox.checked;
-      });
-      applyFilters(); // チェックが変更されたら地図を更新
-    });
-
-    // 個別チェックボックスが変更されたときにマスターの状態を確認
-    allCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener("change", () => {
-        masterCheckbox.checked = [...allCheckboxes].every(cb => cb.checked);
-      });
-    });
-
-  } catch (error) {
-    console.error("初期化中にエラーが発生:", error);
-  }
-});
-
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-
-  } catch (error) {
-    console.error("初期化中にエラーが発生:", error);
-  }
-});
-
 // ==================== 地図の初期化とデータロード ====================
 const initializeMap = async () => {
   initMap();
@@ -1255,3 +1216,34 @@ document.getElementById("search-all").addEventListener("blur", () => {
 
 // ウィンドウサイズ変更時にサーチコンテナを調整
 window.addEventListener("resize", adjustSearchContainer);
+
+// ==================== イベントリスナーの設定 ====================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await initializeMap();
+    setupEventListeners();
+    adjustSearchContainer();
+
+    // 全選択チェックボックスの処理
+    const masterCheckbox = document.getElementById("legend-master-checkbox");
+    const allCheckboxes = document.querySelectorAll(".marker-filter-checkbox");
+
+    masterCheckbox.addEventListener("change", () => {
+      allCheckboxes.forEach(checkbox => {
+        checkbox.checked = masterCheckbox.checked;
+      });
+      applyFilters(); // チェックが変更されたら地図を更新
+    });
+
+    // 個別チェックボックスが変更されたときにマスターの状態を確認
+    allCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener("change", () => {
+        masterCheckbox.checked = [...allCheckboxes].every(cb => cb.checked);
+      });
+    });
+
+  } catch (error) {
+    console.error("初期化中にエラーが発生:", error);
+  }
+});

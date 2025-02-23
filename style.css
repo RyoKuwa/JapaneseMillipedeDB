@@ -33,7 +33,6 @@ header h1 {
 
 /* 検索コンテナの基本スタイル */
 .search-container {
-  position: absolute; /* mapid を基準に配置 */
   top: 10px;          /* mapid の上から 10px */
   left: 10px;         /* mapid の左から 10px */
   background: white;
@@ -439,8 +438,8 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 .select-container select {
   flex-grow: 1; /* 幅を一定にするために調整 */
   width: 0px; /* 絶対幅を設定 */
-  max-width: 190px;
-  min-width: 190px;
+  max-width: none;
+  min-width: none;
   height: 24px; /* 高さを適切に調整 */
   font-size: 14px;
   padding: 2px; /* 内部の余白を調整 */
@@ -490,10 +489,10 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 @media (max-width: 711px) {
   .search-container {
-    position: relative !important; /* `script.js` で変更するため !important */
-    width: 90%; /* `script.js` で mapid に合わせる */
-    padding: 10px;
-    max-width: none; /* 制限を解除 */
-    margin: 10px auto; /* ページ中央揃え */
+    margin: 0 auto;
+    left: 0;
+    top: 0;
+    box-shadow: none;
+    box-sizing: border-box; /* padding を含めた幅計算 */
   }
 }
