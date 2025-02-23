@@ -476,6 +476,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   border-bottom: 1px solid #ccc;
   display: none; /* 初期状態は非表示 */
   white-space: pre-line; /* 改行を有効化 */
+  overflow-wrap: break-word;
 }
 
 @media (max-width: 711px) {
