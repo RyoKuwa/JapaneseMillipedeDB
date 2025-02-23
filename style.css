@@ -439,7 +439,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   flex-grow: 1; /* 幅を一定にするために調整 */
   width: 0px; /* 絶対幅を設定 */
   max-width: none;
-  min-width: none;
+  min-width: 200px;
   height: 24px; /* 高さを適切に調整 */
   font-size: 14px;
   padding: 2px; /* 内部の余白を調整 */
