@@ -1202,11 +1202,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-let isResizing = false;
-let isTyping = false; // 入力中かどうかを判定
+let preventResize = false; // 一時的に resize を防ぐフラグ
 
 const adjustSearchContainer = () => {
-  if (isTyping) return; // 入力中なら調整しない
+  if (preventResize) return; // フォーカス中は調整しない
 
   const searchContainer = document.querySelector(".search-container");
   const mapContainer = document.getElementById("mapid");
@@ -1226,25 +1225,20 @@ const adjustSearchContainer = () => {
   }
 };
 
-// **リサイズイベントを制限**
-window.addEventListener("resize", () => {
-  if (isResizing) return;
-  isResizing = true;
-
-  setTimeout(() => {
-    adjustSearchContainer();
-    isResizing = false;
-  }, 200); // 200msごとに実行
+// 検索窓のフォーカス時に resize イベントを一時的に無効化
+document.getElementById("search-all").addEventListener("focus", () => {
+  preventResize = true;
 });
 
-// **入力中はレイアウト変更を無視**
-document.querySelector("#search-all").addEventListener("focus", () => {
-  isTyping = true;
+// フォーカスが外れたら resize を再開
+document.getElementById("search-all").addEventListener("blur", () => {
+  preventResize = false;
+  adjustSearchContainer(); // フォーカス解除後にレイアウトを再調整
 });
 
-document.querySelector("#search-all").addEventListener("blur", () => {
-  isTyping = false;
-});
+// ウィンドウサイズ変更時に adjustSearchContainer を実行
+window.addEventListener("resize", adjustSearchContainer);
 
-// **初回実行**
+// 初回実行
 document.addEventListener("DOMContentLoaded", adjustSearchContainer);
+
