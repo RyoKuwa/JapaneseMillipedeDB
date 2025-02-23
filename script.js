@@ -1085,7 +1085,9 @@ document.body.appendChild(tooltip);
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    // ... (既存のコード)
+    await initializeMap();
+    setupEventListeners();
+    adjustSearchContainer();
 
     // 全選択チェックボックスの処理
     const masterCheckbox = document.getElementById("legend-master-checkbox");
@@ -1112,8 +1114,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    await initializeMap();
-    setupEventListeners();
+
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
   }
@@ -1254,4 +1255,3 @@ document.getElementById("search-all").addEventListener("blur", () => {
 
 // ウィンドウサイズ変更時にサーチコンテナを調整
 window.addEventListener("resize", adjustSearchContainer);
-document.addEventListener("DOMContentLoaded", adjustSearchContainer);
