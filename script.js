@@ -1201,3 +1201,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("初期化中にエラーが発生:", error);
   }
 });
+
+const adjustSearchContainer = () => {
+  const searchContainer = document.querySelector(".search-container");
+  const mapContainer = document.getElementById("mapid");
+  const selectedLabels = document.getElementById("selected-labels");
+
+  if (window.innerWidth <= 711) {
+    // サーチコンテイナーを地図の外に移動
+    searchContainer.style.position = "relative";
+    searchContainer.style.width = mapContainer.offsetWidth + "px";
+    
+    if (selectedLabels) {
+      selectedLabels.insertAdjacentElement("afterend", searchContainer);
+    }
+  } else {
+    // サーチコンテイナーを従来の地図左上に戻す
+    searchContainer.style.position = "absolute";
+    searchContainer.style.width = "auto";
+    mapContainer.appendChild(searchContainer);
+  }
+};
+
+// ウィンドウサイズが変更されたら調整
+window.addEventListener("resize", adjustSearchContainer);
+
+// 初回実行
+document.addEventListener("DOMContentLoaded", adjustSearchContainer);

@@ -45,8 +45,12 @@ header h1 {
   flex-direction: column; /* 子要素を縦並びに配置 */
   gap: 10px;         /* 各セクション間の間隔を調整 */
   transition: max-height 0.5s ease-out; /* アニメーション */
-  max-height: 540px; /* 初期の最大高さ */
+  max-height: 550px; /* 初期の最大高さ */
   overflow: hidden;
+}
+
+.search-container p {
+  font-size: 12px;
 }
 
 /* searchContainerが閉じられている時のスタイル */
@@ -135,10 +139,6 @@ header h1 {
   word-wrap: break-word;      /* 長いURLを折り返す */
   white-space: normal;        /* 折り返しを有効にする */
   word-break: break-all;      /* 必要に応じて単語を途中で改行 */
-}
-
-#searchContainer input[type="checkbox"] {
-  margin-right: 5px;
 }
 
 ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right {
@@ -466,9 +466,8 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   background-color: #ddd;
 }
 
-.selected-labels {
-  width: 80%;
-  max-width: 900px;
+#selected-labels {
+  width: calc(90% - 20px); /* 地図の幅に合わせつつ、paddingの影響を排除 */
   margin: 0 auto; /* 中央揃え */
   background: rgba(255, 255, 255, 0.9);
   padding: 8px 10px;
@@ -490,7 +489,11 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 @media (max-width: 711px) {
-  .legend {
-    bottom: 40px;
+  .search-container {
+    position: relative !important; /* `script.js` で変更するため !important */
+    width: 90%; /* `script.js` で mapid に合わせる */
+    padding: 10px;
+    max-width: none; /* 制限を解除 */
+    margin: 10px auto; /* ページ中央揃え */
   }
 }
