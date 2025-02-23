@@ -1186,21 +1186,53 @@ const setupSearchContainerToggle = () => {
 // ==================== サーチコンテナの配置調整 ====================
 let preventResize = false;
 
-const adjustSearchContainer = () => {
+const adjustSearchContainerAndLegend = () => {
   if (preventResize) return;
 
   const searchContainer = document.querySelector(".search-container");
   const mapContainer = document.getElementById("mapid");
+  const legend = document.querySelector(".legend");
   const selectedLabels = document.getElementById("selected-labels");
 
   if (window.innerWidth <= 711) {
+    const paddingValue = parseInt(window.getComputedStyle(searchContainer).paddingLeft, 10) || 0;
     searchContainer.style.position = "relative";
-    searchContainer.style.width = `${mapContainer.offsetWidth}px`;
+    searchContainer.style.width = `${mapContainer.offsetWidth - (paddingValue * 2)}px`;
     selectedLabels?.insertAdjacentElement("afterend", searchContainer);
+
+    // トグルボタンの位置を調整
+    const toggleButton = document.getElementById("toggle-button");
+    toggleButton.style.right = "10px";
+    toggleButton.style.top = "10px";
+    toggleButton.style.bottom = "auto"; // 右下の設定を解除
+
+    // legend を mapid の下に配置し、幅を mapid に合わせる
+    if (legend.parentNode !== mapContainer.parentNode) {
+      mapContainer.insertAdjacentElement("afterend", legend); // すでに移動済みでなければ移動
+    }
+    legend.style.position = "relative";
+    legend.style.width = `${mapContainer.offsetWidth}px`;
+    legend.style.bottom = "auto";  // 元の設定を解除
+    legend.style.right = "auto";   // 元の設定を解除
   } else {
     searchContainer.style.position = "absolute";
     searchContainer.style.width = "auto";
     mapContainer.appendChild(searchContainer);
+
+    // トグルボタンを元の位置に戻す
+    const toggleButton = document.getElementById("toggle-button");
+    toggleButton.style.right = "10px";
+    toggleButton.style.bottom = "10px";
+    toggleButton.style.top = "auto";
+
+    // legend の位置と幅をデフォルトに戻す
+    if (legend.parentNode !== mapContainer) {
+      mapContainer.appendChild(legend); // すでに移動済みでなければ戻す
+    }
+    legend.style.position = "absolute";
+    legend.style.width = "340px";
+    legend.style.bottom = "30px";
+    legend.style.right = "10px";
   }
 };
 
@@ -1211,11 +1243,11 @@ document.getElementById("search-all").addEventListener("focus", () => {
 
 document.getElementById("search-all").addEventListener("blur", () => {
   preventResize = false;
-  adjustSearchContainer();
+  adjustSearchContainerAndLegend();
 });
 
 // ウィンドウサイズ変更時にサーチコンテナを調整
-window.addEventListener("resize", adjustSearchContainer);
+window.addEventListener("resize", adjustSearchContainerAndLegend);
 
 // ==================== イベントリスナーの設定 ====================
 
@@ -1223,7 +1255,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await initializeMap();
     setupEventListeners();
-    adjustSearchContainer();
+    adjustSearchContainerAndLegend();
 
     // 全選択チェックボックスの処理
     const masterCheckbox = document.getElementById("legend-master-checkbox");

@@ -478,21 +478,25 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   white-space: pre-line; /* 改行を有効化 */
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 711px) {
   .search-container {
     margin: 0 auto;
     left: 0;
     top: 0;
     box-shadow: none;
-    box-sizing: border-box; /* padding を含めた幅計算 */
+  }
+
+  .legend {
+    margin: 0 auto;
+    left: 0;
+    top: 0;
+    box-shadow: none;
+  }
+
+  .toggle-button {
+    transform: rotate(180deg); /* デフォルトで180度回転（反対向き） */
+  }
+  .toggle-button.rotate {
+    transform: rotate(0deg); /* クリック時に元の向きに戻す */
   }
 }
