@@ -704,9 +704,9 @@ const updateSelectedLabels = () => {
   const labelContainer = document.getElementById("selected-labels");
   if (!labelContainer) return;
 
-  // **更新前の高さを取得**
-  const previousHeight = labelContainer.getBoundingClientRect().height;
-  const previousScrollY = window.scrollY;
+  // **更新前の位置と高さを取得**
+  const previousRect = labelContainer.getBoundingClientRect();
+  const previousHeight = labelContainer.offsetHeight;
 
   const selectIds = [
     "filter-order",
@@ -761,11 +761,19 @@ const updateSelectedLabels = () => {
   }
 
   // **更新後の高さを取得**
-  const newHeight = labelContainer.getBoundingClientRect().height;
+  const newHeight = labelContainer.offsetHeight;
+  const newRect = labelContainer.getBoundingClientRect();
 
-  // **高さの変化量に応じてスクロール位置を調整**
+  // `selected-labels` が完全に画面外にある場合はスクロールしない
+  if (previousRect.bottom < 0 || previousRect.top > window.innerHeight) {
+    return;
+  }
+
+  // `selected-labels` の高さが変化した場合、スクロール調整
   const heightDifference = newHeight - previousHeight;
-  window.scrollTo({ top: previousScrollY + heightDifference, behavior: "instant" });
+  if (heightDifference !== 0) {
+    window.scrollBy(0, heightDifference);
+  }
 };
 
 // 属の学名部分を斜体にする関数
