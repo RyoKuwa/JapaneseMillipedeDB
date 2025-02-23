@@ -133,10 +133,25 @@ const loadLiteratureCSV = async () => {
 const loadTaxonNameCSV = () => {
   loadCSV("TaxonName.csv", (csvText) => {
     const lines = csvText.split("\n").filter(line => line.trim());
+
     lines.forEach((line, index) => {
       if (index === 0) return; // ヘッダーをスキップ
-      const [japaneseName, scientificName] = line.split(",").map(col => col.trim());
-      taxonMap[scientificName] = japaneseName || "-"; // 和名がない場合"-"を表示
+
+      // カンマを含むデータを適切に処理するため、CSVを正しくパース
+      const columns = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g).map(col => col.replace(/^"|"$/g, '').trim());
+
+      if (columns.length < 3) return; // データが足りない場合はスキップ
+
+      const [japaneseName, scientificName, ...authorYearParts] = columns;
+      let authorYear = authorYearParts.join(", "); // カンマを含む `authorYear` を復元
+
+      // 最後のカンマを削除（念のため前後の余分な空白も除去）
+      authorYear = authorYear.replace(/,\s*$/, "").trim();
+
+      taxonMap[scientificName] = {
+        japaneseName: japaneseName || "-",
+        authorYear: authorYear || "-" // 著者と年がない場合は "-"
+      };
     });
   });
 };
@@ -252,7 +267,7 @@ const filterBySearch = (data, searchValue) => {
       {
         value: row[dataKey],
         // 該当する和名が存在しない場合は "-" を設定
-        label: `${row[dataKey]} / ${taxonMap[row[dataKey]] || "-"}`
+        label: `${row[dataKey]} / ${(taxonMap[row[dataKey]]?.japaneseName) || "-"}`
       }
     ])).values()];
 
@@ -663,31 +678,6 @@ const handleMarkerClick = (marker, record) => {
   showPopup(currentPopupIndex); // ポップアップを表示
 };
 
-// ==================== 種の学名のフォーマット処理 ====================
-const formatSpeciesName = (name) => {
-  if (!name.includes(" / ")) return name; // 「/」が含まれていなければそのまま返す
-
-  let [japaneseName, scientificName] = name.split(" / "); // 和名と学名を分割
-  let formattedScientificName = scientificName;
-
-  // 「(」と「)」を通常フォントにする
-  formattedScientificName = formattedScientificName.replace(/\(/g, '<span class="non-italic">(</span>');
-  formattedScientificName = formattedScientificName.replace(/\)/g, '<span class="non-italic">)</span>');
-
-  // ord. / fam. / gen. を含む場合はすべて立体（斜体なし）
-  if (formattedScientificName.match(/ord\.|fam\.|gen\./)) {
-    return `${japaneseName} / <span class="non-italic">${formattedScientificName}</span>`;
-  }
-
-  // sp. を含み、ord. / fam. / gen. が含まれない場合
-  if (formattedScientificName.includes("sp.") && !formattedScientificName.match(/ord\.|fam\.|gen\./)) {
-    return `${japaneseName} / ` + formattedScientificName.replace(/(.*?)(sp\..*)/, '<i>$1</i><span class="non-italic">$2</span>');
-  }
-
-  // それ以外の場合はすべて斜体
-  return `${japaneseName} / <i>${formattedScientificName}</i>`;
-};
-
 // ==================== UI操作関数 ====================
 // 検索部分の開閉
 const searchContainer = document.getElementById('searchContainer');
@@ -733,6 +723,11 @@ const updateSelectedLabels = () => {
       labelText = `${parts[1]} / ${parts[0]}`;
     }
 
+    // 目・科の学名のフォーマットを適用
+    if (id === "filter-order" || id === "filter-family") {
+      labelText = formatOrderFamilyName(labelText);
+    }
+
     // 種の学名のフォーマットを適用
     if (id === "filter-species") {
       labelText = formatSpeciesName(labelText);
@@ -762,7 +757,6 @@ const updateSelectedLabels = () => {
 
   // **更新後の高さを取得**
   const newHeight = labelContainer.offsetHeight;
-  const newRect = labelContainer.getBoundingClientRect();
 
   // `selected-labels` が完全に画面外にある場合はスクロールしない
   if (previousRect.bottom < 0 || previousRect.top > window.innerHeight) {
@@ -776,14 +770,66 @@ const updateSelectedLabels = () => {
   }
 };
 
+// 目・科の学名のフォーマット処理
+const formatOrderFamilyName = (name) => {
+  if (!name.includes(" / ")) return name;
+
+  let [japaneseName, scientificName] = name.split(" / ");
+  
+  // taxonMap からデータを取得
+  const taxonInfo = taxonMap[scientificName] || { japaneseName: "-", authorYear: "-" };
+  const authorYear = taxonInfo.authorYear === "-" ? "" : ` <span class="non-italic">${taxonInfo.authorYear}</span>`;
+
+  // 目・科の学名は通常フォント
+  return `${taxonInfo.japaneseName} / <span class="non-italic">${scientificName}</span>${authorYear}`;
+};
+
 // 属の学名部分を斜体にする関数
 const formatGenusName = (name) => {
+  if (!name.includes(" / ")) return name;
+
+  let [japaneseName, scientificName] = name.split(" / ");
+  
+  // taxonMap からデータを取得
+  const taxonInfo = taxonMap[scientificName] || { japaneseName: "-", authorYear: "-" };
+  const authorYear = taxonInfo.authorYear === "-" ? "" : ` <span class="non-italic">${taxonInfo.authorYear}</span>`;
+
+  // 学名を斜体にし、著者・年は通常フォント
+  return `${taxonInfo.japaneseName} / <i>${scientificName}</i>${authorYear}`;
+};
+
+// 種の学名のフォーマット処理
+const formatSpeciesName = (name) => {
   if (!name.includes(" / ")) return name; // 「/」が含まれていなければそのまま返す
 
-  let [japaneseName, scientificName] = name.split(" / "); // 和名と学名を分割
+  let [japaneseName, scientificName] = name.split(" / ");
+  let formattedScientificName = scientificName;
 
-  // 学名部分を斜体にする
-  return `${japaneseName} / <i>${scientificName}</i>`;
+  // カッコ () を通常フォントにする
+  formattedScientificName = formattedScientificName.replace(/\(/g, '<span class="non-italic">(</span>');
+  formattedScientificName = formattedScientificName.replace(/\)/g, '<span class="non-italic">)</span>');
+
+  // iタグなしのscientificNameを作成
+  const cleanScientificName = scientificName.replace(/<\/?i>/g, "").trim();
+
+  // taxonMap からデータを取得
+  const taxonInfo = taxonMap[cleanScientificName] || { japaneseName: "-", authorYear: "-" };
+  const authorYear = taxonInfo.authorYear === "-" ? "" : ` <span class="non-italic">${taxonInfo.authorYear}</span>`;
+
+  // ord. / fam. / gen. を含む場合は斜体なし
+  if (formattedScientificName.match(/ord\.|fam\.|gen\./)) {
+    return `${taxonInfo.japaneseName} / <span class="non-italic">${formattedScientificName}</span>${authorYear}`;
+  }
+
+  // sp. を含み、ord. / fam. / gen. が含まれない場合
+  if (formattedScientificName.includes("sp.") && !formattedScientificName.match(/ord\.|fam\.|gen\./)) {
+    formattedScientificName = formattedScientificName.replace(/(.*?)(sp\..*)/, '<i>$1</i><span class="non-italic">$2</span>');
+  } else {
+    // それ以外の場合はすべて斜体
+    formattedScientificName = `<i>${formattedScientificName}</i>`;
+  }
+
+  return `${taxonInfo.japaneseName} / ${formattedScientificName}${authorYear}`;
 };
 
 // ==================== マーカー操作 ====================
