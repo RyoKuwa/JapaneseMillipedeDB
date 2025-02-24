@@ -1211,14 +1211,16 @@ const setupEventListeners = () => {
 
 // 検索ボタンとクリアボタンのイベントを設定
 const setupSearchListeners = () => {
-  document.getElementById("search-button").addEventListener("click", () => {
+  document.getElementById("search-button").addEventListener("mousedown", (event) => {
+    event.preventDefault(); // ボタンのクリック処理を妨げないようにする
     useSearch = true;
     const searchValue = getSearchValue();
     clearDropdowns();
     applyFilters(searchValue, true, true);
   });
 
-  document.getElementById("clear-search-button").addEventListener("click", () => {
+  document.getElementById("clear-search-button").addEventListener("mousedown", (event) => {
+    event.preventDefault(); // ボタンのクリック処理を妨げないようにする
     clearSearch();
     applyFilters("", true, true);
   });
