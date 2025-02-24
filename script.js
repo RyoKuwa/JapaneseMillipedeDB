@@ -1213,6 +1213,10 @@ const setupEventListeners = () => {
 const setupSearchListeners = () => {
   document.getElementById("search-button").addEventListener("mousedown", (event) => {
     event.preventDefault(); // ボタンのクリック処理を妨げないようにする
+
+    // スマホでキーボードを閉じるために検索窓のフォーカスを外す
+    document.getElementById("search-all").blur();
+
     useSearch = true;
     const searchValue = getSearchValue();
     clearDropdowns();
@@ -1221,6 +1225,10 @@ const setupSearchListeners = () => {
 
   document.getElementById("clear-search-button").addEventListener("mousedown", (event) => {
     event.preventDefault(); // ボタンのクリック処理を妨げないようにする
+
+    // スマホでキーボードを閉じるために検索窓のフォーカスを外す
+    document.getElementById("search-all").blur();
+
     clearSearch();
     applyFilters("", true, true);
   });
