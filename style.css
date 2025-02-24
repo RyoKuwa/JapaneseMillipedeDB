@@ -27,7 +27,7 @@ header h1 {
   position: relative; /* 地図を基準とする */
   top: 0;
   bottom: 0;
-  width: 90%;
+  width: 85%;
   height: 680px;
   z-index: 0;
   margin: 0 auto; /* ページ中央揃え */
@@ -381,7 +381,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   display: none; /* 初期状態で非表示 */
   position: relative;
   width: 100%; /* 横幅を少し狭める */
-  max-width: 90%; /* 最大幅を調整 */
+  max-width: 85%; /* 最大幅を調整 */
   margin: 0 auto; /* 中央寄せ */
   padding: 10px;
   box-sizing: border-box; /* パディング含む幅計算 */
@@ -468,7 +468,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 #selected-labels {
-  width: calc(90% - 20px); /* 地図の幅に合わせつつ、paddingの影響を排除 */
+  width: calc(85% - 20px); /* 地図の幅に合わせつつ、paddingの影響を排除 */
   margin: 0 auto; /* 中央揃え */
   background: rgba(255, 255, 255, 0.9);
   padding: 8px 10px;
