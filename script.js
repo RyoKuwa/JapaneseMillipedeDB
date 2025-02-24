@@ -63,187 +63,6 @@ const initMap = () => {
   updateSelectedLabels(); // 選択ラベルを更新
 };
 
-// ==================== データロード関数 ====================
-// CSVファイルを読み込む関数
-const loadCSV = async (url, callback) => {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
-    const csvText = await response.text();
-    callback(csvText);
-  } catch (error) {
-    console.error(`${url}の読み込みエラー:`, error);
-  }
-};
-
-// 文献データを読み込む関数
-const loadLiteratureCSV = async () => {
-  try {
-      const response = await fetch("Literature.csv");
-      if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
-      const csvText = await response.text();
-
-      // グローバルスコープの literatureArray を初期化
-      literatureArray = [];
-
-      const lines = csvText.split("\n").filter(line => line.trim());
-
-      // データ解析
-      lines.forEach((line, index) => {
-          if (index === 0) return; // ヘッダーをスキップ
-
-          const columns = [];
-          let current = "";
-          let inQuotes = false;
-
-          for (let char of line) {
-              if (char === '"' && !inQuotes) {
-                  inQuotes = true; 
-              } else if (char === '"' && inQuotes) {
-                  inQuotes = false;
-              } else if (char === "," && !inQuotes) {
-                  columns.push(current.trim());
-                  current = "";
-              } else {
-                  current += char;
-              }
-          }
-
-          if (current) {
-              columns.push(current.trim());
-          }
-
-          const [order, id, litList, link] = columns;
-
-          if (id && litList) {
-              literatureArray.push({ 
-                  id, 
-                  label: litList.trim(), 
-                  link: link ? link.trim() : null, // LINKがあれば格納
-                  order: parseInt(order, 10) || index 
-              });
-          }
-      });
-  } catch (error) {
-      console.error("Literature.csv の読み込みエラー:", error);
-  }
-};
-
-// TaxonName.csv を読み込む
-const loadTaxonNameCSV = () => {
-  loadCSV("TaxonName.csv", (csvText) => {
-    const lines = csvText.split("\n").filter(line => line.trim());
-
-    lines.forEach((line, index) => {
-      if (index === 0) return; // ヘッダーをスキップ
-
-      // カンマを含むデータを適切に処理するため、CSVを正しくパース
-      const columns = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g).map(col => col.replace(/^"|"$/g, '').trim());
-
-      if (columns.length < 3) return; // データが足りない場合はスキップ
-
-      const [japaneseName, scientificName, ...authorYearParts] = columns;
-      let authorYear = authorYearParts.join(", "); // カンマを含む `authorYear` を復元
-
-      // 最後のカンマを削除（念のため前後の余分な空白も除去）
-      authorYear = authorYear.replace(/,\s*$/, "").trim();
-
-      taxonMap[scientificName] = {
-        japaneseName: japaneseName || "-",
-        authorYear: authorYear || "-" // 著者と年がない場合は "-"
-      };
-    });
-  });
-};
-
-// Prefecture.csv と Island.csv を読み込む
-const loadOrderCSV = (fileName, arrayStorage) => {
-  loadCSV(fileName, (csvText) => {
-    const lines = csvText.split("\n").filter(line => line.trim());
-    lines.forEach((line, index) => {
-      if (index === 0) return; // ヘッダーをスキップ
-      arrayStorage.push(line.trim());
-    });
-  });
-};
-
-const parseCSV = (text) => {
-  const lines = text.split("\n").filter(line => line.trim());
-  let headers = lines[0].split(",").map(header => header.replace(/\r/g, "").trim()); // \r を削除
-
-  const data = [];
-
-  lines.slice(1).forEach((line, index) => {
-    const values = [];
-    let current = "";
-    let inQuotes = false;
-
-    for (let char of line) {
-      if (char === '"' && !inQuotes) {
-        inQuotes = true;
-      } else if (char === '"' && inQuotes) {
-        inQuotes = false;
-      } else if (char === "," && !inQuotes) {
-        values.push(current.trim());
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    values.push(current.trim());
-
-    while (values.length < headers.length) {
-      values.push("-"); // 足りないデータは"-"で補完
-    }
-
-    const record = {};
-    headers.forEach((header, idx) => {
-      record[header] = values[idx] || "-";
-    });
-
-    data.push(record);
-  });
-
-  return data;
-};
-
-// CSV読み込み関数の修正
-const loadDistributionCSV = async () => {
-  try {
-    const response = await fetch("DistributionRecord_web.csv");
-    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
-    const csvText = await response.text();
-
-    const parsedData = parseCSV(csvText);
-    rows = parsedData.map(record => ({
-      recordType: record["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] || "-",
-      japaneseName: record["和名"] || "-",
-      scientificName: record["学名"] || "-",
-      latitude: parseFloat(record["Latitude_assumed"]) || null,
-      longitude: parseFloat(record["Longitude_assumed"]) || null,
-      date: record["日付"] || "-",
-      prefecture: record["都道府県_jp"] || "-",
-      island: record["島_jp"] || "-",
-      genus: record["Genus"] || "-",
-      family: record["Family"] || "-",
-      order: record["Order"] || "-",
-      literatureID: record["文献ID"] || "-",
-      page: record["掲載ページ"] || "-",
-      original: record["オリジナル"] || "-",
-      originalJapaneseName: record["文献中の和名"] || "-",
-      originalScientificName: record["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"] || "-",
-      location: record["場所（原文ママ）"] || "-",
-      note: record["メモ"] || "-",
-      registrant: record["記入者"] || "-",
-      registrationDate: record["記入日付"] || "-"
-    }));
-
-    updateFilters(rows, getFilterStates().filters);
-  } catch (error) {
-    console.error("CSV の読み込みエラー:", error);
-  }
-};
-
 // ==================== フィルタリング関数 ====================
 // フィルタの選択状態を取得
 const getFilterStates = () => {
@@ -1197,6 +1016,188 @@ const initializeMap = async () => {
 
   // 初期フィルタリング実行
   applyFilters("", true, false);
+};
+
+// ==================== データロード関数 ====================
+// CSVファイルを読み込む関数
+const loadCSV = async (url, callback) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
+    const csvText = await response.text();
+    callback(csvText);
+  } catch (error) {
+    console.error(`${url}の読み込みエラー:`, error);
+  }
+};
+
+// 文献データを読み込む関数
+const loadLiteratureCSV = async () => {
+  try {
+      const response = await fetch("Literature.csv");
+      if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
+      const csvText = await response.text();
+
+      // グローバルスコープの literatureArray を初期化
+      literatureArray = [];
+
+      const lines = csvText.split("\n").filter(line => line.trim());
+
+      // データ解析
+      lines.forEach((line, index) => {
+          if (index === 0) return; // ヘッダーをスキップ
+
+          const columns = [];
+          let current = "";
+          let inQuotes = false;
+
+          for (let char of line) {
+              if (char === '"' && !inQuotes) {
+                  inQuotes = true; 
+              } else if (char === '"' && inQuotes) {
+                  inQuotes = false;
+              } else if (char === "," && !inQuotes) {
+                  columns.push(current.trim());
+                  current = "";
+              } else {
+                  current += char;
+              }
+          }
+
+          if (current) {
+              columns.push(current.trim());
+          }
+
+          const [order, id, litList, link] = columns;
+
+          if (id && litList) {
+              literatureArray.push({ 
+                  id, 
+                  label: litList.trim(), 
+                  link: link ? link.trim() : null, // LINKがあれば格納
+                  order: parseInt(order, 10) || index 
+              });
+          }
+      });
+  } catch (error) {
+      console.error("Literature.csv の読み込みエラー:", error);
+  }
+};
+
+// TaxonName.csv を読み込む
+const loadTaxonNameCSV = () => {
+  loadCSV("TaxonName.csv", (csvText) => {
+    const lines = csvText.split("\n").filter(line => line.trim());
+
+    lines.forEach((line, index) => {
+      if (index === 0) return; // ヘッダーをスキップ
+
+      // カンマを含むデータを適切に処理するため、CSVを正しくパース
+      const columns = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g).map(col => col.replace(/^"|"$/g, '').trim());
+
+      if (columns.length < 3) return; // データが足りない場合はスキップ
+
+      const [japaneseName, scientificName, ...authorYearParts] = columns;
+      let authorYear = authorYearParts.join(", "); // カンマを含む `authorYear` を復元
+
+      // 最後のカンマを削除（念のため前後の余分な空白も除去）
+      authorYear = authorYear.replace(/,\s*$/, "").trim();
+
+      taxonMap[scientificName] = {
+        japaneseName: japaneseName || "-",
+        authorYear: authorYear || "-" // 著者と年がない場合は "-"
+      };
+    });
+  });
+};
+
+// Prefecture.csv と Island.csv を読み込む
+const loadOrderCSV = (fileName, arrayStorage) => {
+  loadCSV(fileName, (csvText) => {
+    const lines = csvText.split("\n").filter(line => line.trim());
+    lines.forEach((line, index) => {
+      if (index === 0) return; // ヘッダーをスキップ
+      arrayStorage.push(line.trim());
+    });
+  });
+};
+
+// csvのパース処理
+const parseCSV = (text) => {
+  const lines = text.split("\n").filter(line => line.trim());
+  let headers = lines[0].split(",").map(header => header.replace(/\r/g, "").trim()); // \r を削除
+
+  const data = [];
+
+  lines.slice(1).forEach((line, index) => {
+    const values = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let char of line) {
+      if (char === '"' && !inQuotes) {
+        inQuotes = true;
+      } else if (char === '"' && inQuotes) {
+        inQuotes = false;
+      } else if (char === "," && !inQuotes) {
+        values.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim());
+
+    while (values.length < headers.length) {
+      values.push("-"); // 足りないデータは"-"で補完
+    }
+
+    const record = {};
+    headers.forEach((header, idx) => {
+      record[header] = values[idx] || "-";
+    });
+
+    data.push(record);
+  });
+
+  return data;
+};
+
+// CSV読み込み関数の修正
+const loadDistributionCSV = async () => {
+  try {
+    const response = await fetch("DistributionRecord_web.csv");
+    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
+    const csvText = await response.text();
+
+    const parsedData = parseCSV(csvText);
+    rows = parsedData.map(record => ({
+      recordType: record["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] || "-",
+      japaneseName: record["和名"] || "-",
+      scientificName: record["学名"] || "-",
+      latitude: parseFloat(record["Latitude_assumed"]) || null,
+      longitude: parseFloat(record["Longitude_assumed"]) || null,
+      date: record["日付"] || "-",
+      prefecture: record["都道府県_jp"] || "-",
+      island: record["島_jp"] || "-",
+      genus: record["Genus"] || "-",
+      family: record["Family"] || "-",
+      order: record["Order"] || "-",
+      literatureID: record["文献ID"] || "-",
+      page: record["掲載ページ"] || "-",
+      original: record["オリジナル"] || "-",
+      originalJapaneseName: record["文献中の和名"] || "-",
+      originalScientificName: record["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"] || "-",
+      location: record["場所（原文ママ）"] || "-",
+      note: record["メモ"] || "-",
+      registrant: record["記入者"] || "-",
+      registrationDate: record["記入日付"] || "-"
+    }));
+
+    updateFilters(rows, getFilterStates().filters);
+  } catch (error) {
+    console.error("CSV の読み込みエラー:", error);
+  }
 };
 
 // ==================== イベントリスナー設定 ====================
