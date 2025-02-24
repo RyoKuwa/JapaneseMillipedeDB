@@ -12,6 +12,7 @@ header {
   margin-top: 20px; /* 上部の余白 */
   padding: 20px;
   width: 100%; /* 幅を100%に設定 */
+  box-sizing: border-box;
 }
 
 /* タイトルのフォントサイズを調整 */
@@ -27,8 +28,6 @@ header h1 {
   top: 0;
   bottom: 0;
   width: 90%;
-  max-width: 90vw; /* ビューポート幅の90%に制限 */
-  margin-right: 5vw; /* 右に余白を追加 */
   height: 680px;
   z-index: 0;
   margin: 0 auto; /* ページ中央揃え */
@@ -483,15 +482,19 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 @media (max-width: 711px) {
+  
+  #selected-labels{
+    margin-left: 0;
+  }
   .search-container {
-    margin: 0 auto;
+    margin-left: 0;
     left: 0;
     top: 0;
     box-shadow: none;
   }
 
   .legend {
-    margin: 0 auto;
+    margin-left: 0;
     left: 0;
     top: 0;
     box-shadow: none;
@@ -506,5 +509,11 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
   #mapid {
     height: 400px;
+    margin-left: 0;
+  }
+
+  /* タイトルのフォントサイズを調整 */
+  header h1 {
+    font-size: 1.2em; /* 文字サイズを調整 */
   }
 }
