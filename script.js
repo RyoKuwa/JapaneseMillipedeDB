@@ -167,80 +167,42 @@ const loadOrderCSV = (fileName, arrayStorage) => {
   });
 };
 
-const parseCSV = (text) => {
-  const lines = text.split("\n").filter(line => line.trim());
-  let headers = lines[0].split(",").map(header => header.replace(/\r/g, "").trim()); // \r を削除
+// GeoJSON を読み込む
+const loadGeoJSON = async () => {
+  try {
+    const response = await fetch("DistributionRecord_web.geojson");
+    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
+    const geojson = await response.json();
 
-  const data = [];
-
-  lines.slice(1).forEach((line, index) => {
-    const values = [];
-    let current = "";
-    let inQuotes = false;
-
-    for (let char of line) {
-      if (char === '"' && !inQuotes) {
-        inQuotes = true;
-      } else if (char === '"' && inQuotes) {
-        inQuotes = false;
-      } else if (char === "," && !inQuotes) {
-        values.push(current.trim());
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    values.push(current.trim());
-
-    while (values.length < headers.length) {
-      values.push("-"); // 足りないデータは"-"で補完
-    }
-
-    const record = {};
-    headers.forEach((header, idx) => {
-      record[header] = values[idx] || "-";
+    rows = geojson.features.map(feature => {
+      const props = feature.properties;
+      return {
+        recordType: typeof props["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] === "string" ? props["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"].trim() : "-",
+        japaneseName: typeof props["和名"] === "string" ? props["和名"].trim() : "-",
+        scientificName: typeof props["学名"] === "string" ? props["学名"].trim() : "-",
+        latitude: props["Latitude_assumed"] || null,
+        longitude: props["Longitude_assumed"] || null,
+        date: typeof props["日付"] === "string" ? props["日付"].trim() : "-",
+        prefecture: typeof props["都道府県_jp"] === "string" ? props["都道府県_jp"].trim() : "-",
+        island: typeof props["島_jp"] === "string" ? props["島_jp"].trim() : "-",
+        genus: typeof props["Genus"] === "string" ? props["Genus"].trim() : "-",
+        family: typeof props["Family"] === "string" ? props["Family"].trim() : "-",
+        order: typeof props["Order"] === "string" ? props["Order"].trim() : "-",
+        literatureID: typeof props["文献ID"] === "string" ? props["文献ID"].trim() : "-",
+        page: typeof props["掲載ページ"] === "string" ? props["掲載ページ"].trim() : "-",
+        original: typeof props["オリジナル"] === "string" ? props["オリジナル"].trim() : "-",
+        originalJapaneseName: typeof props["文献中の和名"] === "string" ? props["文献中の和名"].trim() : "-",
+        originalScientificName: typeof props["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"] === "string" ? props["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"].trim() : "-",
+        location: typeof props["場所（原文ママ）"] === "string" ? props["場所（原文ママ）"].trim() : "-",
+        note: typeof props["メモ"] === "string" ? props["メモ"].trim() : "-",
+        registrant: typeof props["記入者"] === "string" ? props["記入者"].trim() : "-",
+        registrationDate: typeof props["記入日付"] === "string" ? props["記入日付"].trim() : "-"
+      };
     });
 
-    data.push(record);
-  });
-
-  return data;
-};
-
-// CSV読み込み関数の修正
-const loadDistributionCSV = async () => {
-  try {
-    const response = await fetch("DistributionRecord_web.csv");
-    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
-    const csvText = await response.text();
-
-    const parsedData = parseCSV(csvText);
-    rows = parsedData.map(record => ({
-      recordType: record["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] || "-",
-      japaneseName: record["和名"] || "-",
-      scientificName: record["学名"] || "-",
-      latitude: parseFloat(record["Latitude_assumed"]) || null,
-      longitude: parseFloat(record["Longitude_assumed"]) || null,
-      date: record["日付"] || "-",
-      prefecture: record["都道府県_jp"] || "-",
-      island: record["島_jp"] || "-",
-      genus: record["Genus"] || "-",
-      family: record["Family"] || "-",
-      order: record["Order"] || "-",
-      literatureID: record["文献ID"] || "-",
-      page: record["掲載ページ"] || "-",
-      original: record["オリジナル"] || "-",
-      originalJapaneseName: record["文献中の和名"] || "-",
-      originalScientificName: record["文献中で有効とされる学名_文献紹介など、その文献中で有効とされる学名がわからない場合はハイフンを記入してください。"] || "-",
-      location: record["場所（原文ママ）"] || "-",
-      note: record["メモ"] || "-",
-      registrant: record["記入者"] || "-",
-      registrationDate: record["記入日付"] || "-"
-    }));
-
-    updateFilters(rows, getFilterStates().filters);
+    updateFilters(rows, getFilterStates().filters); // 初期フィルタを適用
   } catch (error) {
-    console.error("CSV の読み込みエラー:", error);
+    console.error("GeoJSONの読み込みエラー:", error);
   }
 };
 
@@ -1183,7 +1145,7 @@ const initializeMap = async () => {
   loadOrderCSV("Prefecture.csv", prefectureOrder);
   loadOrderCSV("Island.csv", islandOrder);
   await loadLiteratureCSV();
-  await loadDistributionCSV();
+  await loadGeoJSON();
 
   // 初期データの記録数と地点数を表示
   updateRecordInfo(rows.length, new Set(rows.map(row => `${row.latitude},${row.longitude}`)).size);
@@ -1211,24 +1173,14 @@ const setupEventListeners = () => {
 
 // 検索ボタンとクリアボタンのイベントを設定
 const setupSearchListeners = () => {
-  document.getElementById("search-button").addEventListener("mousedown", (event) => {
-    event.preventDefault(); // ボタンのクリック処理を妨げないようにする
-
-    // スマホでキーボードを閉じるために検索窓のフォーカスを外す
-    document.getElementById("search-all").blur();
-
+  document.getElementById("search-button").addEventListener("click", () => {
     useSearch = true;
     const searchValue = getSearchValue();
     clearDropdowns();
     applyFilters(searchValue, true, true);
   });
 
-  document.getElementById("clear-search-button").addEventListener("mousedown", (event) => {
-    event.preventDefault(); // ボタンのクリック処理を妨げないようにする
-
-    // スマホでキーボードを閉じるために検索窓のフォーカスを外す
-    document.getElementById("search-all").blur();
-
+  document.getElementById("clear-search-button").addEventListener("click", () => {
     clearSearch();
     applyFilters("", true, true);
   });
