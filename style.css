@@ -179,15 +179,38 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 /* Legend ヘッダー部分のスタイル */
 .legend-header {
-  display: flex;
-  align-items: center; /* 縦方向の中央揃え */
+  display: grid;
+  grid-template-columns: 20px 30px auto; /* [チェックボックス] [スペース] [タイトル] */
+  align-items: center;
   font-weight: bold;
   padding-bottom: 5px;
-  gap: 8px; /* ボタンとテキストの間に適度な余白 */
+  position: relative; /* トグルボタンの配置を調整 */
+}
+
+/* ダミーのマーカー用スペースを確保 */
+.legend-header::before {
+  content: "";
+  width: 30px; /* マーカーのサイズと同じ幅 */
+  height: 1px; /* 実際には見えない要素 */
+  grid-column: 2; /* 2列目に配置 */
+}
+
+.legend-header input[type="checkbox"] {
+  grid-column: 1; /* 1列目（他のチェックボックスと統一） */
+}
+
+/* 「マーカーの種類」のタイトルをテキスト列に移動 */
+.legend-header span {
+  grid-column: 3; /* 2列目に配置（チェックボックスの横） */
+  text-align: left;
+  padding-left: 20px; /* テキストとチェックボックスの間隔調整 */
 }
 
 /* トグルボタンのスタイル */
 .legend-toggle-button {
+  position: absolute;
+  right: 0px;
+  top: 0px;
   background: none;
   border: none;
   font-size: 16px;
@@ -209,30 +232,25 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   content: "▼"; /* 開いているときは「▼」 */
 }
 
+/* Legend アイテムのレイアウト */
 .legend-item {
   display: grid;
-  grid-template-columns: 30px auto 20px; /* マーカー, テキスト, チェックボックス */
+  grid-template-columns: 20px 30px auto; /* [チェックボックス] [マーカー] [テキスト] */
   align-items: center;
-  column-gap: 10px; /* マーカーとテキストの間隔 */
-  margin-bottom: 5px;
+  column-gap: 10px;
 }
 
 .legend-item input[type="checkbox"] {
-  margin-left: auto;
+  margin-right: 5px; /* チェックボックスとマーカーの間隔 */
+  width: 13px;
+  height: 13px;
 }
 
-.legend-item span {
-  width: 20px;  /* マーカーの最大幅 */
-  min-width: 20px; /* 小さいマーカーでも固定 */
-  height: 20px;  /* マーカーの最大高さ */
+.legend-item .marker {
   display: flex;
-  align-items: center;
   justify-content: center;
-}
-
-#legend-master-checkbox {
-  margin-left: auto; /* 右上に配置 */
-  cursor: pointer;
+  align-items: center;
+  margin: auto; /* 上下左右の中央配置 */
 }
 
 /* テキスト部分（左揃え） */
@@ -241,9 +259,11 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   display: flex;
   align-items: center;
   white-space: nowrap; /* 長いテキストの折り返し防止 */
+  display: inline-block;
+  padding: 2px 5px;
 }
 
-.legend-item::after {
+.legend-item-text::after {
   content: attr(data-tooltip);
   position: absolute;
   bottom: 100%;
@@ -265,7 +285,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   z-index: 50; /* 地図より前面に表示 */
 }
 
-.legend-item:hover::after {
+.legend-item-text:hover::after {
   opacity: 1;
   visibility: visible;
 }
@@ -281,13 +301,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   pointer-events: none; /* ツールチップがクリックイベントを妨げないようにする */
   z-index: 50;
   display: none; /* 初期状態では非表示 */
-}
-
-/* マーカーのスタイル */
-.marker {
-  width: 20px;
-  height: 20px;
-  background-color: gray;
 }
 
 /* 星のマーカー（サイズを大きくする） */
@@ -316,7 +329,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: 3px solid black;
+  border: 3px solid darkred;
 }
 
 /* 四角形のマーカー */
