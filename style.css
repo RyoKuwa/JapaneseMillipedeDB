@@ -128,18 +128,10 @@ header h1 {
   border: 1px solid black;
   box-shadow: 1px 1px 5px black;
   z-index: 50;
-  max-width: 300px; /* ポップアップの最大幅を設定 */
-  overflow-wrap: break-word; /* 長い単語を折り返す */
+  width: 30vw;
   word-wrap: break-word; /* 長い単語を折り返す */
   word-break: break-word; /* 必要に応じて単語を途中で改行 */
   white-space: normal; /* 折り返しを有効にする */
-}
-
-/* ポップアップ内のリンクを折り返し表示するためのスタイル */
-.maplibregl-popup-content a.popup-link {
-  word-wrap: break-word;      /* 長いURLを折り返す */
-  white-space: normal;        /* 折り返しを有効にする */
-  word-break: break-all;      /* 必要に応じて単語を途中で改行 */
 }
 
 ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right {
@@ -160,15 +152,10 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 /* Legendの基本スタイル */
 .legend {
-  position: absolute;
-  bottom: 30px;
-  right: 10px;
   background-color: rgba(255, 255, 255, 1);
   padding: 10px;
-  width: 340px;
   font-size: 14px;
   border: 1px solid #ccc;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   z-index: 30;
   max-width: calc(100% - 20px);
   box-sizing: border-box;
@@ -308,7 +295,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   width: 20px;
   height: 20px;
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-  background-color: pink;
   border: none;
 }
 
@@ -320,7 +306,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     0% 12%, 12% 0%, 50% 38%, 88% 0%, 100% 12%, 62% 50%, 
     100% 88%, 88% 100%, 50% 62%, 12% 100%, 0% 88%, 38% 50%
   );
-  background-color: pink;
   border: none;
 }
 
@@ -337,7 +322,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   width: 10px;
   height: 10px;
   border-radius: 0;
-  background-color: gray;
   border: 3px solid black;
 }
 
@@ -391,7 +375,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 #literature-list {
-  display: none; /* 初期状態で非表示 */
   position: relative;
   width: 100%; /* 横幅を少し狭める */
   max-width: 85%; /* 最大幅を調整 */
@@ -494,8 +477,101 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   overflow-wrap: break-word;
 }
 
+/* タブ全体のコンテナ */
+.tab-container {
+  width: 85%;
+  margin: 0px auto;
+  background: #fff;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+/* タブの見出し部分 */
+.tab-header {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  border-bottom: 2px solid #ccc;
+}
+
+.tab-header li {
+  flex: 1;                    /* 均等に幅を割り当て */
+  text-align: center;         /* 見出しの文字を中央揃え */
+  padding: 10px;
+  cursor: pointer;
+  background-color: #f5f5f5;
+  border-right: 1px solid #ccc;
+  font-weight: bold;
+  user-select: none;          /* テキスト選択防止 (お好みで) */
+}
+
+.tab-header li:last-child {
+  border-right: none;         /* 最後のタブは右枠線を消す */
+}
+
+/* アクティブなタブの見た目 */
+.tab-header li.active {
+  background-color: #e1e1e1;
+}
+
+/* タブ切り替えコンテンツの共通スタイル */
+.tab-content {
+  display: none;  /* 非表示にしておき、active だけ表示 */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* アクティブなタブを表示 */
+.tab-content.active {
+  display: block;
+}
+
+#chart-container {
+  flex: 1;
+  max-width: 600px;
+  min-height: 200px;
+  max-height: 400px;
+  margin: 0 auto;      /* 中央寄せ（任意） */
+  position: relative;  /* Chart.jsが幅を自動調整できるように */
+}
+
+#chart-legend {
+  display: flex;
+  flex-direction: column; /* 縦に並べる */
+  gap: 10px;              /* 各ラベル間の余白 */
+  flex: none;             /* 幅を自動拡張しない */
+}
+
+#chart-wrapper {
+  display: flex;          /* 横並びにする */
+  gap: 20px;              /* グラフとチェックボックスの間隔 */
+  align-items: center;    /* 上下方向で中央揃え（任意） */
+}
+
+#month-chart {
+  width: 100%;   /* containerの幅に合わせる */
+}
+
 @media (max-width: 711px) {
-  
+  /* タイトル部分 */
+  header {
+    width: 80%;
+    left: 0;
+  }
+
+  /* タイトルのフォントサイズを調整 */
+  header h1 {
+    font-size: 1.2em; /* 文字サイズを調整 */
+  }
+
+  /* タブコンテナ */
+  .tab-container {
+    width: 85%;
+    margin-left: 0%;
+    margin-right: 0;
+  }
+
   #selected-labels{
     margin-left: 0;
   }
@@ -525,8 +601,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     margin-left: 0;
   }
 
-  /* タイトルのフォントサイズを調整 */
-  header h1 {
-    font-size: 1.2em; /* 文字サイズを調整 */
+  .maplibregl-popup-content {
+    width: 50vw;
   }
 }

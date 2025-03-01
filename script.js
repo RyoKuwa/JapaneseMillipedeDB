@@ -15,6 +15,8 @@ let currentPopupIndex = 0;
 let nearbyRecords = [];
 let activePopup = null;
 let filteredRows = []; // フィルタリングされたデータを格納
+// ==================== グラフ ====================
+let monthChart = null; // グラフ用の変数をグローバルスコープに用意
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   // 画面幅を取得し、デフォルトのズームレベルを決定
@@ -235,7 +237,11 @@ const loadDistributionCSV = async () => {
       location: record["場所（原文ママ）"] || "-",
       note: record["メモ"] || "-",
       registrant: record["記入者"] || "-",
-      registrationDate: record["記入日付"] || "-"
+      registrationDate: record["記入日付"] || "-",
+      adultPresence: record["成体の有無"] || "-",
+      collectorJp: record["採集者_jp"] || "-",
+      collectorEn: record["採集者_en"] || "-",
+      collectedMonth: record["採集月"] || "-"
     }));
 
     updateFilters(rows, getFilterStates().filters);
@@ -348,7 +354,7 @@ const filterByCheckbox = (data, checkboxes) => {
   return data.filter(row => {
     const isUnpublished = row.literatureID === "-" || row.literatureID === "";
     const isDubious = ["3_疑わしいタイプ産地", "4_疑わしい統合された種のタイプ産地", "7_疑わしい文献記録"].includes(row.recordType);
-    const isCitation = row.original === "-";
+    const isCitation = (row.original.toLowerCase() === "no"); 
 
     if (checkboxes.excludeUnpublished && isUnpublished) return false;
     if (checkboxes.excludeDubious && isDubious) return false;
@@ -372,16 +378,16 @@ const filterByCheckbox = (data, checkboxes) => {
 // セレクトボックスによるフィルタリング
 const applyFilters = async (searchValue = "", updateMap = true, useSearch = false) => {
   try {
-    // ① フィルタ状態の取得（選択ボックス + チェックボックス）
+    // フィルタ状態の取得（選択ボックス + チェックボックス）
     const { filters, checkboxes } = getFilterStates();
 
-    // ② 既存のポップアップを削除
+    // 既存のポップアップを削除
     if (activePopup) {
       activePopup.remove();
       activePopup = null;
     }
 
-    // ③ 選択されたフィルタに基づく基本的なデータ抽出
+    // 選択されたフィルタに基づく基本的なデータ抽出
     let filteredRows = rows.filter(row => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
 
@@ -396,26 +402,27 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
       );
     });
 
-    // ④ チェックボックスの状態に基づきデータをフィルタリング
+    // チェックボックスの状態に基づきデータをフィルタリング
     filteredRows = filterByCheckbox(filteredRows, checkboxes);
 
-    // ⑤ UI の更新
+    // UI の更新
     updateFilters(filteredRows, { ...filters, searchValue });
 
     updateSelectedLabels();
     
-    // ⑥ レコード数と地点数の更新
+    // レコード数と地点数の更新
     updateRecordInfo(
       filteredRows.length,
       new Set(filteredRows.map(row => `${row.latitude},${row.longitude}`)).size
     );
 
-    // ⑦ 文献リストの更新
+    // 文献リストの更新
     generateLiteratureList(filteredRows);
 
-    // ⑧ 地図のマーカーを更新
+    // 地図のマーカー，グラフを更新
     if (updateMap) {
       displayMarkers(filteredRows);
+      generateMonthlyChart(filteredRows);
     }
   } catch (error) {
     console.error("applyFilters中にエラーが発生:", error);
@@ -425,12 +432,11 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
 // 全フィルタリングを実行
 const updateFilters = (filteredData, filters) => {
   const searchValue = getSearchValue();
-  const excludeUnpublished = document.getElementById("exclude-unpublished").checked;
-  const excludeDubious = document.getElementById("exclude-dubious").checked;
-  const excludeCitation = document.getElementById("exclude-citation").checked;
+
+  const { filters: f, checkboxes } = getFilterStates();
 
   // チェックボックスによるフィルタリング
-  const checkboxFilteredData = filterByCheckbox(filteredData, excludeUnpublished, excludeDubious, excludeCitation);
+  const checkboxFilteredData = filterByCheckbox(filteredData, checkboxes);
 
   // 検索窓によるフィルタリング
   const searchResults = filterBySearch(checkboxFilteredData, searchValue);
@@ -716,6 +722,120 @@ const handleMarkerClick = (marker, record) => {
   showPopup(currentPopupIndex); // ポップアップを表示
 };
 
+//  ==================== グラフ ====================
+
+// 月別の出現期グラフを生成する関数
+function generateMonthlyChart(allRows) {
+  // 12ヶ月分の配列を0で初期化
+  const monthlyCountsAdult = new Array(12).fill(0);
+  const monthlyCountsJuvenile = new Array(12).fill(0);
+
+  // 全データを走査して「成体 or 幼体・不明」をカウント
+  allRows.forEach(row => {
+    // row.collectedMonth が 1～12なら月を取得
+    const month = parseInt(row.collectedMonth, 10);
+    if (month >= 1 && month <= 12) {
+      // 成体かどうかチェック: adultPresence が "yes" なら成体
+      const isAdult = (row.adultPresence && row.adultPresence.toLowerCase() === "yes");
+      if (isAdult) {
+        monthlyCountsAdult[month - 1]++;
+      } else {
+        monthlyCountsJuvenile[month - 1]++;
+      }
+    }
+  });
+
+  // すでにチャートが存在する場合は破棄（再生成用）
+  if (monthChart) {
+    monthChart.destroy();
+  }
+
+  // Chart.jsでグラフ描画
+  const ctx = document.getElementById('month-chart').getContext('2d');
+
+  monthChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["1","2","3","4","5","6","7","8","9","10","11","12"],
+      datasets: [
+        {
+          label: "成体",
+          data: monthlyCountsAdult,
+          backgroundColor: "rgba(255, 99, 132, 0.6)", // 赤系
+          borderColor: "rgba(255, 99, 132, 1)",
+          borderWidth: 1
+        },
+        {
+          label: "幼体・不明",
+          data: monthlyCountsJuvenile,
+          backgroundColor: "rgba(54, 162, 235, 0.6)", // 青系
+          borderColor: "rgba(54, 162, 235, 1)",
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          stacked: true,
+          title: {
+            display: true,
+            text: '月'
+          }
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: '記録数'
+          },
+          ticks: {
+            stepSize: 1 // ← 整数ステップを指定
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false // Chart.js 本来の凡例は非表示にしておき、チェックボックスで制御
+        },
+        title: {
+          display: true,
+          text: '出現期',
+          align: 'center',
+          font: { size: 16 },
+        }
+      }
+    }
+  });
+}
+
+// チェックボックスによる表示／非表示の切り替え
+function setupChartLegendToggles() {
+  const toggleAdult = document.getElementById("toggle-adult");
+  const toggleJuvenile = document.getElementById("toggle-juvenile");
+
+  // 成体をON/OFF
+  toggleAdult.addEventListener("change", () => {
+    if (monthChart) {
+      // datasets[0] を成体として想定
+      monthChart.data.datasets[0].hidden = !toggleAdult.checked;
+      monthChart.update();
+    }
+  });
+
+  // 幼体・不明をON/OFF
+  toggleJuvenile.addEventListener("change", () => {
+    if (monthChart) {
+      // datasets[1] を幼体・不明として想定
+      monthChart.data.datasets[1].hidden = !toggleJuvenile.checked;
+      monthChart.update();
+    }
+  });
+}
+
 // ==================== UI操作関数 ====================
 // 検索部分の開閉
 const searchContainer = document.getElementById('searchContainer');
@@ -870,6 +990,117 @@ const formatSpeciesName = (name) => {
 
   return `${japaneseName} / ${formattedScientificName}${authorYear}`;
 };
+
+// 疑わしい記録のチェックボックス間の連動
+function linkMasterAndDubiousCheckboxes() {
+  // ▼ レジェンド側チェックボックス
+  const masterCheckbox = document.getElementById("legend-master-checkbox");
+  const filterDoubtfulType = document.getElementById("filter-doubtful-type");
+  const filterDoubtfulIntegrated = document.getElementById("filter-doubtful-integrated-type");
+  const filterDoubtfulLiterature = document.getElementById("filter-doubtful-literature");
+
+  // ▼ サーチコンテナ側
+  const excludeDubious = document.getElementById("exclude-dubious");
+
+  // 存在チェック
+  if (!masterCheckbox || !filterDoubtfulType || !filterDoubtfulIntegrated || !filterDoubtfulLiterature || !excludeDubious) {
+    console.warn("疑わしいチェックボックス、マスター、exclude-dubious のいずれかが見つかりません。");
+    return;
+  }
+
+  // ------------------------------------------
+  // 1) 「疑わしい系」のチェック状態をまとめて判定する関数
+  // ------------------------------------------
+  function areAllDubiousOff() {
+    return (
+      !filterDoubtfulType.checked &&
+      !filterDoubtfulIntegrated.checked &&
+      !filterDoubtfulLiterature.checked
+    );
+  }
+
+  function areAnyDubiousOn() {
+    return (
+      filterDoubtfulType.checked ||
+      filterDoubtfulIntegrated.checked ||
+      filterDoubtfulLiterature.checked
+    );
+  }
+
+  // ------------------------------------------
+  // 2) excludeDubious が変わったときの動作
+  // ------------------------------------------
+  excludeDubious.addEventListener("change", () => {
+    if (excludeDubious.checked) {
+      // 「疑わしい系」はすべて OFF にする
+      filterDoubtfulType.checked = false;
+      filterDoubtfulIntegrated.checked = false;
+      filterDoubtfulLiterature.checked = false;
+    }
+    // 状況に応じて applyFilters を実行して地図等を更新
+    applyFilters();
+  });
+
+  // ------------------------------------------
+  // 3) 「疑わしい系」 3チェックボックスのいずれかが変わったら
+  // ------------------------------------------
+  const onDubiousCheckboxChange = () => {
+    if (areAnyDubiousOn()) {
+      // 1つでもONなら excludeDubiousをOFFに
+      excludeDubious.checked = false;
+    } else {
+      // 全部OFFになったら excludeDubiousをONに
+      excludeDubious.checked = true;
+    }
+    applyFilters();
+  };
+
+  filterDoubtfulType.addEventListener("change", onDubiousCheckboxChange);
+  filterDoubtfulIntegrated.addEventListener("change", onDubiousCheckboxChange);
+  filterDoubtfulLiterature.addEventListener("change", onDubiousCheckboxChange);
+
+  // ------------------------------------------
+  // 4) masterCheckbox が変わったとき
+  //    => 全チェックをON/OFF する基本処理を行った後、
+  //    => 「疑わしい系」の結果に応じて excludeDubious を同期する
+  // ------------------------------------------
+  masterCheckbox.addEventListener("change", () => {
+    const masterOn = masterCheckbox.checked;
+
+    // 全マーカー種別チェックを masterOn に合わせる例
+    // （疑わしい系だけでなく、他のフィルタ checkBox の場合も全チェックするなら以下を拡張）
+    const markerFilterCheckboxes = document.querySelectorAll(".marker-filter-checkbox");
+    markerFilterCheckboxes.forEach(cb => {
+      cb.checked = masterOn;
+    });
+
+    // 「疑わしい系」は上記ループでON/OFFされたので、最後に excludeDubious と同期
+    if (areAllDubiousOff()) {
+      // すべてOFF => excludeDubious = ON
+      excludeDubious.checked = true;
+    } else {
+      // 1つでもON => excludeDubious = OFF
+      excludeDubious.checked = false;
+    }
+
+    applyFilters();
+  });
+
+  // ------------------------------------------
+  // 5) 初期同期
+  // ------------------------------------------
+  // マスターがONなら、.marker-filter-checkboxを全てONにするか
+  // OFFなら全てOFFにするなど、既存の初期処理を行う場合はここでも実行可能
+  
+  // まず、疑わしい系がすべてOFFなら excludeDubious=ON, いずれかONなら excludeDubious=OFF
+  if (areAllDubiousOff()) {
+    excludeDubious.checked = true;
+  } else {
+    excludeDubious.checked = false;
+  }
+
+  // （必要に応じて applyFilters() を呼ぶ）
+}
 
 // ==================== マーカー操作 ====================
 // recordTypeに基づいてマーカーのスタイルを設定
@@ -1058,7 +1289,9 @@ const preparePopupContent = (filteredData) => {
         文献中の学名: ${row.originalScientificName || "不明"}<br>
         ページ: ${row.page || "不明"}<br>
         場所: ${row.location || "不明"}<br>
-        採集日: ${row.date || "不明"}<br><br>
+        採集日: ${row.date || "不明"}<br>
+        採集者: ${row.collectorJp || "不明"}<br>
+        collector: ${row.collectorEn || "不明"}<br><br>
         文献: ${literatureName} ${literatureLink ? `<a href="${literatureLink}" target="_blank">${literatureLink}</a>` : ""}<br><br>
         備考: ${row.note}<br>
         記入: ${row.registrant}, ${row.registrationDate}
@@ -1359,6 +1592,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     await initializeMap();
     setupEventListeners();
     adjustSearchContainerAndLegend();
+    setupChartLegendToggles();
+    linkMasterAndDubiousCheckboxes();
 
     // 全選択チェックボックスの処理
     const masterCheckbox = document.getElementById("legend-master-checkbox");
@@ -1375,6 +1610,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     allCheckboxes.forEach(checkbox => {
       checkbox.addEventListener("change", () => {
         masterCheckbox.checked = [...allCheckboxes].every(cb => cb.checked);
+      });
+    });
+
+    // ここからタブの処理
+    const tabHeaderItems = document.querySelectorAll(".tab-header li");
+    const tabContents = document.querySelectorAll(".tab-content");
+  
+    tabHeaderItems.forEach(item => {
+      item.addEventListener("click", () => {
+        // 1) すべてのタブ見出しとタブ内容から active を外す
+        tabHeaderItems.forEach(i => i.classList.remove("active"));
+        tabContents.forEach(c => c.classList.remove("active"));
+  
+        // 2) クリックしたタブを active にし、対応するコンテンツを表示
+        item.classList.add("active");
+        const targetTabId = item.getAttribute("data-tab");
+        const targetTabContent = document.getElementById(targetTabId);
+        targetTabContent.classList.add("active");
       });
     });
 

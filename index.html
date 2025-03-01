@@ -1,15 +1,26 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="faviconMilli.ico" type="image/x-icon">
-  <title>日本産ヤスデ類の分布</title>
-  <link href='https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.css' rel='stylesheet' />
-  <script src='https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.js'></script>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-</head>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="faviconMilli.ico" type="image/x-icon">
+    <title>日本産ヤスデ類の分布</title>
+  
+    <!-- MapLibre CSS -->
+    <link href="https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.css" rel="stylesheet" />
+  
+    <!-- MapLibre JS -->
+    <script src="https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.js"></script>
+  
+    <!-- ページ独自のCSS -->
+    <link rel="stylesheet" href="style.css">
+  
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
 <body>
   <header>
     <h1>日本産ヤスデ類の分布 (作成中)<br>Distribution of Japanese Millipedes (Uncompleted Version)</h1>
@@ -80,10 +91,10 @@
           <input type="checkbox" id="exclude-unpublished"> 未公表データを除外
         </label>
         <label>
-          <input type="checkbox" id="exclude-dubious"> 疑わしい記録を除外
+          <input type="checkbox" id="exclude-dubious" checked> 疑わしい記録を除外
         </label>
         <label>
-          <input type="checkbox" id="exclude-citation"> 引用記録を除外
+          <input type="checkbox" id="exclude-citation" checked> 引用記録を除外
         </label>
       </div>
       <p>レコード数: <span id="record-count">0</span><br>地点数: <span id="location-count">0</span></p>
@@ -132,8 +143,57 @@
       </div>
     </div>
   </div>
-  <div id="literature-list">
-    <!-- 文献リストがここに動的に表示されます -->
+  <!-- タブ部分 -->
+  <div class="tab-container">
+    <!-- タブの見出し -->
+    <ul class="tab-header">
+      <li class="active" data-tab="tab-data">データ Data</li>
+      <li data-tab="tab-species">種 Species</li>
+      <li data-tab="tab-prefecture">都道府県 Prefecture</li>
+      <li data-tab="tab-island">島 Island</li>
+      <li data-tab="tab-reference">引用文献 Reference</li>
+    </ul>
+  
+    <!-- タブの内容 -->
+    <div id="tab-data" class="tab-content active">
+      <!-- 出現期 -->
+      <div id="chart-wrapper">
+        <!-- グラフを表示するキャンバス -->
+        <div id="chart-container">
+          <canvas id="month-chart"></canvas>
+        </div>
+    
+        <!-- 右側に縦並びのチェックボックス -->
+        <div id="chart-legend">
+          <label>
+            <input type="checkbox" id="toggle-adult" checked>
+            成体
+          </label>
+          <label>
+            <input type="checkbox" id="toggle-juvenile" checked>
+            幼体・不明
+          </label>
+        </div>
+      </div>
+    </div>
+  
+    <div id="tab-species" class="tab-content">
+      <p>ここに種ごとのデータやグラフを表示する予定です。</p>
+    </div>
+  
+    <div id="tab-prefecture" class="tab-content">
+      <p>ここに都道府県ごとのデータやグラフを表示する予定です。</p>
+    </div>
+  
+    <div id="tab-island" class="tab-content">
+      <p>ここに島ごとのデータやグラフを表示する予定です。</p>
+    </div>
+  
+    <div id="tab-reference" class="tab-content">
+      <div id="literature-list">
+        <!-- 文献リストがここに動的に表示される -->
+      </div>
+    </div>
   </div>
   <script src="script.js"></script>
 </body>
