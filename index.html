@@ -96,6 +96,12 @@
         <label>
           <input type="checkbox" id="exclude-citation" checked> 引用記録を除外
         </label>
+        <label>
+          <input type="checkbox" id="exclude-undescribed"> 未記載種を除外
+        </label>
+        <label>
+          <input type="checkbox" id="exclude-unspecies"> 種同定されていない記録を除外
+        </label>
       </div>
       <p>レコード数: <span id="record-count">0</span><br>地点数: <span id="location-count">0</span></p>
       <div id="toggle-button" class="toggle-button">&#9650;</div> <!-- 上向き三角形 -->
@@ -117,12 +123,12 @@
         <span class="legend-item-text" data-tooltip="統合された種のタイプ産地：現在、有効とは見なされていないものの、過去には別種として扱われていた種のタイプ産地です。">統合された種のタイプ産地</span>
       </div>
       <div class="legend-item">
-        <input type="checkbox" id="filter-doubtful-type" class="marker-filter-checkbox" checked>
+        <input type="checkbox" id="filter-doubtful-type" class="marker-filter-checkbox">
         <span class="marker marker-star pink"></span>
         <span class="legend-item-text" data-tooltip="疑わしいタイプ産地：タイプ産地とされたものの、実際には誤りの可能性が高いと考えられる産地です。">疑わしいタイプ産地</span>
       </div>
       <div class="legend-item">
-        <input type="checkbox" id="filter-doubtful-integrated-type" class="marker-filter-checkbox" checked>
+        <input type="checkbox" id="filter-doubtful-integrated-type" class="marker-filter-checkbox">
         <span class="marker marker-square pink"></span>
         <span class="legend-item-text" data-tooltip="統合された種の疑わしいタイプ産地：現在、有効とは見なされていないものの、過去には別の種として扱われていた種の、疑わしいタイプ産地です。">統合された種の疑わしいタイプ産地</span>
       </div>
@@ -137,7 +143,7 @@
         <span class="legend-item-text" data-tooltip="文献記録：標本記録を除く、文献に掲載された記録です。証拠が十分ではない記録も含まれており、一部の記録は将来、疑わしい記録に変わる可能性があります。">文献記録</span>
       </div>
       <div class="legend-item">
-        <input type="checkbox" id="filter-doubtful-literature" class="marker-filter-checkbox" checked>
+        <input type="checkbox" id="filter-doubtful-literature" class="marker-filter-checkbox">
         <span class="marker marker-cross pink"></span>
         <span class="legend-item-text" data-tooltip="疑わしい記録：標本の再確認により、誤同定が明らかになった記録や、疑わしい記録が含まれます。分布する可能性がある記録でも、同定の精度が高くない著者による、十分な証拠が示されていない記録は、疑わしい記録として扱っていることがあります。">疑わしい記録</span>
       </div>
@@ -162,7 +168,6 @@
         <div id="chart-container">
           <canvas id="month-chart"></canvas>
         </div>
-    
         <!-- 右側に縦並びのチェックボックス -->
         <div id="chart-legend">
           <label>
@@ -174,6 +179,11 @@
             幼体・不明
           </label>
         </div>
+      </div>
+
+      <!-- 各都道府県の記録数 -->
+      <div id="prefecture-chart-wrapper" class="chart-container-scroll">
+        <canvas id="prefecture-chart"></canvas>
       </div>
     </div>
   

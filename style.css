@@ -46,7 +46,7 @@ header h1 {
   flex-direction: column; /* 子要素を縦並びに配置 */
   gap: 10px;         /* 各セクション間の間隔を調整 */
   transition: max-height 0.3s ease-out; /* アニメーション */
-  max-height: 550px; /* 初期の最大高さ */
+  max-height: 600px; /* 初期の最大高さ */
   overflow: hidden;
 }
 
@@ -532,7 +532,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   max-width: 600px;
   min-height: 200px;
   max-height: 400px;
-  margin: 0 auto;      /* 中央寄せ（任意） */
   position: relative;  /* Chart.jsが幅を自動調整できるように */
 }
 
@@ -545,12 +544,29 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 #chart-wrapper {
   display: flex;          /* 横並びにする */
-  gap: 20px;              /* グラフとチェックボックスの間隔 */
+  gap: 10px;              /* グラフとチェックボックスの間隔 */
   align-items: center;    /* 上下方向で中央揃え（任意） */
 }
 
 #month-chart {
   width: 100%;   /* containerの幅に合わせる */
+}
+
+/* 都道府県グラフを包むラッパに対するスクロール指定 */
+.chart-container-scroll {
+  width: 100%;              /* 親要素いっぱいに広げる */
+  max-height: 920px;        /* 必要に応じて高さを拡大 (例: 600px) */
+  overflow-x: auto;         /* 横スクロールを許可 */
+  overflow-y: hidden;       /* 縦スクロールは要らなければ隠す */
+  margin: 20px 0;           /* 上下余白 (お好みで) */
+  border: 1px solid #ccc;   /* 視覚的に領域がわかりやすいように (任意) */
+  box-sizing: border-box;
+}
+
+/* 実際のチャート(canvas) に最低幅と固定高さを与える */
+#prefecture-chart {
+  min-width: 1200px;  /* 多くの都道府県が並んでも横スクロールで見られるように */
+  height: 920px;      /* 高さを大きくする例 (お好みで値を変更) */
 }
 
 @media (max-width: 711px) {
