@@ -815,6 +815,7 @@ function generateMonthlyChart(allRows) {
       ]
     },
     options: {
+      animation: false,
       responsive: true,
       maintainAspectRatio: false,
       scales: {
@@ -1051,6 +1052,7 @@ function generatePrefectureChart(allRows) {
       datasets: datasets
     },
     options: {
+      animation: false,
       responsive: true,
       maintainAspectRatio: false,
       layout: {

@@ -605,7 +605,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {
-    width: 80%;
+    width: 100%;
     left: 0;
   }
 
@@ -616,7 +616,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
   /* タブコンテナ */
   .tab-container {
-    width: 85%;
+    width: 100%;
     margin-left: 0%;
     margin-right: 0;
   }
@@ -647,10 +647,14 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
   #mapid {
     height: 400px;
-    margin-left: 0;
+    width: 100%;
   }
 
   .maplibregl-popup-content {
     width: 50vw;
+  }
+
+  #selected-labels {
+    width: 100%;
   }
 }
