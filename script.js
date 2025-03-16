@@ -1149,7 +1149,7 @@ const updateSelectedLabels = () => {
   const newHeight = labelContainer.clientHeight; // clientHeight に変更
   const heightDifference = newHeight - previousHeight;
 
-  if (heightDifference !== 0) {
+  if (window.innerWidth > 711 && heightDifference !== 0) {
     window.scrollTo({
       top: window.scrollY + heightDifference,
       behavior: "instant"
@@ -1775,44 +1775,62 @@ const adjustSearchContainerAndLegend = () => {
   if (preventResize) return;
 
   const searchContainer = document.querySelector(".search-container");
-  const mapContainer = document.getElementById("mapid");
+  const mapContainer = document.getElementById("mapid");        // <div id="mapid"> 地図本体
   const legend = document.querySelector(".legend");
   const selectedLabels = document.getElementById("selected-labels");
 
+  // ① 画面幅 <= 711 の場合
   if (window.innerWidth <= 711) {
+    // ---------------------------------------------------------
+    // searchContainer -> selectedLabels -> mapid の順に配置する
+    // ---------------------------------------------------------
+
+    // 1) #mapid の親要素を取得
+    const parent = mapContainer.parentNode;
+
+    // 2) searchContainer を mapid の“直前”に挿入
+    //    => これで DOM 順序が [searchContainer, mapid]
+    parent.insertBefore(searchContainer, mapContainer);
+
+    // 3) selectedLabels を searchContainer の“直後”に挿入
+    //    => これで DOM 順序が [searchContainer, selectedLabels, mapid]
+    searchContainer.insertAdjacentElement("afterend", selectedLabels);
+
+    // ▼ 検索コンテナ( searchContainer )の幅計算等をお好みで
     const paddingValue = parseInt(window.getComputedStyle(searchContainer).paddingLeft, 10) || 0;
     searchContainer.style.position = "relative";
     searchContainer.style.width = `${mapContainer.offsetWidth - (paddingValue * 2)}px`;
-    selectedLabels?.insertAdjacentElement("afterend", searchContainer);
 
-    // トグルボタンの位置を調整
+    // ▼ トグルボタンの位置調整 (任意)
     const toggleButton = document.getElementById("toggle-button");
     toggleButton.style.right = "10px";
     toggleButton.style.top = "10px";
-    toggleButton.style.bottom = "auto"; // 右下の設定を解除
+    toggleButton.style.bottom = "auto";
 
-    // legend を mapid の下に配置し、幅を mapid に合わせる
+    // ▼ legend を #mapid の後ろへ移動 (元のコードに合わせて)
     if (legend.parentNode !== mapContainer.parentNode) {
-      mapContainer.insertAdjacentElement("afterend", legend); // すでに移動済みでなければ移動
+      mapContainer.insertAdjacentElement("afterend", legend);
     }
     legend.style.position = "relative";
     legend.style.width = `${mapContainer.offsetWidth}px`;
-    legend.style.bottom = "auto";  // 元の設定を解除
-    legend.style.right = "auto";   // 元の設定を解除
+    legend.style.bottom = "auto";
+    legend.style.right = "auto";
+
+  // ② 画面幅 > 711 の場合 (従来のレイアウト)
   } else {
     searchContainer.style.position = "absolute";
     searchContainer.style.width = "auto";
-    mapContainer.appendChild(searchContainer);
+    mapContainer.appendChild(searchContainer); // デフォルトで mapid 内に戻す
 
-    // トグルボタンを元の位置に戻す
+    // トグルボタン元位置
     const toggleButton = document.getElementById("toggle-button");
     toggleButton.style.right = "10px";
     toggleButton.style.bottom = "10px";
     toggleButton.style.top = "auto";
 
-    // legend の位置と幅をデフォルトに戻す
+    // legend もデフォルト位置に戻す
     if (legend.parentNode !== mapContainer) {
-      mapContainer.appendChild(legend); // すでに移動済みでなければ戻す
+      mapContainer.appendChild(legend);
     }
     legend.style.position = "absolute";
     legend.style.width = "340px";
