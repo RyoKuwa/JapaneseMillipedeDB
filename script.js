@@ -65,6 +65,17 @@ const initMap = () => {
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   // 地図にスケールを追加
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
+
+  // ---- ここから二本指操作に関する設定 ----
+  // 1) 1本指ドラッグを無効にし、2本指ドラッグのみ有効にする
+  map.dragPan.disable();
+  map.dragPan.enable({ twoFingerPan: true });
+
+  // 2) ピンチ回転を無効化し、二本指ピンチズームだけを許可
+  map.touchZoomRotate.disableRotation();
+  map.touchZoomRotate.enable({ around: 'center' });
+  // ---- ここまで二本指操作に関する設定 ----
+
   updateSelectedLabels(); // 選択ラベルを更新
 };
 
