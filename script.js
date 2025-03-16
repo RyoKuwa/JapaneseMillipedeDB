@@ -60,21 +60,36 @@ const initMap = () => {
     center: [136, 35.7],
     zoom: defaultZoom,
     maxZoom: 9,
-    minZoom: 3
+    minZoom: 3,
+    dragPan: false, // 1本指ドラッグによるパンを禁止
+    touchZoomRotate: true // ピンチズームを有効
   });
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   // 地図にスケールを追加
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
+  
+  // 2本指タッチのときだけ dragPan を enable する処理
+  map.on('touchstart', (e) => {
+    if (e.points && e.points.length >= 2) {
+      map.dragPan.enable();
+    } else {
+      map.dragPan.disable();
+    }
+  });
 
-  // ---- ここから二本指操作に関する設定 ----
-  // 1) 1本指ドラッグを無効にし、2本指ドラッグのみ有効にする
-  map.dragPan.disable();
-  map.dragPan.enable({ twoFingerPan: true });
+  map.on('touchmove', (e) => {
+    // 移動中も指の本数が変わればパンをON/OFF
+    if (e.points && e.points.length >= 2) {
+      map.dragPan.enable();
+    } else {
+      map.dragPan.disable();
+    }
+  });
 
-  // 2) ピンチ回転を無効化し、二本指ピンチズームだけを許可
-  map.touchZoomRotate.disableRotation();
-  map.touchZoomRotate.enable({ around: 'center' });
-  // ---- ここまで二本指操作に関する設定 ----
+  map.on('touchend', (e) => {
+    // 指が離れた後はパンをOFFに戻す
+    map.dragPan.disable();
+  });
 
   updateSelectedLabels(); // 選択ラベルを更新
 };
