@@ -181,21 +181,22 @@
         </div>
       </div>
       
-      <!-- 各都道府県の記録数 -->
-      <div id="prefecture-chart-wrapper" class="chart-container-scroll">
-        <!-- 都道府県グラフ -->
-        <canvas id="prefecture-chart"></canvas>
-      
+      <div id="chart-area" style="position: relative; width: 100%;">
         <!-- ラジオボタン（目／科）の切り替え UI -->
         <div id="classification-radio">
-          <label>
-            <input type="radio" name="classification" value="order" checked>
-            目
-          </label>
-          <label>
-            <input type="radio" name="classification" value="family">
-            科
-          </label>
+          <!-- 目／科 切り替え (すでにある想定) -->
+          <label><input type="radio" name="classification" value="order" checked> 目</label>
+          <label><input type="radio" name="classification" value="family"> 科</label>
+        
+          <!-- 種数／割合 切り替え -->
+          <br>
+          <label><input type="radio" name="chart-mode" value="count" checked> 種数</label>
+          <label><input type="radio" name="chart-mode" value="ratio"> 割合</label>
+        </div>
+        <!-- 各都道府県の記録数 -->
+        <div id="prefecture-chart-wrapper" class="chart-container-scroll">
+          <!-- 都道府県グラフ -->
+          <canvas id="prefecture-chart"></canvas>
         </div>
       </div>
     </div>
