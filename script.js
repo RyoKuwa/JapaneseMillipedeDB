@@ -22,8 +22,8 @@ let currentClassification = "order";
 let currentChartMode = "count";       // "count" (種数) or "ratio" (割合)
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
-  // 画面幅を取得し、デフォルトのズームレベルを決定
-  const defaultZoom = window.innerWidth <= 711 ? 3 : 4;
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); // タッチデバイスかどうかを判定
+  const defaultZoom = window.innerWidth <= 711 ? 3 : 4; // 画面幅を取得し、デフォルトのズームレベルを決定
 
   map = new maplibregl.Map({
     container: 'mapid',
@@ -61,35 +61,35 @@ const initMap = () => {
     zoom: defaultZoom,
     maxZoom: 9,
     minZoom: 3,
-    dragPan: false, // 1本指ドラッグによるパンを禁止
+    dragPan: isTouchDevice ? false : true, // タッチデバイスなら無効、非タッチなら有効
     touchZoomRotate: true // ピンチズームを有効
   });
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   // 地図にスケールを追加
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
   
-  // 2本指タッチのときだけ dragPan を enable する処理
-  map.on('touchstart', (e) => {
-    if (e.points && e.points.length >= 2) {
-      map.dragPan.enable();
-    } else {
-      map.dragPan.disable();
-    }
-  });
+  // タッチデバイスの場合のみ、2本指操作でパンを有効にする
+  if (isTouchDevice) {
+    map.on('touchstart', (e) => {
+      if (e.points && e.points.length >= 2) {
+        map.dragPan.enable();
+      } else {
+        map.dragPan.disable();
+      }
+    });
 
-  map.on('touchmove', (e) => {
-    // 移動中も指の本数が変わればパンをON/OFF
-    if (e.points && e.points.length >= 2) {
-      map.dragPan.enable();
-    } else {
-      map.dragPan.disable();
-    }
-  });
+    map.on('touchmove', (e) => {
+      if (e.points && e.points.length >= 2) {
+        map.dragPan.enable();
+      } else {
+        map.dragPan.disable();
+      }
+    });
 
-  map.on('touchend', (e) => {
-    // 指が離れた後はパンをOFFに戻す
-    map.dragPan.disable();
-  });
+    map.on('touchend', (e) => {
+      map.dragPan.disable();
+    });
+  }
 
   updateSelectedLabels(); // 選択ラベルを更新
 };
