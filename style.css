@@ -657,4 +657,8 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   #selected-labels {
     width: 100%;
   }
+
+  .legend {
+    max-width: 100%;
+  }
 }
