@@ -18,6 +18,7 @@ let filteredRows = []; // フィルタリングされたデータを格納
 // ==================== グラフ ====================
 let monthChart = null; // 出現期グラフ
 let prefectureChart = null;   // 都道府県グラフ
+let currentClassification = "order";
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   // 画面幅を取得し、デフォルトのズームレベルを決定
@@ -854,82 +855,92 @@ function setupChartLegendToggles() {
  * @param {Array} allRows フィルタ済みのデータ
  */
 function generatePrefectureChart(allRows) {
-  // すでにチャートが存在する場合は破棄（再生成用）
+  // 既存グラフがあれば破棄
   if (prefectureChart) {
     prefectureChart.destroy();
   }
 
-  // 未記載種を除外するチェックがONかどうか (filterByCheckboxでも除外される場合は不要)
+  const classificationKey = currentClassification; // "order" or "family"
+
+  // ----------------
+  // 1) データ抽出と整形
+  // ----------------
   const excludeUndescribed = document.getElementById("exclude-undescribed")?.checked;
+  const validRanks = ["species", "species complex", "subspecies"];
 
-  // taxonRank === "species" のみ対象
-  // 未記載種除外をここで行う場合は、 && で絞り込み
-  const speciesRows = allRows.filter(row => {
-    // taxonRank が "species" 以外は除外
-    if (row.taxonRank !== "species") return false;
-    // 「未記載種を除外」がチェックされており、かつ undescribedSpecies が "yes" の場合は除外
-    if (excludeUndescribed && row.undescribedSpecies.toLowerCase() === "yes") return false;
-
+  const targetRows = allRows.filter(row => {
+    const rank = row.taxonRank?.toLowerCase();
+    if (!validRanks.includes(rank)) return false;
+    if (excludeUndescribed && row.undescribedSpecies?.toLowerCase() === "yes") {
+      return false;
+    }
     return true;
   });
 
-  // データ構造: 都道府県 × 科 => 「(和名 + 学名)のSet」
-  const prefectureFamilySpecies = {};
+  const prefectureTaxonMap = {};
 
-  // データを走査して「同じ和名+学名」を1種として集計
-  speciesRows.forEach(row => {
+  function getNormalizedSpeciesName(row) {
+    const rank = row.taxonRank?.toLowerCase();
+    const sciName = row.scientificName?.trim() || "";
+    if (rank === "subspecies") {
+      const parts = sciName.split(/\s+/);
+      if (parts.length >= 2) {
+        return parts[0] + " " + parts[1];
+      }
+      return sciName;
+    }
+    // species, species complex はそのまま
+    return sciName;
+  }
+
+  // ----------------
+  // 2) 集計処理
+  // ----------------
+  targetRows.forEach(row => {
     const pref = row.prefecture;
-    const fam  = row.family;
-    // 都道府県やfamilyが空("-")の場合は除外
-    if (!pref || pref === "-" || !fam || fam === "-") return;
+    const keyValue = (classificationKey === "order") ? row.order : row.family;
+    if (!pref || pref === "-" || !keyValue || keyValue === "-") return;
 
-    // 1種を表すユニークキーを作成
-    const uniqueSpeciesKey = `${row.japaneseName}//${row.scientificName}`;
+    const normalizedName = getNormalizedSpeciesName(row);
 
-    // 集計用初期化
-    if (!prefectureFamilySpecies[pref]) {
-      prefectureFamilySpecies[pref] = {};
+    if (!prefectureTaxonMap[pref]) {
+      prefectureTaxonMap[pref] = {};
     }
-    if (!prefectureFamilySpecies[pref][fam]) {
-      prefectureFamilySpecies[pref][fam] = new Set();
+    if (!prefectureTaxonMap[pref][keyValue]) {
+      prefectureTaxonMap[pref][keyValue] = new Set();
     }
-
-    // 重複チェック込みで1種を登録
-    prefectureFamilySpecies[pref][fam].add(uniqueSpeciesKey);
+    prefectureTaxonMap[pref][keyValue].add(normalizedName);
   });
 
-  // 都道府県ごとの合計「種数」が多い順でソート
-  const prefTotalArray = Object.keys(prefectureFamilySpecies).map(pref => {
-    const familyObj = prefectureFamilySpecies[pref];
-    // 各科に格納されている Set の合計サイズを計算
-    const totalSpecies = Object.values(familyObj).reduce((sum, setOfSpecies) => sum + setOfSpecies.size, 0);
+  // ----------------
+  // 3) 都道府県ごとの合計種数が多い順にソート
+  // ----------------
+  const prefTotalArray = Object.keys(prefectureTaxonMap).map(pref => {
+    const taxonObj = prefectureTaxonMap[pref];
+    const totalSpecies = Object.values(taxonObj).reduce(
+      (sum, setOfSpecies) => sum + setOfSpecies.size, 0
+    );
     return { pref, total: totalSpecies };
   });
-
-  // 降順ソート
   prefTotalArray.sort((a, b) => b.total - a.total);
-
-  // ソート結果から都道府県名を抽出
   const sortedPrefectures = prefTotalArray.map(item => item.pref);
 
-  // 全科 (family) をまとめた配列を作り、アルファベット順などでソート
-  const familySet = new Set();
-  for (const pref in prefectureFamilySpecies) {
-    for (const fam in prefectureFamilySpecies[pref]) {
-      familySet.add(fam);
+  // ----------------
+  // 4) Chart.js 用 データセット化
+  // ----------------
+  const taxonSet = new Set();
+  for (const pref in prefectureTaxonMap) {
+    for (const taxonKey in prefectureTaxonMap[pref]) {
+      taxonSet.add(taxonKey);
     }
   }
-  const families = Array.from(familySet).sort();
+  const taxons = Array.from(taxonSet).sort();
 
-  // Chart.js の dataset を作る (科を積み上げ系列に)
-  const datasets = families.map((fam, index) => {
-    // 都道府県リストと同じ順番で値(種数)を並べる
+  const datasets = taxons.map((taxon, index) => {
     const data = sortedPrefectures.map(pref => {
-      // 指定のprefに該当のfamがあれば、そのSetのsize。無ければ0
-      return prefectureFamilySpecies[pref][fam]?.size || 0;
+      return prefectureTaxonMap[pref][taxon]?.size || 0;
     });
 
-    // カラー
     const colorPalette = [
       "rgba(255, 99, 132, 0.6)",
       "rgba(54, 162, 235, 0.6)",
@@ -952,30 +963,26 @@ function generatePrefectureChart(allRows) {
     const bdColor = borderColorPalette[index % borderColorPalette.length];
 
     return {
-      label: fam,
+      label: taxon, // 目 or 科(学名)
       data: data,
       backgroundColor: bgColor,
       borderColor: bdColor,
       borderWidth: 1,
-      order: families.length - 1 - index
+      // グラフ積み上げ順を逆転
+      order: taxons.length - 1 - index
     };
   });
 
-  // **横スクロール用の canvas 幅を調整**
+  // ----------------
+  // 5) Chart.js で描画
+  // ----------------
   const canvas = document.getElementById("prefecture-chart");
-  const chartWrapper = document.getElementById("prefecture-chart-wrapper");
-
-  const minWidth = 600; // 最低でも 600px 確保
-  const barWidth = 40;  // 1都道府県あたりの棒グラフ幅
-  const totalWidth = Math.max(minWidth, sortedPrefectures.length * barWidth);
-  canvas.style.width = `${totalWidth}px`;
-  canvas.width = totalWidth;      // 内部解像度も更新
-  canvas.style.height = "920px";
-  canvas.height = 920;            // 内部解像度も更新
-  chartWrapper.style.overflowX = "auto"; // **スクロール可能にする**
-
-  // Chart.js で描画
+  if (!canvas) {
+    console.error("#prefecture-chart が見つかりません。");
+    return;
+  }
   const ctx = canvas.getContext("2d");
+
   prefectureChart = new Chart(ctx, {
     type: "bar",
     data: {
@@ -983,73 +990,74 @@ function generatePrefectureChart(allRows) {
       datasets: datasets
     },
     options: {
-      responsive: false,
+      responsive: true,
       maintainAspectRatio: false,
+      layout: {
+        padding: { right: 50 }
+      },
       scales: {
         x: {
           stacked: true,
-          title: {
-            display: true,
-            text: "都道府県"
-          },
+          title: { display: true, text: "都道府県" },
           ticks: {
-            maxRotation: 90,
-            minRotation: 0
+            autoSkip: false,
+            maxRotation: 60
           }
         },
         y: {
           stacked: true,
           beginAtZero: true,
-          title: {
-            display: true,
-            text: "種数"  // 縦軸ラベルを"種数"に
-          },
-          ticks: {
-            precision: 0,
-            maxTicksLimit: 15
-          }
+          title: { display: true, text: "種数" }
         }
       },
       plugins: {
+        // (★) 凡例をカスタマイズして「学名 / 和名」の表示にし、
+        //     かつ アルファベット昇順にソート
         legend: {
           display: true,
-          position: "right", // 凡例を右側に表示
+          position: "right",
           labels: {
             generateLabels: function (chart) {
-              return chart.data.datasets.map((dataset) => {
-                const familyName = dataset.label;
-                const scientificName = familyName;
+              const datasets = chart.data.datasets;
+              return datasets.map((ds, i) => {
+                // ds.label は「学名」(= taxon)
+                const scientificName = ds.label;
                 const japaneseName = taxonMap[scientificName]?.japaneseName || "-";
+                const fullText = `${scientificName} / ${japaneseName}`;
+                
                 return {
-                  text: `${japaneseName} ${scientificName}`,
-                  fillStyle: dataset.backgroundColor,
-                  strokeStyle: dataset.borderColor,
-                  lineWidth: dataset.borderWidth,
-                  datasetIndex: chart.data.datasets.indexOf(dataset)
+                  text: fullText,
+                  fillStyle: ds.backgroundColor,
+                  strokeStyle: ds.borderColor,
+                  lineWidth: ds.borderWidth,
+                  hidden: !chart.isDatasetVisible(i),
+                  datasetIndex: i
                 };
-              });
+              })
+              // 凡例のみ アルファベット昇順ソート
+              .sort((a, b) => a.text.localeCompare(b.text));
             }
           }
         },
         tooltip: {
           callbacks: {
             label: function (context) {
-              const index = context.datasetIndex;
-              const familyName = context.chart.data.datasets[index].label;
-              const scientificName = familyName;
-              const japaneseName = taxonMap[scientificName]?.japaneseName || "-";
-              const value = context.raw;
-              return `${japaneseName} ${scientificName}: ${value}`;
+              const datasetIndex = context.datasetIndex;
+              const taxonName = context.chart.data.datasets[datasetIndex].label;
+              const val = context.raw;
+              return `${taxonName}: ${val}`;
             }
           }
         },
         title: {
           display: true,
-          text: "各都道府県の種数 (科別)",
-          align: "center",
+          text: (classificationKey === "order")
+            ? "各都道府県の種数（目別）"
+            : "各都道府県の種数（科別）",
           font: { size: 16 }
         }
-      }
+      },
+      barThickness: 20
     }
   });
 }
@@ -1326,6 +1334,18 @@ function linkMasterAndDubiousCheckboxes() {
   }
 
   // （必要に応じて applyFilters() を呼ぶ）
+}
+
+function setupClassificationRadio() {
+  // ラジオボタンを取得
+  const radios = document.querySelectorAll('input[name="classification"]');
+  radios.forEach(radio => {
+    radio.addEventListener("change", (e) => {
+      currentClassification = e.target.value; 
+      // 現在の全CSV行データが rows 等にあるとして、再描画を呼び出す
+      generatePrefectureChart(filteredRows);
+    });
+  });
 }
 
 // ==================== マーカー操作 ====================
@@ -1859,6 +1879,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         targetTabContent.classList.add("active");
       });
     });
+
+    setupClassificationRadio(); // ラジオボタンリスナーの設定
+    generatePrefectureChart(rows); // 初期描画 (デフォルトは「目」表示)
 
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);

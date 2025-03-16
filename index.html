@@ -163,7 +163,7 @@
     <!-- タブの内容 -->
     <div id="tab-data" class="tab-content active">
       <!-- 出現期 -->
-      <div id="chart-wrapper">
+      <div id="chart-wrapper"  class="chart-container-scroll">
         <!-- グラフを表示するキャンバス -->
         <div id="chart-container">
           <canvas id="month-chart"></canvas>
@@ -180,10 +180,23 @@
           </label>
         </div>
       </div>
-
+      
       <!-- 各都道府県の記録数 -->
       <div id="prefecture-chart-wrapper" class="chart-container-scroll">
+        <!-- 都道府県グラフ -->
         <canvas id="prefecture-chart"></canvas>
+      
+        <!-- ラジオボタン（目／科）の切り替え UI -->
+        <div id="classification-radio">
+          <label>
+            <input type="radio" name="classification" value="order" checked>
+            目
+          </label>
+          <label>
+            <input type="radio" name="classification" value="family">
+            科
+          </label>
+        </div>
       </div>
     </div>
   

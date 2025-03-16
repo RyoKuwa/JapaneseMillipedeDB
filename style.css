@@ -563,10 +563,42 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   box-sizing: border-box;
 }
 
-/* 実際のチャート(canvas) に最低幅と固定高さを与える */
+/* chart を包むラッパ要素：横スクロール・縦スクロールを許可 */
+#prefecture-chart-wrapper.chart-container-scroll {
+  width: 100%;             /* 横幅いっぱい */
+  min-height: 800px;       /* 高さを確保 -> グラフが縦に潰れにくい */
+  overflow-x: auto;        /* 横スクロール許可 */
+  overflow-y: auto;        /* 縦方向も必要ならスクロール可 */
+  margin: 20px 0;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  position: relative;     /* 内部要素をabsolute配置するため */
+}
+
+/* canvas 本体: レスポンシブで伸びるよう width 100% */
 #prefecture-chart {
-  min-width: 1200px;  /* 多くの都道府県が並んでも横スクロールで見られるように */
-  height: 920px;      /* 高さを大きくする例 (お好みで値を変更) */
+  display: block;
+  width: 100%;
+  /* 凡例 + 47都道府県を並べるため、最低幅を広めに取る */
+  min-width: 1500px;       /* 数値は任意で調整 */
+  /* 高さは親要素に合わせるなら min-height で可変 */
+  min-height: 800px;       /* これにより上画像のように縦に大きく描画 */
+  margin: 0 auto;          /* 中央寄せ（任意） */
+}
+
+/* ラジオボタンを凡例の右側に重ねる例 */
+#classification-radio {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+}
+
+#classification-radio label {
+  margin-right: 10px;
 }
 
 @media (max-width: 711px) {
