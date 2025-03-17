@@ -766,24 +766,27 @@ const handleMarkerClick = (marker, record) => {
 
 // 月別の出現期グラフを生成する関数
 function generateMonthlyChart(allRows) {
-  // 12ヶ月分の配列を0で初期化
-  const monthlyCountsAdult = new Array(12).fill(0);
-  const monthlyCountsJuvenile = new Array(12).fill(0);
+  // 月ごとの記録を保持するセットを作成（重複防止）
+  const monthlySetAdult = Array.from({ length: 12 }, () => new Set());
+  const monthlySetJuvenile = Array.from({ length: 12 }, () => new Set());
 
-  // 全データを走査して「成体 or 幼体・不明」をカウント
   allRows.forEach(row => {
-    // row.collectedMonth が 1～12なら月を取得
     const month = parseInt(row.collectedMonth, 10);
-    if (month >= 1 && month <= 12) {
-      // 成体かどうかチェック: adultPresence が "yes" なら成体
-      const isAdult = (row.adultPresence && row.adultPresence.toLowerCase() === "yes");
-      if (isAdult) {
-        monthlyCountsAdult[month - 1]++;
+    if (month >= 1 && month <= 12 && row.latitude && row.longitude) {
+      // 一意の識別キー: lat,lng,種名,成体有無
+      const uniqueKey = `${row.latitude},${row.longitude},${row.scientificName},${row.adultPresence}`;
+
+      if (row.adultPresence && row.adultPresence.toLowerCase() === "yes") {
+        monthlySetAdult[month - 1].add(uniqueKey);
       } else {
-        monthlyCountsJuvenile[month - 1]++;
+        monthlySetJuvenile[month - 1].add(uniqueKey);
       }
     }
   });
+
+  // セットから記録数を取得
+  const monthlyCountsAdult = monthlySetAdult.map(set => set.size);
+  const monthlyCountsJuvenile = monthlySetJuvenile.map(set => set.size);
 
   // すでにチャートが存在する場合は破棄（再生成用）
   if (monthChart) {
@@ -800,15 +803,15 @@ function generateMonthlyChart(allRows) {
       datasets: [
         {
           label: "成体",
-          data: monthlyCountsAdult,
-          backgroundColor: "rgba(255, 99, 132, 0.6)", // 赤系
+          data: monthlySetAdult.map(set => set.size),
+          backgroundColor: "rgba(255, 99, 132, 0.6)",
           borderColor: "rgba(255, 99, 132, 1)",
           borderWidth: 1
         },
         {
           label: "幼体・不明",
-          data: monthlyCountsJuvenile,
-          backgroundColor: "rgba(54, 162, 235, 0.6)", // 青系
+          data: monthlySetJuvenile.map(set => set.size),
+          backgroundColor: "rgba(54, 162, 235, 0.6)",
           borderColor: "rgba(54, 162, 235, 1)",
           borderWidth: 1
         }
@@ -821,28 +824,20 @@ function generateMonthlyChart(allRows) {
       scales: {
         x: {
           stacked: true,
-          title: {
-            display: true,
-            text: '月'
-          }
+          title: { display: true, text: '月' }
         },
         y: {
           stacked: true,
           beginAtZero: true,
-          title: {
-            display: true,
-            text: '記録数'
-          },
+          title: { display: true, text: '記録数' },
           ticks: {
-            precision: 0, // 小数点以下を丸めて表示 (整数表示)
-            maxTicksLimit: 20, // 最大でも 20個程度の目盛りに制限
+            precision: 0,
+            maxTicksLimit: 20,
           }
         }
       },
       plugins: {
-        legend: {
-          display: false // Chart.js 本来の凡例は非表示にしておき、チェックボックスで制御
-        },
+        legend: { display: false },
         title: {
           display: true,
           text: '出現期',
@@ -1986,7 +1981,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     setupClassificationRadio(); // ラジオボタンリスナーの設定
-    generatePrefectureChart(rows); // 初期描画 (デフォルトは「目」表示)
+    generatePrefectureChart(filteredRows); // 初期描画 (デフォルトは「目」表示)
 
   } catch (error) {
     console.error("初期化中にエラーが発生:", error);
