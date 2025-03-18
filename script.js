@@ -419,7 +419,6 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
   try {
     // フィルタ状態の取得（選択ボックス + チェックボックス）
     const { filters, checkboxes } = getFilterStates();
-
     // 既存のポップアップを削除
     if (activePopup) {
       activePopup.remove();
@@ -464,6 +463,9 @@ const applyFilters = async (searchValue = "", updateMap = true, useSearch = fals
       generateMonthlyChart(filteredRows);
       generatePrefectureChart(filteredRows);
     }
+
+    updateDropdownPlaceholders(); // プレースホルダーを更新
+
   } catch (error) {
     console.error("applyFilters中にエラーが発生:", error);
   }
@@ -496,22 +498,80 @@ const clearSearch = () => {
   document.getElementById("search-all").value = "";
 };
 
-// セレクトボックスを初期化し該当件数をセレクトボックスのデフォルト表示に反映
+// Select2 の初期化
+const initializeSelect2 = () => {
+  const selectBoxes = [
+    { id: "#filter-order", placeholder: "目を選択" },
+    { id: "#filter-family", placeholder: "科を選択" },
+    { id: "#filter-genus", placeholder: "属を選択" },
+    { id: "#filter-species", placeholder: "種を選択" },
+    { id: "#filter-prefecture", placeholder: "都道府県を選択" },
+    { id: "#filter-island", placeholder: "島を選択" },
+    { id: "#filter-literature", placeholder: "文献を選択" }
+  ];
+
+  selectBoxes.forEach(({ id, placeholder }) => {
+    $(id).select2({
+      placeholder: placeholder, // 各セレクトボックスに適切なプレースホルダーを設定
+      allowClear: true, // 選択解除を許可
+      minimumResultsForSearch: 0, // 検索ボックスを常に表示
+      dropdownAutoWidth: true
+    });
+  });
+};
+
+const updateDropdownPlaceholders = () => {
+  const dropdowns = [
+    { id: "#filter-order", baseText: "目を選択" },
+    { id: "#filter-family", baseText: "科を選択" },
+    { id: "#filter-genus", baseText: "属を選択" },
+    { id: "#filter-species", baseText: "種を選択" },
+    { id: "#filter-prefecture", baseText: "都道府県を選択" },
+    { id: "#filter-island", baseText: "島を選択" },
+    { id: "#filter-literature", baseText: "文献を選択" }
+  ];
+
+  dropdowns.forEach(({ id, baseText }) => {
+    const selectElement = $(id);
+    if (!selectElement.data("select2")) return; // select2が適用されていない場合はスキップ
+
+    const itemCount = selectElement.find("option:not(:first-child)").length; // 最初の空のオプションを除外
+
+    // プレースホルダーを更新
+    selectElement.select2({
+      placeholder: `${baseText}（${itemCount}件）`,
+      allowClear: true,
+      minimumResultsForSearch: 0,
+      dropdownAutoWidth: true
+    });
+  });
+};
+
+// セレクトボックスを初期化
 const populateSelect = (id, options, defaultText, selectedValue) => {
   const select = document.getElementById(id);
+  if (!select) return;
 
-  // 該当件数を計算
-  const optionCount = options.length;
+  // 現在の選択値を保持
+  const currentValue = select.value;
 
-  // 選択肢を生成
-  const optionsHTML = options.map(option => {
-    // ラベルから <i> タグを削除
-    const sanitizedLabel = option.label.replace(/<i>(.*?)<\/i>/g, '$1');
-    return `<option value="${option.value}" ${option.value === selectedValue ? "selected" : ""}>${sanitizedLabel}</option>`;
-  }).join("");
+  // 選択肢をクリア
+  $(select).empty();
 
-  // デフォルト選択肢を該当件数付きで追加
-  select.innerHTML = `<option value="">${defaultText}（${optionCount}件）</option>` + optionsHTML;
+  // デフォルトのオプションを追加
+  $(select).append(new Option(defaultText, "", false, false));
+
+  // 選択肢を追加
+  options.forEach(option => {
+    $(select).append(new Option(option.label, option.value, false, false));
+  });
+
+  // 現在の選択値を可能な限り維持
+  if (options.some(option => option.value === currentValue)) {
+    $(select).val(currentValue).trigger("change");
+  } else {
+    $(select).val("").trigger("change"); // 選択解除
+  }
 };
 
 // 文献リストを更新する関数
@@ -1644,27 +1704,53 @@ const setupDropdownListeners = () => {
     "filter-literature"
   ];
 
+  let preventOpen = false; // 選択解除時にドロップダウンを開かせないフラグ
+
   dropdowns.forEach((id) => {
-    const element = document.getElementById(id);
+    const element = $(`#${id}`);
 
-    // セレクトボックスがクリックされたとき
-    element.addEventListener("mousedown", () => {
-      element.value = ""; // 選択値を空にする
-      applyFilters("", false, useSearch); // フィルタリングを実行：フィルタリングは""による，地図に反映無効，検索窓によるフィルタリング無効
-    });
-
-    // セレクトボックスがフォーカスを失った場合（例: 外部をクリックした場合）
-    element.addEventListener("blur", () => {
-      applyFilters("", true, useSearch); // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング無効
-      updateSelectedLabels(); // 選択ラベルを更新
-    });
-
-    // ドロップダウンから値が選択されたとき
-    element.addEventListener("change", () => {
+    // 通常の `change` イベントではなく、Select2 の `select2:select` を監視
+    element.on("select2:select", function () {
       useSearch = false; // 検索窓のフィルタリングを無効化
-      applyFilters("", true, false); // フィルタリングを実行：フィルタリングは""による，地図に反映有効，検索窓によるフィルタリング無効
+      applyFilters("", true, false); // フィルタリングを実行（地図更新）
       updateSelectedLabels(); // 選択ラベルを更新
     });
+
+    // クリック時にリセット
+    element.on("mousedown", function () {
+      $(this).val("").trigger("change"); // 選択を解除
+      applyFilters("", false, useSearch); // フィルタリングを実行（地図更新しない）
+    });
+
+    // フォーカスを外したときの処理
+    element.on("blur", function () {
+      applyFilters("", true, useSearch); // フィルタリングを実行（地図更新）
+      updateSelectedLabels(); // 選択ラベルを更新
+    });
+  });
+
+  // 選択解除時の処理（修正）
+  $("select").on("select2:clear", function () {
+    preventOpen = true; // フラグをセット
+
+    // `select2("close")` を呼ぶ前に `select2("data")` をチェック
+    const $select = $(this);
+    if ($select.select2("data") !== null) {
+      setTimeout(() => {
+        $select.select2("close"); // UI 更新を待ってから閉じる
+        applyFilters();
+        preventOpen = false; // フラグ解除
+      }, 50);
+    } else {
+      preventOpen = false; // フラグ解除
+    }
+  });
+
+  // 選択解除後にドロップダウンが開かないようにする（修正）
+  $("select").on("select2:opening", function (e) {
+    if (preventOpen) {
+      e.preventDefault(); // 開かせない
+    }
   });
 };
 
@@ -1746,6 +1832,8 @@ const initializeMap = async () => {
   await loadLiteratureCSV();
   await loadDistributionCSV();
 
+  console.log("データロード完了");
+
   // 初期データの記録数と地点数を表示
   updateRecordInfo(rows.length, new Set(rows.map(row => `${row.latitude},${row.longitude}`)).size);
 
@@ -1757,7 +1845,17 @@ const initializeMap = async () => {
   map.on("zoomend", () => displayMarkers(filteredRows));
 
   // 初期フィルタリング実行
-  applyFilters("", true, false);
+  await applyFilters("", true, false);
+
+  // **修正: Select2 初期化**
+  setTimeout(() => {
+    initializeSelect2(); 
+  }, 50); // 🔥 50ms 遅延
+
+  // **修正: ドロップダウンのプレースホルダー更新**
+  setTimeout(() => {
+    updateDropdownPlaceholders();
+  }, 100); // 🔥 100ms 遅延
 };
 
 // ==================== イベントリスナー設定 ====================
@@ -1979,6 +2077,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         targetTabContent.classList.add("active");
       });
     });
+
+    initializeSelect2(); // Select2 を初期化
 
     setupClassificationRadio(); // ラジオボタンリスナーの設定
     generatePrefectureChart(filteredRows); // 初期描画 (デフォルトは「目」表示)

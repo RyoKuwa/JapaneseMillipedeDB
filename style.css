@@ -444,6 +444,19 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   box-sizing: border-box; /* 幅計算を内側の要素に含める */
 }
 
+/* Select2 のスタイル調整 */
+.select2-container {
+  font-size: 14px;
+}
+
+/* 更新中のメッセージ */
+.update-message {
+  font-size: 12px;
+  color: gray;
+  margin-bottom: 3px;
+  text-align: left;
+}
+
 /* 左右ボタンのスタイル */
 .nav-button {
   width: 24px; /* コンパクトな幅 */
@@ -577,8 +590,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 /* canvas 本体: レスポンシブで伸びるよう width 100% */
 #prefecture-chart {
-  display: block;
-  width: 100%;
   /* 凡例 + 47都道府県を並べるため、最低幅を広めに取る */
   min-width: 1500px;       /* 数値は任意で調整 */
   /* 高さは親要素に合わせるなら min-height で可変 */
