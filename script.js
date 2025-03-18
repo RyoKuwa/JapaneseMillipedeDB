@@ -518,39 +518,46 @@ const initializeSelect2 = () => {
       dropdownAutoWidth: true
     });
 
-    // 🔥 カスタマイズ：▽ボタンを×ボタンに置き換える処理
-    const updateClearButton = (selectElement) => {
+    // 🔥 `▽` と `✕` の表示制御関数
+    const updateClearButton = () => {
       setTimeout(() => {
-        const selectContainer = $(selectElement).next(".select2-container");
-        const arrow = selectContainer.find(".select2-selection__arrow");
-        const clear = selectContainer.find(".select2-selection__clear");
+        $(".select2-container").each(function () {
+          const selectContainer = $(this);
+          const selectElement = $("#" + selectContainer.prev("select").attr("id"));
 
-        if ($(selectElement).val()) {
-          // 🔥 選択済みなら▽を削除し×を表示
-          arrow.hide();
-          clear.css({
-            "position": "absolute",
-            "right": "10px",
-            "top": "50%",
-            "transform": "translateY(-50%)",
-            "cursor": "pointer",
-            "z-index": "10"
-          }).show();
-        } else {
-          // 🔥 未選択なら×を削除し▽を表示
-          arrow.show();
-        }
+          if (selectElement.length === 0) return;
+
+          const arrow = selectContainer.find(".select2-selection__arrow");
+          const clear = selectContainer.find(".select2-selection__clear");
+
+          if (selectElement.val()) {
+            // 🔥 選択済みなら `▽` を削除し `✕` を表示
+            arrow.hide();
+            clear.css({
+              "position": "absolute",
+              "right": "10px",
+              "top": "50%",
+              "transform": "translateY(-50%)",
+              "cursor": "pointer",
+              "z-index": "10"
+            }).show();
+          } else {
+            // 🔥 未選択なら `✕` を削除し `▽` を表示
+            arrow.show();
+            clear.hide();
+          }
+        });
       }, 10);
     };
 
     // 🔄 Select2 イベントを監視
     $(id).on("select2:open select2:select select2:unselect", function () {
-      updateClearButton(this);
+      updateClearButton();
     });
 
     // 🔥 前ボタン・次ボタンがクリックされたときも適用
     $(id).closest(".select-container").find(".nav-button").on("click", function () {
-      updateClearButton(id);
+      updateClearButton();
     });
   });
 };
