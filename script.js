@@ -647,6 +647,8 @@ const updateLiteratureList = (titles) => {
   listContainer.appendChild(ol);
 };
 
+
+
 // セレクトボックスを更新する関数
 const updateSelectBoxes = (filters, searchResults) => {
   const {
@@ -660,7 +662,14 @@ const updateSelectBoxes = (filters, searchResults) => {
   } = searchResults;
 
   // 文献セレクトボックスを更新
-  populateSelect("filter-literature", literatureOptions, "文献を選択", filters.literature);
+  populateSelect("filter-literature",
+    literatureOptions.map(option => ({
+      value: option.value,
+      label: option.label.replace(/<\/?i>/g, '') // 🔥 <i>タグを削除
+    })),
+    "文献を選択",
+    filters.literature
+  );
 
   // 種のセレクトボックスを更新
   populateSelect("filter-species",
@@ -1873,8 +1882,6 @@ const initializeMap = async () => {
   loadOrderCSV("Island.csv", islandOrder);
   await loadLiteratureCSV();
   await loadDistributionCSV();
-
-  console.log("データロード完了");
 
   // 初期データの記録数と地点数を表示
   updateRecordInfo(rows.length, new Set(rows.map(row => `${row.latitude},${row.longitude}`)).size);
