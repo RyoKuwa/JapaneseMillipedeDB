@@ -512,10 +512,36 @@ const initializeSelect2 = () => {
 
   selectBoxes.forEach(({ id, placeholder }) => {
     $(id).select2({
-      placeholder: placeholder, // 各セレクトボックスに適切なプレースホルダーを設定
-      allowClear: true, // 選択解除を許可
-      minimumResultsForSearch: 0, // 検索ボックスを常に表示
+      placeholder: placeholder,
+      allowClear: true,
+      minimumResultsForSearch: 0,
       dropdownAutoWidth: true
+    });
+
+    // 🔥 カスタマイズ：▽ボタンを×ボタンに置き換える処理
+    $(id).on("select2:open select2:select select2:unselect", function () {
+      setTimeout(() => {
+        const selectContainer = $(this).next(".select2-container");
+        const rendered = selectContainer.find(".select2-selection__rendered");
+        const arrow = selectContainer.find(".select2-selection__arrow");
+        const clear = selectContainer.find(".select2-selection__clear");
+
+        if (clear.length > 0) {
+          // 🔥 選択済みなら▽を削除し×を表示
+          arrow.hide(); 
+          clear.css({
+            "position": "absolute",
+            "right": "10px",
+            "top": "50%",
+            "transform": "translateY(-50%)",
+            "cursor": "pointer",
+            "z-index": "10"
+          }).show();
+        } else {
+          // 🔥 未選択なら×を削除し▽を表示
+          arrow.show();
+        }
+      }, 10);
     });
   });
 };
