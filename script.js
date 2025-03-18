@@ -519,16 +519,15 @@ const initializeSelect2 = () => {
     });
 
     // 🔥 カスタマイズ：▽ボタンを×ボタンに置き換える処理
-    $(id).on("select2:open select2:select select2:unselect", function () {
+    const updateClearButton = (selectElement) => {
       setTimeout(() => {
-        const selectContainer = $(this).next(".select2-container");
-        const rendered = selectContainer.find(".select2-selection__rendered");
+        const selectContainer = $(selectElement).next(".select2-container");
         const arrow = selectContainer.find(".select2-selection__arrow");
         const clear = selectContainer.find(".select2-selection__clear");
 
-        if (clear.length > 0) {
+        if ($(selectElement).val()) {
           // 🔥 選択済みなら▽を削除し×を表示
-          arrow.hide(); 
+          arrow.hide();
           clear.css({
             "position": "absolute",
             "right": "10px",
@@ -542,6 +541,16 @@ const initializeSelect2 = () => {
           arrow.show();
         }
       }, 10);
+    };
+
+    // 🔄 Select2 イベントを監視
+    $(id).on("select2:open select2:select select2:unselect", function () {
+      updateClearButton(this);
+    });
+
+    // 🔥 前ボタン・次ボタンがクリックされたときも適用
+    $(id).closest(".select-container").find(".nav-button").on("click", function () {
+      updateClearButton(id);
     });
   });
 };
