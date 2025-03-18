@@ -31,62 +31,66 @@ const initMap = () => {
       "version": 8,
       "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
       "sources": {
-          "japan": {
-              "type": "geojson",
-              "data": "Japan.geojson",
-              attribution: "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
-          }
+        "japan": {
+          "type": "geojson",
+          "data": "Japan.geojson",
+          attribution: "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
+        }
       },
       "layers": [
-          {
-              "id": "background",
-              "type": "background",
-              "paint": { "background-color": "rgba(173, 216, 230, 1)" }
-          },
-          {
-              "id": "japan",
-              "type": "fill",
-              "source": "japan",
-              "paint": { "fill-color": "rgba(255, 255, 255, 1)", "fill-outline-color": "rgba(0, 0, 0, 1)" }
-          },
-          {
-              "id": "japan-outline",
-              "type": "line",
-              "source": "japan",
-              "paint": { "line-color": "rgba(0, 0, 0, 1)", "line-width": 1 }
-          }
+        {
+          "id": "background",
+          "type": "background",
+          "paint": { "background-color": "rgba(173, 216, 230, 1)" }
+        },
+        {
+          "id": "japan",
+          "type": "fill",
+          "source": "japan",
+          "paint": { "fill-color": "rgba(255, 255, 255, 1)", "fill-outline-color": "rgba(0, 0, 0, 1)" }
+        },
+        {
+          "id": "japan-outline",
+          "type": "line",
+          "source": "japan",
+          "paint": { "line-color": "rgba(0, 0, 0, 1)", "line-width": 1 }
+        }
       ]
     },
     center: [136, 35.7],
     zoom: defaultZoom,
     maxZoom: 9,
     minZoom: 3,
-    dragPan: isTouchDevice ? false : true, // タッチデバイスなら無効、非タッチなら有効
+    // タッチデバイスならデフォルトのドラッグパンは無効（以降イベントで制御）
+    dragPan: isTouchDevice ? false : true,
     touchZoomRotate: true // ピンチズームを有効
   });
+
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
-  // 地図にスケールを追加
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
-  
-  // タッチデバイスの場合のみ、2本指操作でパンを有効にする
+
+  // タッチデバイスの場合、タッチイベントでのドラッグ挙動を制御
   if (isTouchDevice) {
-    map.on('touchstart', (e) => {
-      if (e.points && e.points.length >= 2) {
+    const handleTouchEvent = (e) => {
+      // 元のDOMイベントからタッチした要素を取得
+      const target = e.originalEvent ? e.originalEvent.target : null;
+      // ポップアップ内でタッチしている場合（クラス名が"maplibregl-popup"の場合）
+      if (target && target.closest('.maplibregl-popup')) {
+        // ポップアップ内なら1本指でもパン操作を有効
         map.dragPan.enable();
       } else {
-        map.dragPan.disable();
+        // ポップアップ外なら2本指以上の場合のみパン操作を有効
+        if (e.points && e.points.length >= 2) {
+          map.dragPan.enable();
+        } else {
+          map.dragPan.disable();
+        }
       }
-    });
+    };
 
-    map.on('touchmove', (e) => {
-      if (e.points && e.points.length >= 2) {
-        map.dragPan.enable();
-      } else {
-        map.dragPan.disable();
-      }
-    });
-
-    map.on('touchend', (e) => {
+    map.on('touchstart', handleTouchEvent);
+    map.on('touchmove', handleTouchEvent);
+    map.on('touchend', () => {
       map.dragPan.disable();
     });
   }
