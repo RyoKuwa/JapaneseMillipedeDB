@@ -33,6 +33,10 @@ header h1 {
   margin: 0 auto; /* ページ中央揃え */
 }
 
+.maplibregl-ctrl-bottom-left {
+  z-index: 2 !important;
+}
+
 /* 検索コンテナの基本スタイル */
 .search-container {
   top: 10px;          /* mapid の上から 10px */
@@ -46,7 +50,7 @@ header h1 {
   flex-direction: column; /* 子要素を縦並びに配置 */
   gap: 10px;         /* 各セクション間の間隔を調整 */
   transition: max-height 0.3s ease-out; /* アニメーション */
-  max-height: 600px; /* 初期の最大高さ */
+  max-height: 630px; /* 初期の最大高さ */
   overflow: hidden;
 }
 
