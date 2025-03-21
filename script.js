@@ -34,7 +34,7 @@ const initMap = () => {
         japan: {
           type: "geojson",
           data: "Japan.geojson",
-          attribution: "…"
+          attribution: "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
         }
       },
       layers: [
