@@ -34,40 +34,20 @@ const initMap = () => {
         japan: {
           type: "geojson",
           data: "Japan.geojson",
-          attribution: "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
+          attribution: "…"
         }
       },
       layers: [
-        {
-          id: "background",
-          type: "background",
-          paint: { "background-color": "rgba(173, 216, 230, 1)" }
-        },
-        {
-          id: "japan",
-          type: "fill",
-          source: "japan",
-          paint: {
-            "fill-color": "rgba(255, 255, 255, 1)",
-            "fill-outline-color": "rgba(0, 0, 0, 1)"
-          }
-        },
-        {
-          id: "japan-outline",
-          type: "line",
-          source: "japan",
-          paint: {
-            "line-color": "rgba(0, 0, 0, 1)",
-            "line-width": 1
-          }
-        }
+        { id: "background", type: "background", paint: { "background-color": "rgba(173, 216, 230, 1)" } },
+        { id: "japan", type: "fill", source: "japan", paint: { "fill-color": "#fff", "fill-outline-color": "#000" } },
+        { id: "japan-outline", type: "line", source: "japan", paint: { "line-color": "#000", "line-width": 1 } }
       ]
     },
     center: [136, 35.7],
     zoom: defaultZoom,
     maxZoom: 9,
     minZoom: 3,
-    dragPan: !isTouchDevice,  // タッチデバイスなら無効、PCなら有効
+    dragPan: !isTouchDevice,  // タッチデバイスなら初期はOFF, PCはON
     touchZoomRotate: true
   });
 
@@ -75,27 +55,43 @@ const initMap = () => {
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
 
-  // タッチデバイス向けパン操作制御
+  // ▼ タッチデバイスの場合のみ、2本指操作でドラッグを許可し、1本指でオーバーレイを表示
   if (isTouchDevice) {
+    // オーバーレイ要素を取得
+    const touchHint = document.getElementById("touch-hint");
+
     map.on('touchstart', (e) => {
-      if (e.points && e.points.length >= 2) {
+      if (!e.points) return;
+      if (e.points.length >= 2) {
+        // 2本指以上 → パン操作ON, オーバーレイ消す
         map.dragPan.enable();
+        touchHint.style.display = 'none';
       } else {
+        // 1本指 → パン操作OFF, オーバーレイ表示
         map.dragPan.disable();
+        touchHint.style.display = 'block';
       }
     });
+
     map.on('touchmove', (e) => {
-      if (e.points && e.points.length >= 2) {
+      if (!e.points) return;
+      if (e.points.length >= 2) {
         map.dragPan.enable();
+        touchHint.style.display = 'none';
       } else {
         map.dragPan.disable();
+        touchHint.style.display = 'block';
       }
     });
-    map.on('touchend', () => {
+
+    map.on('touchend', (e) => {
+      // 指が離れたら1本指状態ではなくなるのでドラッグOFF + オーバーレイ消す
       map.dragPan.disable();
+      touchHint.style.display = 'none';
     });
   }
 
+  // 既存の呼び出し（選択ラベル更新など）
   updateSelectedLabels();
 };
 

@@ -475,7 +475,9 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   display: flex;
   margin: 0;
   padding: 0;
+  white-space: nowrap;
   border-bottom: 2px solid #ccc;
+  overflow-x: auto;
 }
 
 .tab-header li {
@@ -581,6 +583,24 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 #classification-radio label {
   margin-right: 10px;
+}
+
+#touch-hint {
+  position: absolute;
+  top: 50%;                 /* 地図の中央あたりに表示する例 */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;            /* 地図より前面に表示 */
+  
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: center;
+  
+  display: none;            /* 初期状態で非表示 */
+  pointer-events: none;     /* タップ操作をブロックしない */
 }
 
 @media (max-width: 711px) {
