@@ -1653,6 +1653,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.addEventListener("resize", adjustSearchContainerAndLegend);
   adjustSearchContainerAndLegend();
 
-  // 必要ならここで改めて applyFilters(true) してもOK
-  // applyFilters(true);
+  applyFilters(true);
 });
