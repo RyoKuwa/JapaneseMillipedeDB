@@ -534,7 +534,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 #month-chart {
-  height: 30vh;
+  height: 40vh;
 }
 
 /* 都道府県グラフを包むラッパに対するスクロール指定 */
