@@ -571,25 +571,30 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 /* ラジオボタンを凡例の右側に重ねる例 */
 #classification-radio {
-  position: absolute;
-  top: 60px;              /* タイトルやグラフとかぶらないように余裕をもたせる */
-  right: 10px;
-  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 10px auto;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid #aaa;
   border-radius: 4px;
-  padding: 8px 12px;
-
-  display: flex;          /* 横並びにする */
-  gap: 16px;              /* グループ同士の余白 */
   font-size: 14px;
-  z-index: 9999;          /* グラフタイトルより前面に出す */
+  flex-wrap: wrap;
 }
 
 /* ラジオボタン同士の間隔や配置を制御 */
-#classification-radio .radio-group {
+#classification-radio {
   display: flex;
-  align-items: center;
-  gap: 8px;              /* ラベルとラベルの間隔 */
+  justify-content: center;
+  gap: 20px;
+  margin: 10px auto;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  font-size: 14px;
+  flex-wrap: wrap;
 }
 
 #classification-radio label {
