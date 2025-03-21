@@ -60,25 +60,48 @@ const initMap = () => {
     const touchHint = document.getElementById("touch-hint");
     map.on('touchstart', (e) => {
       if (!e.points) return;
+    
+      // 2本指以上の場合はピンチズームなどドラッグ許可
       if (e.points.length >= 2) {
         map.dragPan.enable();
         touchHint.style.display = 'none';
-      } else {
-        map.dragPan.disable();
-        touchHint.style.display = 'block';
+        return;
       }
+    
+      // 1本指の場合 → ドラッグ無効化・移動距離判定の準備
+      map.dragPan.disable();
+      touchHint.style.display = 'none';
+    
+      // タッチ開始座標を記録 (1本指だけを想定)
+      const p = e.points[0];
+      map._touchStartPosition = { x: p.x, y: p.y };
     });
+    
     map.on('touchmove', (e) => {
       if (!e.points) return;
+    
       if (e.points.length >= 2) {
+        // 2本指になった → ドラッグ許可
         map.dragPan.enable();
         touchHint.style.display = 'none';
-      } else {
-        map.dragPan.disable();
+        return;
+      }
+    
+      // 1本指移動量を判定
+      const { x: startX, y: startY } = map._touchStartPosition || {x: 0, y: 0};
+      const { x: nowX, y: nowY } = e.points[0];
+      const dx = nowX - startX;
+      const dy = nowY - startY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+    
+      // ある程度(例: 10px以上)移動したらオーバーレイを表示
+      if (dist > 10) {
         touchHint.style.display = 'block';
       }
     });
+    
     map.on('touchend', () => {
+      // 1本指を離したらドラッグを無効にしてオーバーレイ非表示
       map.dragPan.disable();
       touchHint.style.display = 'none';
     });
