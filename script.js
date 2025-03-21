@@ -57,22 +57,17 @@ const initMap = () => {
 
   // ▼ タッチデバイスの場合のみ、2本指操作でドラッグを許可し、1本指でオーバーレイを表示
   if (isTouchDevice) {
-    // オーバーレイ要素を取得
     const touchHint = document.getElementById("touch-hint");
-
     map.on('touchstart', (e) => {
       if (!e.points) return;
       if (e.points.length >= 2) {
-        // 2本指以上 → パン操作ON, オーバーレイ消す
         map.dragPan.enable();
         touchHint.style.display = 'none';
       } else {
-        // 1本指 → パン操作OFF, オーバーレイ表示
         map.dragPan.disable();
         touchHint.style.display = 'block';
       }
     });
-
     map.on('touchmove', (e) => {
       if (!e.points) return;
       if (e.points.length >= 2) {
@@ -83,9 +78,7 @@ const initMap = () => {
         touchHint.style.display = 'block';
       }
     });
-
-    map.on('touchend', (e) => {
-      // 指が離れたら1本指状態ではなくなるのでドラッグOFF + オーバーレイ消す
+    map.on('touchend', () => {
       map.dragPan.disable();
       touchHint.style.display = 'none';
     });
@@ -118,7 +111,6 @@ const loadLiteratureCSV = async () => {
     lines.forEach((line, index) => {
       if (index === 0) return; // ヘッダーをスキップ
 
-      // カンマ区切りを安全に処理
       const columns = [];
       let current = "";
       let inQuotes = false;
@@ -155,7 +147,7 @@ const loadTaxonNameCSV = () => {
   loadCSV("TaxonName.csv", (csvText) => {
     const lines = csvText.split("\n").filter(line => line.trim());
     lines.forEach((line, idx) => {
-      if (idx === 0) return; // ヘッダーをスキップ
+      if (idx === 0) return;
 
       const columns = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g)?.map(col => col.replace(/^"|"$/g, '').trim());
       if (!columns || columns.length < 3) return;
@@ -171,7 +163,6 @@ const loadTaxonNameCSV = () => {
   });
 };
 
-// Promiseを返す形にする
 function loadOrderCSV(fileName, arrayStorage) {
   return new Promise((resolve, reject) => {
     loadCSV(fileName, (csvText) => {
@@ -180,7 +171,7 @@ function loadOrderCSV(fileName, arrayStorage) {
         if (index === 0) return;
         arrayStorage.push(line.trim());
       });
-      resolve(); // 読み込み完了を通知
+      resolve();
     });
   });
 }
@@ -265,7 +256,6 @@ const loadDistributionCSV = async () => {
 };
 
 // ==================== フィルタリングロジック ====================
-/** 現在のセレクトボックス＆チェックボックス状態を取得 */
 const getFilterStates = () => {
   const filters = {
     species: document.getElementById("filter-species").value,
@@ -311,7 +301,6 @@ const filterByCheckbox = (data, checkboxes) => {
     if (checkboxes.excludeDubious && isDubious) return false;
     if (checkboxes.excludeCitation && isCitation) return false;
 
-    // マーカー種別ごとの表示可否
     const recordTypeFilter = {
       "1_タイプ産地": checkboxes.filterType,
       "2_統合された種のタイプ産地": checkboxes.filterIntegratedType,
@@ -328,18 +317,14 @@ const filterByCheckbox = (data, checkboxes) => {
   });
 };
 
-/** セレクトボックスに表示する候補を集める (検索窓なし) */
 const gatherSelectOptions = (data) => {
-  // 1) 文献
   const literatureOptions = literatureArray
     .filter(item => data.some(row => row.literatureID === item.id))
     .map(item => ({ value: item.id, label: item.label }));
 
-  // 2) 種 (学名/和名)
   const combinedNames = [...new Set(data.map(row => `${row.scientificName} / ${row.japaneseName}`))]
     .sort();
 
-  // 3) 目・科・属
   const getOptions = (dataKey) => {
     const uniqueMap = new Map();
     data.forEach(r => {
@@ -358,7 +343,6 @@ const gatherSelectOptions = (data) => {
     return arr;
   };
 
-  // 4) 都道府県・島
   const getPrefIslandOptions = (dataKey, refArray) => {
     return refArray
       .filter(item => data.some(row => row[dataKey] === item))
@@ -376,7 +360,6 @@ const gatherSelectOptions = (data) => {
   };
 };
 
-/** セレクトボックスのDOM構築 */
 const populateSelect = (id, options, defaultText, selectedValue) => {
   const select = document.getElementById(id);
   if (!select) return;
@@ -384,15 +367,12 @@ const populateSelect = (id, options, defaultText, selectedValue) => {
   const currentVal = select.value;
   $(select).empty();
 
-  // デフォルトオプション
   $(select).append(new Option(defaultText, "", false, false));
 
-  // 候補を追加
   options.forEach(opt => {
     $(select).append(new Option(opt.label, opt.value, false, false));
   });
 
-  // 可能なら前の選択を復元
   if (options.some(opt => opt.value === currentVal)) {
     $(select).val(currentVal).trigger("change");
   } else {
@@ -431,16 +411,12 @@ const updateSelectBoxes = (filters, selectOptions) => {
   populateSelect("filter-island", islandOptions, "島を選択", filters.island);
 };
 
-/** 絞り込み結果をセレクトボックスに反映 */
 const updateFilters = (filteredData) => {
   const { filters, checkboxes } = getFilterStates();
-  // ここで改めてcheckBoxフィルタをしない: applyFilters()で既に済
-  // => 下行の "dataAfterCheckbox" を "filteredData" に変更する
   const selectOptions = gatherSelectOptions(filteredData);
   updateSelectBoxes(filters, selectOptions);
 };
 
-/** 最終的なフィルタを実行し、地図やグラフを更新 */
 const applyFilters = async (updateMap = true) => {
   try {
     const { filters, checkboxes } = getFilterStates();
@@ -449,7 +425,6 @@ const applyFilters = async (updateMap = true) => {
       activePopup = null;
     }
 
-    // 1) セレクトボックス条件
     let filteredRowsLocal = rows.filter(row => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
       return (
@@ -463,25 +438,17 @@ const applyFilters = async (updateMap = true) => {
       );
     });
 
-    // 2) チェックボックス条件
     filteredRowsLocal = filterByCheckbox(filteredRowsLocal, checkboxes);
-
-    // 3) セレクトボックス候補再生成
     updateFilters(filteredRowsLocal);
-
-    // 4) 選択ラベル更新
     updateSelectedLabels();
 
-    // 5) レコード数・地点数
     updateRecordInfo(
       filteredRowsLocal.length,
       new Set(filteredRowsLocal.map(r => `${r.latitude},${r.longitude}`)).size
     );
 
-    // 6) 文献リスト
     generateLiteratureList(filteredRowsLocal);
 
-    // 7) 地図・グラフ更新
     if (updateMap) {
       displayMarkers(filteredRowsLocal);
       generateMonthlyChart(filteredRowsLocal);
@@ -555,7 +522,6 @@ const initializeSelect2 = () => {
   ];
 
   selectBoxes.forEach(({ id, placeholder }) => {
-    // ① Select2 化
     $(id).select2({
       placeholder: placeholder,
       allowClear: true,
@@ -563,14 +529,11 @@ const initializeSelect2 = () => {
       dropdownAutoWidth: true
     });
 
-    // ② Select2 独自イベントで絞り込み
-    //    ユーザがマウスで選んだ/クリアした時などに呼ばれる
     $(id).on("select2:select select2:unselect select2:clear", () => {
       applyFilters(true);
       updateSelectedLabels();
     });
 
-    // ③ 「▽ と ✕」の見た目調整
     const updateClearButton = () => {
       setTimeout(() => {
         $(".select2-container").each(function () {
@@ -646,7 +609,6 @@ function setupSelectListeners() {
   dropDownIds.forEach((id) => {
     const sel = document.getElementById(id);
     if (sel) {
-      // 原生の "change" イベント(前/次ボタンなどでvalueを変えた時に発火)
       sel.addEventListener("change", () => {
         applyFilters(true);
         updateSelectedLabels();
@@ -656,7 +618,6 @@ function setupSelectListeners() {
 }
 
 function setupCheckboxListeners() {
-  // 主要チェックボックス
   [
     "exclude-unpublished",
     "exclude-dubious",
@@ -670,7 +631,6 @@ function setupCheckboxListeners() {
     }
   });
 
-  // マーカー種類チェックボックス
   document.querySelectorAll(".marker-filter-checkbox").forEach(checkbox => {
     checkbox.addEventListener("change", () => applyFilters(true));
   });
@@ -704,7 +664,6 @@ const navigateOption = async (selectId, direction) => {
   if (!select) return;
   const selectedVal = select.value;
 
-  // 一時的に選択解除→フィルタ更新
   select.value = "";
   await applyFilters(false);
 
@@ -730,7 +689,6 @@ const setupResetButton = () => {
   const resetBtn = document.getElementById("reset-button");
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
-      // セレクトボックスを未選択に
       [
         "filter-species",
         "filter-genus",
@@ -744,11 +702,8 @@ const setupResetButton = () => {
         if (sel) sel.selectedIndex = 0;
       });
 
-      // マーカークリア & ラベル更新
       clearMarkers();
       updateSelectedLabels();
-
-      // チェックボックスは状態を維持
       applyFilters(true);
     });
   }
@@ -764,7 +719,6 @@ const setupLegendToggle = () => {
   });
 };
 
-// ポップアップの外をクリックで閉じる
 const setupPopupClose = () => {
   document.addEventListener("click", (e) => {
     if (!activePopup) return;
@@ -777,7 +731,6 @@ const setupPopupClose = () => {
   }, true);
 };
 
-// サーチコンテナの開閉
 const setupSearchContainerToggle = () => {
   const searchContainer = document.querySelector(".search-container");
   const toggleButton = document.getElementById("toggle-button");
@@ -1042,8 +995,14 @@ const preparePopupContent = (filteredData) => {
 
 // ==================== グラフ系 ====================
 function generateMonthlyChart(allRows) {
-  if (monthChart) monthChart.destroy();
+  // ★★★ タイトルを外部HTML要素に設定する例 ★★★
+  const monthTitleEl = document.getElementById("month-chart-title");
+  if (monthTitleEl) {
+    monthTitleEl.textContent = "出現期（月別）";
+  }
 
+  if (monthChart) monthChart.destroy();
+  
   const monthlySetAdult = Array.from({ length: 12 }, () => new Set());
   const monthlySetJuvenile = Array.from({ length: 12 }, () => new Set());
 
@@ -1099,12 +1058,7 @@ function generateMonthlyChart(allRows) {
       },
       plugins: {
         legend: { display: false },
-        title: {
-          display: true,
-          text: '出現期',
-          align: 'center',
-          font: { size: 16 }
-        }
+        title: { display: false } // Chart.js内蔵タイトルはオフ
       }
     }
   });
@@ -1129,14 +1083,23 @@ function setupChartLegendToggles() {
 }
 
 function generatePrefectureChart(allRows) {
+  // ★★★ タイトルを外部HTML要素に設定する例 ★★★
+  const prefTitleEl = document.getElementById("prefecture-chart-title");
+  if (prefTitleEl) {
+    // 目/科 & 種数/割合からタイトルを組み立て
+    const classTxt = (currentClassification === "order") ? "目別" : "科別";
+    const measureTxt = (currentChartMode === "ratio") ? "割合" : "種数";
+    
+    prefTitleEl.textContent = `各都道府県の${classTxt}${measureTxt}`;
+  }
+
   if (prefectureChart) prefectureChart.destroy();
 
-  const classificationKey = currentClassification; // "order" or "family"
-  const chartMode = currentChartMode; // "count" or "ratio"
+  const classificationKey = currentClassification;
+  const chartMode = currentChartMode;
   const excludeUndescribed = document.getElementById("exclude-undescribed")?.checked;
   const validRanks = ["species", "species complex", "subspecies"];
 
-  // 対象行
   const targetRows = allRows.filter(row => {
     const rank = row.taxonRank?.toLowerCase();
     if (!validRanks.includes(rank)) return false;
@@ -1146,7 +1109,6 @@ function generatePrefectureChart(allRows) {
     return true;
   });
 
-  // 都道府県x(目 or 科) => 種のSet
   const prefectureTaxonMap = {};
   function getNormalizedSpeciesName(row) {
     const rank = row.taxonRank?.toLowerCase();
@@ -1317,11 +1279,7 @@ function generatePrefectureChart(allRows) {
           }
         },
         title: {
-          display: true,
-          text: (classificationKey === "order")
-            ? `各都道府県の${(chartMode === "ratio") ? "割合" : "種数"}（目別）`
-            : `各都道府県の${(chartMode === "ratio") ? "割合" : "種数"}（科別）`,
-          font: { size: 16 }
+          display: false // Chart.js内蔵タイトルはオフ
         }
       },
       barThickness: 20
@@ -1357,12 +1315,10 @@ function updateSelectedLabels() {
 
     let labelText = opt.text;
     if (labelText.includes(" / ")) {
-      // "学名 / 和名"→"和名 / 学名"
       const parts = labelText.split(" / ");
       labelText = `${parts[1]} / ${parts[0]}`;
     }
 
-    // 目・科・属・種の学名フォーマット
     if (id === "filter-order" || id === "filter-family") {
       labelText = formatOrderFamilyName(labelText);
     } else if (id === "filter-genus") {
@@ -1399,7 +1355,6 @@ function updateSelectedLabels() {
   }
 }
 
-// 目・科・属・種の表記フォーマット
 const formatOrderFamilyName = (name) => {
   if (!name.includes(" / ")) return name;
   const [jName, sciName] = name.split(" / ");
@@ -1437,7 +1392,6 @@ const formatSpeciesName = (name) => {
   return `${jName} / ${formatted}${authorYear}`;
 };
 
-/** 疑わしい記録のチェックボックス連動 */
 function linkMasterAndDubiousCheckboxes() {
   const masterCheckbox = document.getElementById("legend-master-checkbox");
   const filterDoubtfulType = document.getElementById("filter-doubtful-type");
@@ -1509,7 +1463,6 @@ function linkMasterAndDubiousCheckboxes() {
   }
 }
 
-/** 目/科 & 種数/割合 のラジオボタン */
 function setupClassificationRadio() {
   const classRadios = document.querySelectorAll('input[name="classification"]');
   classRadios.forEach(r => {
@@ -1540,7 +1493,6 @@ const adjustSearchContainerAndLegend = () => {
   if (!searchContainer || !mapContainer || !legend || !selectedLabels) return;
 
   if (window.innerWidth <= 711) {
-    // スマホ幅
     const parent = mapContainer.parentNode;
     parent.insertBefore(searchContainer, mapContainer);
     searchContainer.insertAdjacentElement("afterend", selectedLabels);
@@ -1562,7 +1514,6 @@ const adjustSearchContainerAndLegend = () => {
     legend.style.bottom = "auto";
     legend.style.right = "auto";
   } else {
-    // PC幅
     searchContainer.style.position = "absolute";
     searchContainer.style.width = "auto";
     mapContainer.appendChild(searchContainer);
@@ -1593,17 +1544,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadLiteratureCSV();
   await loadDistributionCSV(); // rowsにデータが入る
 
-  // 初期のレコード数・地点数表示
   updateRecordInfo(rows.length, new Set(rows.map(r => `${r.latitude},${r.longitude}`)).size);
 
-  // イベントの設定
-  setupSelectListeners();   // 原生の "change" イベント
+  setupSelectListeners();
   setupCheckboxListeners();
   setupNavButtonListeners();
   setupResetButton();
   map.on("zoomend", () => displayMarkers(filteredRows));
 
-  // Select2 初期化 (ここで select2 独自イベント→ applyFilters を仕込む)
   setTimeout(() => initializeSelect2(), 50);
   setTimeout(() => updateDropdownPlaceholders(), 100);
 
@@ -1614,7 +1562,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   linkMasterAndDubiousCheckboxes();
   setupClassificationRadio();
 
-  // マスターcheckbox(「マーカーの種類」)全選択/一部選択同期
   const masterCb = document.getElementById("legend-master-checkbox");
   const allCbs = document.querySelectorAll(".marker-filter-checkbox");
   masterCb.addEventListener("change", () => {
@@ -1629,7 +1576,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // タブ切り替え
   const tabHeaderItems = document.querySelectorAll(".tab-header li");
   const tabContents = document.querySelectorAll(".tab-content");
   tabHeaderItems.forEach(item => {
@@ -1642,10 +1588,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // 最初の都道府県グラフ描画
   generatePrefectureChart(filteredRows);
 
-  // 画面サイズ変化対応
   window.addEventListener("resize", adjustSearchContainerAndLegend);
   adjustSearchContainerAndLegend();
 
