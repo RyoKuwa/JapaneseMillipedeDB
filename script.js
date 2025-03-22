@@ -463,6 +463,7 @@ const applyFilters = async (updateMap = true) => {
 
     filteredRowsLocal = filterByCheckbox(filteredRowsLocal, checkboxes);
     updateFilters(filteredRowsLocal);
+    initializeSelect2();
     updateSelectedLabels();
 
     updateRecordInfo(
