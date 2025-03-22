@@ -11,9 +11,6 @@
   
     <!-- MapLibre JS -->
     <script src="https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.js"></script>
-  
-    <!-- viewport メタタグ -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- ページ独自のCSS -->
     <link rel="stylesheet" href="style.css">
@@ -40,7 +37,7 @@
   <div id="selected-labels"></div>
 
   <div id="mapid">
-    <div id="touch-hint">2本指で地図を操作します</div>
+    <div id="touch-hint">2本指で地図を操作<br><br>マーカークリックで詳細表示</div>
     <!-- 検索とセレクトボックス -->
     <div class="search-container">
       <h2 class="select-box-title">フィルタリング</h2>
@@ -163,9 +160,13 @@
       <li data-tab="tab-island">島 Island</li>
       <li data-tab="tab-reference">引用文献 Reference</li>
     </ul>
-  
+
     <!-- タブの内容 -->
     <div id="tab-data" class="tab-content active">
+
+      <!-- 区切り線 -->
+      <div class="chart-divider"></div>
+
       <!-- 出現期 -->
       <h2 id="month-chart-title" class="external-chart-title"></h2>
       <div id="chart-wrapper"  class="chart-container-scroll">
@@ -186,6 +187,9 @@
         </div>
       </div>
       
+      <!-- 区切り線 -->
+      <div class="chart-divider"></div>
+
       <!-- 各都道府県の記録数（タイトル） -->
       <h2 id="prefecture-chart-title" class="external-chart-title"></h2>
       <div id="classification-radio">
