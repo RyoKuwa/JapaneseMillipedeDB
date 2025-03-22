@@ -714,6 +714,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     top:auto;
     bottom: auto;
     transform: rotate(180deg); /* デフォルトで180度回転（反対向き） */
+    font-size: 18px;
   }
   .toggle-button.rotate {
     transform: rotate(0deg); /* クリック時に元の向きに戻す */
