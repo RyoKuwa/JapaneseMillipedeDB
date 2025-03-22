@@ -39,6 +39,8 @@ header h1 {
 
 /* 検索コンテナの基本スタイル */
 .search-container {
+  position: absolute;
+  width: auto;
   top: 10px;          /* mapid の上から 10px */
   left: 10px;         /* mapid の左から 10px */
   background: white;
@@ -122,6 +124,10 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 /* Legendの基本スタイル */
 .legend {
+  position: absolute;
+  width: 340px;
+  bottom: 30px;
+  right: 10px;
   background-color: rgba(255, 255, 255, 1);
   padding: 10px;
   font-size: 14px;
@@ -481,6 +487,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   display: none; /* 初期状態は非表示 */
   white-space: pre-line; /* 改行を有効化 */
   overflow-wrap: break-word;
+  border: 1px solid #ccc;
 }
 
 /* タブ全体のコンテナ */
@@ -670,23 +677,42 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
   #selected-labels{
     margin-left: 0;
-    width: calc(100% - 20px);
+    width: 100%;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
   }
+
   .search-container {
     margin-left: 0;
     left: 0;
     top: 0;
     box-shadow: none;
+    position: relative;
+    width: 100%;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    max-height: 560px;
+  }
+
+  .search-container.closed {
+    max-height: 40px; /* 高さを0にして隠す */
   }
 
   .legend {
+    position: relative;
+    width: 100%;
+    bottom: auto;
     margin-left: 0;
     left: 0;
+    right: auto;
     top: 0;
     box-shadow: none;
   }
 
   .toggle-button {
+    right: 10px;
+    top:auto;
+    bottom: auto;
     transform: rotate(180deg); /* デフォルトで180度回転（反対向き） */
   }
   .toggle-button.rotate {

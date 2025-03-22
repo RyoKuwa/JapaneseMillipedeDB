@@ -554,7 +554,6 @@ const initializeSelect2 = () => {
     $(id).off();  // イベント解除
   });
 
-  // セレクトボックス一覧
   const selectBoxes = [
     { id: "#filter-order", placeholder: "目を選択" },
     { id: "#filter-family", placeholder: "科を選択" },
@@ -565,7 +564,6 @@ const initializeSelect2 = () => {
     { id: "#filter-literature", placeholder: "文献を選択" }
   ];
 
-  // 安全にSelect2を初期化
   const safelyInitSelect2 = (id, options) => {
     try {
       $(id).select2(options);
@@ -576,20 +574,16 @@ const initializeSelect2 = () => {
     }
   };
 
-  // カスタムクリアボタンの設定
   const setupCustomClearButton = (id) => {
     const selectElement = $(id);
     const selectContainer = selectElement.next('.select2-container');
 
-    // 既存クリアボタンを削除
     selectContainer.find('.custom-select2-clear').remove();
 
-    // 矢印ボタンの親に追加
     const arrow = selectContainer.find('.select2-selection__arrow');
     const clearButton = $('<span class="custom-select2-clear">✕</span>');
     arrow.parent().append(clearButton);
 
-    // 矢印とクリアボタンの切り替え
     const updateButtonsVisibility = () => {
       if (selectElement.val() && selectElement.val().length > 0) {
         arrow.hide();
@@ -600,10 +594,8 @@ const initializeSelect2 = () => {
       }
     };
 
-    // 初期表示設定
     updateButtonsVisibility();
 
-    // クリック時の処理
     clearButton.on('click', function(e) {
       e.stopPropagation();
       e.preventDefault();
@@ -620,19 +612,19 @@ const initializeSelect2 = () => {
       return false;
     });
 
-    // select2コンテナの相対配置を確保
     selectContainer.css('position', 'relative');
 
-    // イベント設定
     selectElement.on('change', updateButtonsVisibility);
     selectElement.on('select2:open select2:close', updateButtonsVisibility);
   };
 
-  // 各セレクトボックスを初期化
   selectBoxes.forEach(({ id, placeholder }) => {
+    const count = $(id).find("option:not(:first-child)").length;
+    const placeholderWithCount = `${placeholder}（${count}件）`;
+
     const initSuccess = safelyInitSelect2(id, {
-      placeholder: placeholder,
-      allowClear: false,  // 標準のクリア機能は使用しない
+      placeholder: placeholderWithCount,
+      allowClear: false,
       minimumResultsForSearch: 0,
       dropdownAutoWidth: true
     });
@@ -640,14 +632,13 @@ const initializeSelect2 = () => {
     if (initSuccess) {
       setupCustomClearButton(id);
 
-      $(id).on("select2:select", function() {
+      $(id).on("select2:select", function () {
         applyFilters(true);
         updateSelectedLabels();
       });
     }
   });
 
-  // 遅延対策（念のため）
   setTimeout(() => {
     selectBoxes.forEach(({ id }) => {
       setupCustomClearButton(id);
@@ -1634,50 +1625,28 @@ let preventResize = false;
 
 const adjustSearchContainerAndLegend = () => {
   if (preventResize) return;
+  
   const searchContainer = document.querySelector(".search-container");
   const mapContainer = document.getElementById("mapid");
   const legend = document.querySelector(".legend");
   const selectedLabels = document.getElementById("selected-labels");
-  if (!searchContainer || !mapContainer || !legend || !selectedLabels) return;
+  const toggleButton = document.getElementById("toggle-button");
+
+  if (!searchContainer || !mapContainer || !legend || !selectedLabels || !toggleButton) return;
 
   if (window.innerWidth <= 711) {
+    // モバイルレイアウト
     const parent = mapContainer.parentNode;
     parent.insertBefore(searchContainer, mapContainer);
     searchContainer.insertAdjacentElement("afterend", selectedLabels);
 
-    const paddingValue = parseInt(window.getComputedStyle(searchContainer).paddingLeft, 10) || 0;
-    searchContainer.style.position = "relative";
-    searchContainer.style.width = `${mapContainer.offsetWidth - paddingValue * 2}px`;
-
-    const toggleButton = document.getElementById("toggle-button");
-    toggleButton.style.right = "10px";
-    toggleButton.style.top = "10px";
-    toggleButton.style.bottom = "auto";
-
     if (legend.parentNode !== mapContainer.parentNode) {
       mapContainer.insertAdjacentElement("afterend", legend);
     }
-    legend.style.position = "relative";
-    legend.style.width = `${mapContainer.offsetWidth}px`;
-    legend.style.bottom = "auto";
-    legend.style.right = "auto";
   } else {
-    searchContainer.style.position = "absolute";
-    searchContainer.style.width = "auto";
+    // デスクトップレイアウト
     mapContainer.appendChild(searchContainer);
-
-    const toggleButton = document.getElementById("toggle-button");
-    toggleButton.style.right = "10px";
-    toggleButton.style.bottom = "10px";
-    toggleButton.style.top = "auto";
-
-    if (legend.parentNode !== mapContainer) {
-      mapContainer.appendChild(legend);
-    }
-    legend.style.position = "absolute";
-    legend.style.width = "340px";
-    legend.style.bottom = "30px";
-    legend.style.right = "10px";
+    mapContainer.appendChild(legend);
   }
 };
 
