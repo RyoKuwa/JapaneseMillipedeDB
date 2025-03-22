@@ -423,6 +423,9 @@ const populateSelect = (id, options, defaultText, selectedValue) => {
   if (!select) return;
 
   const currentVal = select.value;
+  const currentOpt = select.querySelector(`option[value="${CSS.escape(currentVal)}"]`);
+  const currentLabel = currentOpt ? currentOpt.textContent : currentVal;
+
   $(select).empty();
 
   $(select).append(new Option(defaultText, "", false, false));
@@ -431,11 +434,14 @@ const populateSelect = (id, options, defaultText, selectedValue) => {
     $(select).append(new Option(opt.label, opt.value, false, false));
   });
 
-  if (options.some(opt => opt.value === currentVal)) {
-    $(select).val(currentVal).trigger("change");
-  } else {
-    $(select).val("").trigger("change");
+  // currentValがまだ候補にないなら追加しておく
+  const exists = options.some(opt => opt.value === currentVal);
+  if (currentVal && !exists) {
+    $(select).append(new Option(currentLabel, currentVal, true, true));
   }
+
+  // 選択状態を再設定
+  $(select).val(currentVal).trigger("change");
 };
 
 const updateSelectBoxes = (filters, selectOptions) => {
@@ -470,12 +476,23 @@ const updateSelectBoxes = (filters, selectOptions) => {
 };
 
 const updateFilters = (filteredData) => {
-  const { filters, checkboxes } = getFilterStates();
+  // 最新のセレクトボックスの選択状態を取得（保持するため）
+  const filters = {
+    species: document.getElementById("filter-species")?.value || "",
+    genus: document.getElementById("filter-genus")?.value || "",
+    family: document.getElementById("filter-family")?.value || "",
+    order: document.getElementById("filter-order")?.value || "",
+    prefecture: document.getElementById("filter-prefecture")?.value || "",
+    island: document.getElementById("filter-island")?.value || "",
+    literature: document.getElementById("filter-literature")?.value || ""
+  };
+
   const selectOptions = gatherSelectOptions(filteredData);
   updateSelectBoxes(filters, selectOptions);
-  updateSpeciesListInTab();// 種タブ更新
-  updatePrefectureListInTab();// 都道府県タブ更新
-  updateIslandListInTab();// 島タブ更新
+
+  updateSpeciesListInTab();
+  updatePrefectureListInTab();
+  updateIslandListInTab();
 };
 
 const applyFilters = async (updateMap = true) => {
@@ -605,14 +622,22 @@ const initializeSelect2 = () => {
 
   const safelyInitSelect2 = (id, options) => {
     try {
-      $(id).select2(options);
+      const currentVal = $(id).val(); // 現在の選択値を保存
+  
+      $(id).select2(options); // 初期化
+  
+      // 選択値を再設定（Select2が options にない値でも表示される）
+      if (currentVal) {
+        $(id).val(currentVal).trigger("change");
+      }
+  
       return true;
     } catch (e) {
       console.error(`Select2初期化エラー(${id}):`, e);
       return false;
     }
   };
-
+  
   const setupCustomClearButton = (id) => {
     const selectElement = $(id);
     const selectContainer = selectElement.next('.select2-container');
