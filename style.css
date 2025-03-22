@@ -733,4 +733,9 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   .legend {
     max-width: 100%;
   }
+
+  /* トグルボタンのスタイル */
+  .legend-toggle-button {
+    font-size: 18px;
+  }
 }
