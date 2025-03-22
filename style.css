@@ -181,6 +181,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   font-size: 18px;
   cursor: pointer;
   transition: transform 0.3s ease;
+  font-size: 18px;
 }
 
 /* 折りたたみ時のスタイル（高さを0に） */
