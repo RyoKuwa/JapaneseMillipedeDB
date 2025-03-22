@@ -649,6 +649,11 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   width: 100%;
 }
 
+#species-list {
+  list-style: none;
+  padding-left: 0;
+}
+
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {

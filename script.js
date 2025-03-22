@@ -175,14 +175,15 @@ const loadTaxonNameCSV = () => {
       if (idx === 0) return;
 
       const columns = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g)?.map(col => col.replace(/^"|"$/g, '').trim());
-      if (!columns || columns.length < 3) return;
+      if (!columns || columns.length < 5) return;
 
-      const [japaneseName, scientificName, ...authorYearParts] = columns;
-      let authorYear = authorYearParts.join(", ").replace(/,\s*$/, "").trim();
+      const [no, japaneseName, scientificName, authorYear, rank] = columns;
 
       taxonMap[scientificName] = {
+        no: parseInt(no, 10),
         japaneseName: japaneseName || "-",
-        authorYear: authorYear || "-"
+        authorYear: authorYear || "-",
+        rank: rank || "-"
       };
     });
   });
@@ -499,6 +500,7 @@ const applyFilters = async (updateMap = true) => {
     });
 
     filteredRowsLocal = filterByCheckbox(filteredRowsLocal, checkboxes);
+    filteredRows = filteredRowsLocal;
     updateFilters(filteredRowsLocal);
     initializeSelect2();
     updateSelectedLabels();
@@ -517,7 +519,6 @@ const applyFilters = async (updateMap = true) => {
     }
 
     updateDropdownPlaceholders();
-    filteredRows = filteredRowsLocal;
 
   } catch (error) {
     console.error("applyFilters中にエラー:", error);
@@ -1721,33 +1722,117 @@ function updateIslandListInTab() {
 }
 
 function updateSpeciesListInTab() {
-  const select = document.getElementById('filter-species');
   const listContainer = document.getElementById('species-list');
-  listContainer.innerHTML = ''; // 既存リストをクリア
+  listContainer.innerHTML = '';
 
-  Array.from(select.options).forEach(option => {
-    if (option.value !== '') {
-      const li = document.createElement('li');
+  const validRows = filteredRows.filter(r => r.scientificName && r.scientificName !== "-");
 
-      const [scientificName, japaneseName] = option.value.split(' / ');
-      const taxonInfo = taxonMap[scientificName?.trim()] || { authorYear: "-" };
-      const authorYear = taxonInfo.authorYear !== "-" ? ` <span class="non-italic">${taxonInfo.authorYear}</span>` : "";
-
-      let formattedSci = scientificName
-        .replace(/\(/g, '<span class="non-italic">(</span>')
-        .replace(/\)/g, '<span class="non-italic">)</span>');
-
-      if (formattedSci.includes("sp.") && !formattedSci.includes("ord.") && !formattedSci.includes("fam.") && !formattedSci.includes("gen.")) {
-        formattedSci = formattedSci.replace(/(.*?)(sp\..*)/, '<i>$1</i><span class="non-italic">$2</span>');
-      } else if (formattedSci.match(/ord\.|fam\.|gen\./)) {
-        formattedSci = `<span class="non-italic">${formattedSci}</span>`;
-      } else {
-        formattedSci = `<i>${formattedSci}</i>`;
-      }
-
-      li.innerHTML = `${japaneseName} / ${formattedSci}${authorYear}`;
-      listContainer.appendChild(li);
+  const tree = {};
+  validRows.forEach(row => {
+    const { order, family, genus, scientificName, taxonRank, japaneseName } = row;
+    if (!tree[order]) tree[order] = {};
+    if (!tree[order][family]) tree[order][family] = {};
+    if (!tree[order][family][genus]) tree[order][family][genus] = {};
+    if (!tree[order][family][genus][scientificName]) {
+      tree[order][family][genus][scientificName] = {
+        rank: taxonRank,
+        japaneseName,
+        subspecies: new Set()
+      };
     }
+    if (taxonRank === "subspecies") {
+      tree[order][family][genus][scientificName].subspecies.add(japaneseName);
+    }
+  });
+
+  let speciesCounter = 1;
+
+  const getNo = (name, rank) => {
+    const entry = Object.entries(taxonMap).find(([sci, data]) =>
+      data && data.rank === rank && sci === name
+    );
+    return entry ? parseInt(entry[1].no) || Infinity : Infinity;
+  };
+
+  const sortByNo = (names, rank) => {
+    return names.sort((a, b) => getNo(a, rank) - getNo(b, rank));
+  };
+
+  const createLi = (html, indent = 0) => {
+    const li = document.createElement('li');
+    li.style.marginLeft = `${indent * 1.2}em`;
+    li.innerHTML = html;
+    listContainer.appendChild(li);
+  };
+
+  const getDisplayName = (sci) => {
+    const entry = taxonMap[sci] || {};
+    const jpn = entry.japaneseName || "-";
+    const author = entry.authorYear && entry.authorYear !== "-" ? ` <span class="non-italic">${entry.authorYear}</span>` : "";
+    return { jpn, sci, author };
+  };
+
+  sortByNo(Object.keys(tree), "order").forEach(order => {
+    const orderDisp = getDisplayName(order);
+    const formatted = order.match(/ord\.|fam\.|gen\./)
+      ? `<span class="non-italic">${order}</span>`
+      : `<span class="non-italic">${order}</span>`;
+    createLi(`${orderDisp.jpn} / ${formatted}${orderDisp.author}`, 0);
+
+    sortByNo(Object.keys(tree[order]), "family").forEach(family => {
+      const familyDisp = getDisplayName(family);
+      const formatted = family.match(/ord\.|fam\.|gen\./)
+        ? `<span class="non-italic">${family}</span>`
+        : `<span class="non-italic">${family}</span>`;
+      createLi(`${familyDisp.jpn} / ${formatted}${familyDisp.author}`, 1);
+
+      sortByNo(Object.keys(tree[order][family]), "genus").forEach(genus => {
+        const genusDisp = getDisplayName(genus);
+        const formatted = genus.match(/ord\.|fam\.|gen\./)
+          ? `<span class="non-italic">${genus}</span>`
+          : `<i>${genus}</i>`;
+        createLi(`${genusDisp.jpn} / ${formatted}${genusDisp.author}`, 2);
+
+        const speciesList = Object.entries(tree[order][family][genus]);
+
+        speciesList.sort((a, b) => {
+          const aNo = getNo(a[0], a[1].rank);
+          const bNo = getNo(b[0], b[1].rank);
+          return aNo - bNo;
+        }).forEach(([sci, data]) => {
+          if (data.rank === "subspecies") return;
+
+          const { jpn, author } = getDisplayName(sci);
+          let formattedSci = sci;
+          if (sci.includes("sp.") && !sci.match(/ord\.|fam\.|gen\./)) {
+            formattedSci = sci.replace(/(.*?)\s(sp\..*)/, '<i>$1</i><span class="non-italic"> $2</span>');
+          } else if (sci.match(/ord\.|fam\.|gen\./)) {
+            formattedSci = `<span class="non-italic">${sci}</span>`;
+          } else {
+            formattedSci = `<i>${sci}</i>`;
+          }
+
+          const label = `${speciesCounter}. ${jpn} / ${formattedSci}${author}`;
+          createLi(label, 3);
+
+          Array.from(data.subspecies).sort().forEach((subJpn, idx) => {
+            const subEntry = Object.entries(taxonMap).find(([k, v]) =>
+              v.japaneseName === subJpn && v.rank === "subspecies"
+            );
+            const subSci = subEntry?.[0] || "-";
+            const subInfo = taxonMap[subSci] || {};
+            const subAuthor = subInfo.authorYear && subInfo.authorYear !== "-" ? ` <span class="non-italic">${subInfo.authorYear}</span>` : "";
+            const formattedSubSci = subSci.match(/ord\.|fam\.|gen\./)
+              ? `<span class="non-italic">${subSci}</span>`
+              : `<i>${subSci}</i>`;
+            const subLabel = `${speciesCounter}.${idx + 1} ${subJpn} / ${formattedSubSci}${subAuthor}`;
+            createLi(subLabel, 4);
+          });
+
+          speciesCounter++;
+        });
+      });
+    });
   });
 }
 
