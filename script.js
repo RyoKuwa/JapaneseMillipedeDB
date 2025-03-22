@@ -534,6 +534,27 @@ const getLiteratureInfo = (literatureID) => {
 
 // ==================== Select2 初期化 ====================
 const initializeSelect2 = () => {
+  // 既存のSelect2をすべて破棄
+  [
+    "#filter-order", 
+    "#filter-family", 
+    "#filter-genus", 
+    "#filter-species", 
+    "#filter-prefecture", 
+    "#filter-island", 
+    "#filter-literature"
+  ].forEach(id => {
+    try {
+      if ($(id).data('select2')) {
+        $(id).select2('destroy');
+      }
+    } catch (e) {
+      console.log(`Select2破棄エラー(${id}):`, e);
+    }
+    $(id).off();  // イベント解除
+  });
+
+  // セレクトボックス一覧
   const selectBoxes = [
     { id: "#filter-order", placeholder: "目を選択" },
     { id: "#filter-family", placeholder: "科を選択" },
@@ -544,56 +565,97 @@ const initializeSelect2 = () => {
     { id: "#filter-literature", placeholder: "文献を選択" }
   ];
 
+  // 安全にSelect2を初期化
+  const safelyInitSelect2 = (id, options) => {
+    try {
+      $(id).select2(options);
+      return true;
+    } catch (e) {
+      console.error(`Select2初期化エラー(${id}):`, e);
+      return false;
+    }
+  };
+
+  // カスタムクリアボタンの設定
+  const setupCustomClearButton = (id) => {
+    const selectElement = $(id);
+    const selectContainer = selectElement.next('.select2-container');
+
+    // 既存クリアボタンを削除
+    selectContainer.find('.custom-select2-clear').remove();
+
+    // 矢印ボタンの親に追加
+    const arrow = selectContainer.find('.select2-selection__arrow');
+    const clearButton = $('<span class="custom-select2-clear">✕</span>');
+    arrow.parent().append(clearButton);
+
+    // 矢印とクリアボタンの切り替え
+    const updateButtonsVisibility = () => {
+      if (selectElement.val() && selectElement.val().length > 0) {
+        arrow.hide();
+        clearButton.show();
+      } else {
+        arrow.show();
+        clearButton.hide();
+      }
+    };
+
+    // 初期表示設定
+    updateButtonsVisibility();
+
+    // クリック時の処理
+    clearButton.on('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      selectElement.val(null).trigger('change');
+      updateButtonsVisibility();
+      applyFilters(true);
+      updateSelectedLabels();
+
+      if (selectElement.data('select2')?.isOpen()) {
+        selectElement.select2('close');
+      }
+
+      return false;
+    });
+
+    // select2コンテナの相対配置を確保
+    selectContainer.css('position', 'relative');
+
+    // イベント設定
+    selectElement.on('change', updateButtonsVisibility);
+    selectElement.on('select2:open select2:close', updateButtonsVisibility);
+  };
+
+  // 各セレクトボックスを初期化
   selectBoxes.forEach(({ id, placeholder }) => {
-    $(id).select2({
+    const initSuccess = safelyInitSelect2(id, {
       placeholder: placeholder,
-      allowClear: true,
+      allowClear: false,  // 標準のクリア機能は使用しない
       minimumResultsForSearch: 0,
       dropdownAutoWidth: true
     });
 
-    $(id).on("select2:select select2:unselect select2:clear", () => {
-      applyFilters(true);
-      updateSelectedLabels();
-    });
+    if (initSuccess) {
+      setupCustomClearButton(id);
 
-    const updateClearButton = () => {
-      setTimeout(() => {
-        $(".select2-container").each(function () {
-          const selectContainer = $(this);
-          const selectElement = $("#" + selectContainer.prev("select").attr("id"));
-          if (!selectElement.length) return;
-
-          const arrow = selectContainer.find(".select2-selection__arrow");
-          const clear = selectContainer.find(".select2-selection__clear");
-
-          if (selectElement.val()) {
-            arrow.hide();
-            clear.css({
-              position: "absolute",
-              right: "10px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              cursor: "pointer",
-              zIndex: "10"
-            }).show();
-          } else {
-            arrow.show();
-            clear.hide();
-          }
-        });
-      }, 10);
-    };
-
-    $(id).on("select2:open select2:select select2:unselect", () => {
-      updateClearButton();
-    });
-    $(id).closest(".select-container").find(".nav-button").on("click", () => {
-      updateClearButton();
-    });
+      $(id).on("select2:select", function() {
+        applyFilters(true);
+        updateSelectedLabels();
+      });
+    }
   });
+
+  // 遅延対策（念のため）
+  setTimeout(() => {
+    selectBoxes.forEach(({ id }) => {
+      setupCustomClearButton(id);
+    });
+  }, 500);
 };
 
+// ドロップダウンのプレースホルダー更新関数
 const updateDropdownPlaceholders = () => {
   const items = [
     { id: "#filter-order", baseText: "目を選択" },
@@ -608,17 +670,37 @@ const updateDropdownPlaceholders = () => {
   items.forEach(({ id, baseText }) => {
     const selectEl = $(id);
     if (!selectEl.data("select2")) return;
+    
     const count = selectEl.find("option:not(:first-child)").length;
-    selectEl.select2({
-      placeholder: `${baseText}（${count}件）`,
-      allowClear: true,
-      minimumResultsForSearch: 0,
-      dropdownAutoWidth: true
-    });
+    try {
+      // プレースホルダーのみ更新（初期化し直さない）
+      const select2Instance = selectEl.data('select2');
+      if (select2Instance && select2Instance.$container) {
+        const placeholderElement = select2Instance.$container.find('.select2-selection__placeholder');
+        if (placeholderElement.length) {
+          placeholderElement.text(`${baseText}（${count}件）`);
+        }
+      }
+      
+      // 値が選択されている場合は、矢印を隠してクリアボタンを表示
+      const selectContainer = selectEl.next('.select2-container');
+      const arrow = selectContainer.find('.select2-selection__arrow');
+      const clearButton = selectContainer.find('.custom-select2-clear');
+      
+      if (selectEl.val() && selectEl.val().length > 0) {
+        arrow.hide();
+        clearButton.show();
+      } else {
+        arrow.show();
+        clearButton.hide();
+      }
+    } catch (e) {
+      console.error(`プレースホルダー更新エラー(${id}):`, e);
+    }
   });
 };
 
-// ==================== セレクトボックス/チェックボックスのイベント設定 ====================
+// セレクトボックスのイベント設定
 function setupSelectListeners() {
   const dropDownIds = [
     "filter-species",
@@ -629,25 +711,68 @@ function setupSelectListeners() {
     "filter-island",
     "filter-literature"
   ];
+  
+  // 既存のイベントリスナーを全て解除
   dropDownIds.forEach((id) => {
     const sel = document.getElementById(id);
     if (sel) {
-      sel.addEventListener("change", () => {
+      const clone = sel.cloneNode(true);
+      sel.parentNode.replaceChild(clone, sel);
+    }
+  });
+  
+  // 新しいイベントリスナーを設定
+  dropDownIds.forEach((id) => {
+    const sel = document.getElementById(id);
+    if (sel) {
+      sel.addEventListener("change", function() {
         applyFilters(true);
         updateSelectedLabels();
+        
+        // 矢印とクリアボタンの表示を更新
+        const selectEl = $(`#${id}`);
+        const selectContainer = selectEl.next('.select2-container');
+        const arrow = selectContainer.find('.select2-selection__arrow');
+        const clearButton = selectContainer.find('.custom-select2-clear');
+        
+        if (this.value) {
+          arrow.hide();
+          clearButton.show();
+        } else {
+          arrow.show();
+          clearButton.hide();
+        }
       });
     }
   });
 }
 
+// チェックボックスイベントのセットアップ関数
 function setupCheckboxListeners() {
-  [
+  const checkboxIds = [
     "exclude-unpublished",
     "exclude-dubious",
     "exclude-citation",
     "exclude-undescribed",
     "exclude-unspecies"
-  ].forEach(id => {
+  ];
+  
+  // 既存のイベントリスナーを全て解除
+  checkboxIds.forEach(id => {
+    const cb = document.getElementById(id);
+    if (cb) {
+      const clone = cb.cloneNode(true);
+      cb.parentNode.replaceChild(clone, cb);
+    }
+  });
+  
+  document.querySelectorAll(".marker-filter-checkbox").forEach(checkbox => {
+    const clone = checkbox.cloneNode(true);
+    checkbox.parentNode.replaceChild(clone, checkbox);
+  });
+  
+  // 新しいイベントリスナーを設定
+  checkboxIds.forEach(id => {
     const cb = document.getElementById(id);
     if (cb) {
       cb.addEventListener("change", () => applyFilters(true));
