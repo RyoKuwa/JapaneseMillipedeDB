@@ -7,6 +7,8 @@ let islandOrder = [];
 let markers = [];
 let literatureArray = [];
 let clusterGroup;
+let prefectureMeta = []; // [{ jp: "北海道", en: "Hokkaidō" }, ...]
+let islandMeta = [];     // [{ jp: "本州", en: "Honshū Island" }, ...]
 
 // ポップアップ関連
 let currentPopupIndex = 0;
@@ -186,14 +188,46 @@ const loadTaxonNameCSV = () => {
   });
 };
 
-function loadOrderCSV(fileName, arrayStorage) {
+function loadOrderCSV(fileName, arrayStorage, type) {
   return new Promise((resolve, reject) => {
     loadCSV(fileName, (csvText) => {
       const lines = csvText.split("\n").filter(line => line.trim());
-      lines.forEach((line, index) => {
-        if (index === 0) return;
-        arrayStorage.push(line.trim());
+      const header = lines[0].split(",");
+
+      const noIdx = header.findIndex(h => h.toLowerCase().includes("no"));
+      const jpIdx = header.findIndex(h => h.toLowerCase().includes("_jp"));
+      const enIdx = header.findIndex(h => h.toLowerCase().includes("_en"));
+
+      const tempArray = [];
+
+      lines.slice(1).forEach(line => {
+        const cols = line.split(",");
+        const no = parseInt(cols[noIdx], 10);
+        const jp = cols[jpIdx]?.trim() || "-";
+        const en = cols[enIdx]?.trim() || "-";
+        if (no && jp && en) {
+          tempArray.push({ no, jp, en });
+        }
       });
+
+      tempArray.sort((a, b) => a.no - b.no);
+
+      if (type === "prefecture") {
+        prefectureOrder.length = 0;
+        prefectureMeta.length = 0;
+        tempArray.forEach(item => {
+          prefectureOrder.push(item.jp);
+          prefectureMeta.push({ jp: item.jp, en: item.en });
+        });
+      } else if (type === "island") {
+        islandOrder.length = 0;
+        islandMeta.length = 0;
+        tempArray.forEach(item => {
+          islandOrder.push(item.jp);
+          islandMeta.push({ jp: item.jp, en: item.en });
+        });
+      }
+
       resolve();
     });
   });
@@ -438,6 +472,9 @@ const updateFilters = (filteredData) => {
   const { filters, checkboxes } = getFilterStates();
   const selectOptions = gatherSelectOptions(filteredData);
   updateSelectBoxes(filters, selectOptions);
+  updateSpeciesListInTab();// 種タブ更新
+  updatePrefectureListInTab();// 都道府県タブ更新
+  updateIslandListInTab();// 島タブ更新
 };
 
 const applyFilters = async (updateMap = true) => {
@@ -1651,14 +1688,77 @@ const adjustSearchContainerAndLegend = () => {
   }
 };
 
+function updatePrefectureListInTab() {
+  const select = document.getElementById('filter-prefecture');
+  const listContainer = document.getElementById('prefecture-list');
+  listContainer.innerHTML = '';
+
+  Array.from(select.options).forEach(option => {
+    if (option.value !== '') {
+      const li = document.createElement('li');
+      const jpName = option.value;
+      const enName = prefectureMeta.find(m => m.jp === jpName)?.en || "-";
+      li.textContent = `${jpName} / ${enName}`;
+      listContainer.appendChild(li);
+    }
+  });
+}
+
+function updateIslandListInTab() {
+  const select = document.getElementById('filter-island');
+  const listContainer = document.getElementById('island-list');
+  listContainer.innerHTML = '';
+
+  Array.from(select.options).forEach(option => {
+    if (option.value !== '') {
+      const li = document.createElement('li');
+      const jpName = option.value;
+      const enName = islandMeta.find(m => m.jp === jpName)?.en || "-";
+      li.textContent = `${jpName} / ${enName}`;
+      listContainer.appendChild(li);
+    }
+  });
+}
+
+function updateSpeciesListInTab() {
+  const select = document.getElementById('filter-species');
+  const listContainer = document.getElementById('species-list');
+  listContainer.innerHTML = ''; // 既存リストをクリア
+
+  Array.from(select.options).forEach(option => {
+    if (option.value !== '') {
+      const li = document.createElement('li');
+
+      const [scientificName, japaneseName] = option.value.split(' / ');
+      const taxonInfo = taxonMap[scientificName?.trim()] || { authorYear: "-" };
+      const authorYear = taxonInfo.authorYear !== "-" ? ` <span class="non-italic">${taxonInfo.authorYear}</span>` : "";
+
+      let formattedSci = scientificName
+        .replace(/\(/g, '<span class="non-italic">(</span>')
+        .replace(/\)/g, '<span class="non-italic">)</span>');
+
+      if (formattedSci.includes("sp.") && !formattedSci.includes("ord.") && !formattedSci.includes("fam.") && !formattedSci.includes("gen.")) {
+        formattedSci = formattedSci.replace(/(.*?)(sp\..*)/, '<i>$1</i><span class="non-italic">$2</span>');
+      } else if (formattedSci.match(/ord\.|fam\.|gen\./)) {
+        formattedSci = `<span class="non-italic">${formattedSci}</span>`;
+      } else {
+        formattedSci = `<i>${formattedSci}</i>`;
+      }
+
+      li.innerHTML = `${japaneseName} / ${formattedSci}${authorYear}`;
+      listContainer.appendChild(li);
+    }
+  });
+}
+
 // ==================== メイン処理 ====================
 document.addEventListener("DOMContentLoaded", async () => {
   initMap();
 
   // CSV類読み込み
   await loadTaxonNameCSV();
-  await loadOrderCSV("Prefecture.csv", prefectureOrder);
-  await loadOrderCSV("Island.csv", islandOrder);
+  await loadOrderCSV("Prefecture.csv", prefectureOrder, "prefecture");
+  await loadOrderCSV("Island.csv", islandOrder, "island");
   await loadLiteratureCSV();
   await loadDistributionCSV(); // rowsにデータが入る
 
