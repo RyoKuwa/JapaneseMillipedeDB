@@ -1551,23 +1551,43 @@ const formatGenusName = (name) => {
 
 const formatSpeciesName = (name) => {
   if (!name.includes(" / ")) return name;
+
   let [jName, sciName] = name.split(" / ");
-  let formatted = sciName
-    .replace(/\(/g, '<span class="non-italic">(</span>')
-    .replace(/\)/g, '<span class="non-italic">)</span>');
   const cleanSciName = sciName.replace(/<\/?i>/g, "").trim();
   const taxonInfo = taxonMap[cleanSciName] || { authorYear: "-" };
   const authorYear = taxonInfo.authorYear === "-" ? "" : ` <span class="non-italic">${taxonInfo.authorYear}</span>`;
 
-  if (formatted.match(/ord\.|fam\.|gen\./)) {
-    return `${jName} / <span class="non-italic">${formatted}</span>${authorYear}`;
+  // 括弧を非斜体に置換
+  let sciFormatted = sciName
+    .replace(/\(/g, '<span class="non-italic">(</span>')
+    .replace(/\)/g, '<span class="non-italic">)</span>');
+
+  // ord., fam., gen. が含まれている場合は全体を非斜体
+  if (/\bord\.|\bfam\.|\bgen\./.test(sciFormatted)) {
+    return `${jName} / <span class="non-italic">${sciFormatted}</span>${authorYear}`;
   }
-  if (formatted.includes("sp.") && !formatted.match(/ord\.|fam\.|gen\./)) {
-    formatted = formatted.replace(/(.*?)(sp\..*)/, '<i>$1</i><span class="non-italic">$2</span>');
-  } else {
-    formatted = `<i>${formatted}</i>`;
+
+  // sp. を含む場合は sp. 以降を非斜体に
+  if (/ sp\./.test(sciFormatted)) {
+    const [beforeSp, afterSp] = sciFormatted.split(/ sp\./, 2);
+    const italicPart = beforeSp.trim().split(/\s+/).map(word => {
+      if (["cf.", "aff."].includes(word)) {
+        return `<span class="non-italic">${word}</span>`;
+      }
+      return `<i>${word}</i>`;
+    }).join(" ");
+    const nonItalicSp = `<span class="non-italic"> sp.${afterSp ? afterSp : ""}</span>`;
+    return `${jName} / ${italicPart} ${nonItalicSp}${authorYear}`;
   }
-  return `${jName} / ${formatted}${authorYear}`;
+
+  // 通常パターン：cf.やaff.のみ非斜体、それ以外は斜体
+  const formattedParts = sciFormatted.split(/\s+/).map(part => {
+    return ["cf.", "aff."].includes(part)
+      ? `<span class="non-italic">${part}</span>`
+      : `<i>${part}</i>`;
+  });
+
+  return `${jName} / ${formattedParts.join(" ")}${authorYear}`;
 };
 
 function linkMasterAndDubiousCheckboxes() {
@@ -1773,25 +1793,16 @@ function updateSpeciesListInTab() {
   };
 
   sortByNo(Object.keys(tree), "order").forEach(order => {
-    const orderDisp = getDisplayName(order);
-    const formatted = order.match(/ord\.|fam\.|gen\./)
-      ? `<span class="non-italic">${order}</span>`
-      : `<span class="non-italic">${order}</span>`;
-    createLi(`${orderDisp.jpn} / ${formatted}${orderDisp.author}`, 0);
+    const orderFormatted = formatOrderFamilyName(`${getDisplayName(order).jpn} / ${order}`);
+    createLi(orderFormatted, 0);
 
     sortByNo(Object.keys(tree[order]), "family").forEach(family => {
-      const familyDisp = getDisplayName(family);
-      const formatted = family.match(/ord\.|fam\.|gen\./)
-        ? `<span class="non-italic">${family}</span>`
-        : `<span class="non-italic">${family}</span>`;
-      createLi(`${familyDisp.jpn} / ${formatted}${familyDisp.author}`, 1);
+      const familyFormatted = formatOrderFamilyName(`${getDisplayName(family).jpn} / ${family}`);
+      createLi(familyFormatted, 1);
 
       sortByNo(Object.keys(tree[order][family]), "genus").forEach(genus => {
-        const genusDisp = getDisplayName(genus);
-        const formatted = genus.match(/ord\.|fam\.|gen\./)
-          ? `<span class="non-italic">${genus}</span>`
-          : `<i>${genus}</i>`;
-        createLi(`${genusDisp.jpn} / ${formatted}${genusDisp.author}`, 2);
+        const genusFormatted = formatGenusName(`${getDisplayName(genus).jpn} / ${genus}`);
+        createLi(genusFormatted, 2);
 
         const speciesList = Object.entries(tree[order][family][genus]);
 
@@ -1802,17 +1813,7 @@ function updateSpeciesListInTab() {
         }).forEach(([sci, data]) => {
           if (data.rank === "subspecies") return;
 
-          const { jpn, author } = getDisplayName(sci);
-          let formattedSci = sci;
-          if (sci.includes("sp.") && !sci.match(/ord\.|fam\.|gen\./)) {
-            formattedSci = sci.replace(/(.*?)\s(sp\..*)/, '<i>$1</i><span class="non-italic"> $2</span>');
-          } else if (sci.match(/ord\.|fam\.|gen\./)) {
-            formattedSci = `<span class="non-italic">${sci}</span>`;
-          } else {
-            formattedSci = `<i>${sci}</i>`;
-          }
-
-          const label = `${speciesCounter}. ${jpn} / ${formattedSci}${author}`;
+          const label = `${speciesCounter}. ${formatSpeciesName(`${data.japaneseName} / ${sci}`)}`;
           createLi(label, 3);
 
           Array.from(data.subspecies).sort().forEach((subJpn, idx) => {
@@ -1822,9 +1823,15 @@ function updateSpeciesListInTab() {
             const subSci = subEntry?.[0] || "-";
             const subInfo = taxonMap[subSci] || {};
             const subAuthor = subInfo.authorYear && subInfo.authorYear !== "-" ? ` <span class="non-italic">${subInfo.authorYear}</span>` : "";
-            const formattedSubSci = subSci.match(/ord\.|fam\.|gen\./)
+            let formattedSubSci = subSci.match(/ord\.|fam\.|gen\./)
               ? `<span class="non-italic">${subSci}</span>`
               : `<i>${subSci}</i>`;
+
+            // cf., aff. は非斜体化
+            formattedSubSci = formattedSubSci
+              .replace(/\bcf\./g, '<span class="non-italic">cf.</span>')
+              .replace(/\baff\./g, '<span class="non-italic">aff.</span>');
+
             const subLabel = `${speciesCounter}.${idx + 1} ${subJpn} / ${formattedSubSci}${subAuthor}`;
             createLi(subLabel, 4);
           });
