@@ -1290,13 +1290,12 @@ function setupChartLegendToggles() {
 }
 
 function generatePrefectureChart(allRows) {
-  // ★★★ タイトルを外部HTML要素に設定する例 ★★★
   const prefTitleEl = document.getElementById("prefecture-chart-title");
   if (prefTitleEl) {
-    // 目/科 & 種数/割合からタイトルを組み立て
     const classTxt = (currentClassification === "order") ? "目別" : "科別";
-    const measureTxt = (currentChartMode === "ratio") ? "割合" : "種数";
-    
+    const measureTxt = 
+      (currentChartMode === "ratio") ? "割合" :
+      (currentChartMode === "record") ? "記録数" : "種数";
     prefTitleEl.textContent = `各都道府県の${classTxt}${measureTxt}`;
   }
 
@@ -1317,6 +1316,8 @@ function generatePrefectureChart(allRows) {
   });
 
   const prefectureTaxonMap = {};
+  const prefectureRecordMap = {};
+
   function getNormalizedSpeciesName(row) {
     const rank = row.taxonRank?.toLowerCase();
     const sciName = row.scientificName?.trim() || "";
@@ -1336,13 +1337,16 @@ function generatePrefectureChart(allRows) {
     if (!pref || pref === "-" || !keyValue || keyValue === "-") return;
 
     const nm = getNormalizedSpeciesName(row);
-    if (!prefectureTaxonMap[pref]) {
-      prefectureTaxonMap[pref] = {};
-    }
-    if (!prefectureTaxonMap[pref][keyValue]) {
-      prefectureTaxonMap[pref][keyValue] = new Set();
-    }
+
+    // 種数カウント
+    if (!prefectureTaxonMap[pref]) prefectureTaxonMap[pref] = {};
+    if (!prefectureTaxonMap[pref][keyValue]) prefectureTaxonMap[pref][keyValue] = new Set();
     prefectureTaxonMap[pref][keyValue].add(nm);
+
+    // 記録数カウント
+    if (!prefectureRecordMap[pref]) prefectureRecordMap[pref] = {};
+    if (!prefectureRecordMap[pref][keyValue]) prefectureRecordMap[pref][keyValue] = 0;
+    prefectureRecordMap[pref][keyValue]++;
   });
 
   let sortedPrefectures = [];
@@ -1354,13 +1358,21 @@ function generatePrefectureChart(allRows) {
     });
     arr.sort((a, b) => b.total - a.total);
     sortedPrefectures = arr.map(i => i.pref);
+  } else if (chartMode === "record") {
+    const arr = Object.keys(prefectureRecordMap).map(pref => {
+      const obj = prefectureRecordMap[pref];
+      const total = Object.values(obj).reduce((sum, count) => sum + count, 0);
+      return { pref, total };
+    });
+    arr.sort((a, b) => b.total - a.total);
+    sortedPrefectures = arr.map(i => i.pref);
   } else {
     sortedPrefectures = prefectureOrder.filter(p => !!prefectureTaxonMap[p]);
   }
 
   const taxonSet = new Set();
-  for (const pref in prefectureTaxonMap) {
-    for (const tKey in prefectureTaxonMap[pref]) {
+  for (const pref in (chartMode === "record" ? prefectureRecordMap : prefectureTaxonMap)) {
+    for (const tKey in (chartMode === "record" ? prefectureRecordMap[pref] : prefectureTaxonMap[pref])) {
       taxonSet.add(tKey);
     }
   }
@@ -1371,17 +1383,21 @@ function generatePrefectureChart(allRows) {
     const absData = [];
 
     sortedPrefectures.forEach(pref => {
-      const count = prefectureTaxonMap[pref][taxon]?.size || 0;
+      let count = 0;
+
+      if (chartMode === "record") {
+        count = prefectureRecordMap[pref]?.[taxon] || 0;
+      } else {
+        count = prefectureTaxonMap[pref]?.[taxon]?.size || 0;
+      }
+
       absData.push(count);
+
       if (chartMode === "ratio") {
         const totalOfPref = Object.values(prefectureTaxonMap[pref])
           .reduce((s, st) => s + st.size, 0);
-        if (totalOfPref === 0) {
-          data.push(0);
-        } else {
-          const ratioNum = ((count / totalOfPref) * 100).toFixed(1);
-          data.push(parseFloat(ratioNum));
-        }
+        const ratioNum = totalOfPref === 0 ? 0 : ((count / totalOfPref) * 100).toFixed(1);
+        data.push(parseFloat(ratioNum));
       } else {
         data.push(count);
       }
@@ -1444,7 +1460,14 @@ function generatePrefectureChart(allRows) {
           stacked: true,
           beginAtZero: true,
           max: (chartMode === "ratio") ? 100 : undefined,
-          title: { display: true, text: (chartMode === "ratio") ? "割合(%)" : "種数" }
+          title: {
+            display: true,
+            text: (chartMode === "ratio")
+              ? "割合(%)"
+              : (chartMode === "record")
+                ? "記録数"
+                : "種数"
+          }
         }
       },
       plugins: {
@@ -1486,7 +1509,7 @@ function generatePrefectureChart(allRows) {
           }
         },
         title: {
-          display: false // Chart.js内蔵タイトルはオフ
+          display: false
         }
       },
       barThickness: 20
