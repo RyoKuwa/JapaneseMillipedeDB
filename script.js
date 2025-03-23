@@ -1126,10 +1126,13 @@ const showPopup = (index) => {
   if (activePopup) activePopup.remove();
 
   const { popupContent } = preparePopupContent([record]).popupContents[0];
+
   const popupHtml = `
     <div>
-      <div>${popupContent}</div>
-      <div style="margin-top: 5px; text-align: center;">
+      <div class="popup-wrapper" style="overflow-y: auto;">
+        ${popupContent}
+      </div>
+      <div class="popup-footer" style="margin-top: 5px; text-align: center;">
         <button id="prev-popup">前へ</button>
         <span>${index + 1} / ${total}</span>
         <button id="next-popup">次へ</button>
@@ -1146,6 +1149,7 @@ const showPopup = (index) => {
     .setHTML(popupHtml)
     .addTo(map);
 
+  // 前へ/次へボタンのイベント設定
   document.getElementById("prev-popup").addEventListener("click", () => {
     currentPopupIndex = (currentPopupIndex - 1 + total) % total;
     showPopup(currentPopupIndex);
@@ -1154,6 +1158,22 @@ const showPopup = (index) => {
     currentPopupIndex = (currentPopupIndex + 1) % total;
     showPopup(currentPopupIndex);
   });
+
+  // 表示後に高さを調整
+  setTimeout(() => {
+    const popupWrapper = document.querySelector(".popup-wrapper");
+    if (!popupWrapper) return;
+
+    // マーカー位置を取得
+    const markerPixel = map.project([record.longitude, record.latitude]);
+
+    // 上端からの距離を計算（少し余裕を持たせる）
+    const distanceFromTop = markerPixel.y;
+    const safeMargin = 80; // フッター高さ + 余裕
+    const maxHeight = Math.max(100, distanceFromTop - safeMargin);
+
+    popupWrapper.style.maxHeight = `${maxHeight}px`;
+  }, 0);
 };
 
 const preparePopupContent = (filteredData) => {

@@ -674,6 +674,29 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   margin: 0 auto;
 }
 
+/* ポップアップ全体のラッパー */
+.popup-wrapper {
+  display: flex;
+  flex-direction: column;
+  max-height: unset; /* ← JSで設定する */
+}
+
+/* 本文をスクロール可能にする */
+.popup-scroll-container {
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 8px;
+}
+
+/* 前/次ボタンは常に下部に固定（本文の外） */
+.popup-nav-fixed {
+  padding: 6px 0;
+  text-align: center;
+  border-top: 1px solid #ccc;
+  background: white;
+  flex-shrink: 0;
+}
+
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {
