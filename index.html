@@ -109,7 +109,7 @@
     </div>
     <div class="legend">
       <div class="legend-header">
-        <input type="checkbox" id="legend-master-checkbox">
+        <input type="checkbox" id="legend-master-checkbox" checked>
         <span>マーカーの種類</span>
         <button class="legend-toggle-button"></button>
       </div>
@@ -206,6 +206,24 @@
         <div id="prefecture-chart-wrapper" class="chart-container-scroll">
           <canvas id="prefecture-chart"></canvas>
         </div>        
+      </div>
+
+      <!-- 区切り線 -->
+      <div class="chart-divider"></div>
+
+      <!-- 出版年グラフ -->
+      <div class="external-chart-title">記録数と累積記録数（出版年）</div>
+      <div id="publication-chart-wrapper" class="chart-container-scroll">
+        <canvas id="publication-chart"></canvas>
+      </div>
+
+      <!-- 区切り線 -->
+      <div class="chart-divider"></div>
+
+      <!-- 採集年グラフ -->
+      <div class="external-chart-title">記録数と累積記録数（採集年）</div>
+      <div id="collection-chart-wrapper" class="chart-container-scroll">
+        <canvas id="collection-chart"></canvas>
       </div>
     </div>
   

@@ -653,6 +653,27 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   padding-left: 0;
 }
 
+/* 出版年・採集年グラフ共通ラッパー */
+#publication-chart-wrapper,
+#collection-chart-wrapper {
+  width: 100%;
+  min-height: 400px;
+  overflow-x: auto;
+  overflow-y: auto;
+  margin: 20px 0;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* 出版年・採集年グラフ canvas */
+#publication-chart,
+#collection-chart {
+  min-width: 1500px;   /* 年数が多くても表示できるように横長に */
+  min-height: 400px;
+  margin: 0 auto;
+}
+
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {

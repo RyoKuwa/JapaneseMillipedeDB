@@ -301,7 +301,9 @@ const loadDistributionCSV = async () => {
       adultPresence: record["成体の有無"] || "-",
       collectorJp: record["採集者_jp"] || "-",
       collectorEn: record["採集者_en"] || "-",
-      collectedMonth: record["採集月"] || "-",
+      collectionMonth: record["採集月"] || "-",
+      collectionYear: record["採集年"] || "-",
+      publicationYear: record["出版年"] || "-",
       taxonRank: record["階級"] || "-",
       undescribedSpecies: record["未記載種の可能性が高い_幼体等で同定が困難な場合はno"] || "-"
     }));
@@ -533,6 +535,8 @@ const applyFilters = async (updateMap = true) => {
       displayMarkers(filteredRowsLocal);
       generateMonthlyChart(filteredRowsLocal);
       generatePrefectureChart(filteredRowsLocal);
+      generatePublicationChart(filteredRowsLocal);
+      generateCollectionChart(filteredRowsLocal);
     }
 
     updateDropdownPlaceholders();
@@ -1210,7 +1214,7 @@ function generateMonthlyChart(allRows) {
   const monthlySetJuvenile = Array.from({ length: 12 }, () => new Set());
 
   allRows.forEach(row => {
-    const m = parseInt(row.collectedMonth, 10);
+    const m = parseInt(row.collectionMonth, 10);
     if (m >= 1 && m <= 12 && row.latitude && row.longitude) {
       const key = `${row.latitude},${row.longitude},${row.scientificName},${row.adultPresence}`;
       if (row.adultPresence?.toLowerCase() === "yes") {
@@ -1486,6 +1490,256 @@ function generatePrefectureChart(allRows) {
         }
       },
       barThickness: 20
+    }
+  });
+}
+
+function generatePublicationChart(rows) {
+  const yearData = {};  // {year: {recordType: count}}
+
+  rows.forEach(row => {
+    const year = parseInt(row.publicationYear);
+    const type = row.recordType;
+    if (!Number.isInteger(year)) return;
+    if (!yearData[year]) yearData[year] = {};
+    if (!yearData[year][type]) yearData[year][type] = 0;
+    yearData[year][type]++;
+  });
+
+  const sortedYears = Object.keys(yearData).map(y => parseInt(y)).sort((a, b) => a - b);
+
+  const originalTypes = [
+    "1_タイプ産地",
+    "2_統合された種のタイプ産地",
+    "3_疑わしいタイプ産地",
+    "4_疑わしい統合された種のタイプ産地",
+    "5_標本記録",
+    "6_文献記録",
+    "7_疑わしい文献記録"
+  ];
+
+  const displayLabels = [
+    "タイプ",
+    "統合された種のタイプ",
+    "疑わしいタイプ",
+    "疑わしい統合された種のタイプ",
+    "標本記録",
+    "文献記録",
+    "疑わしい文献記録"
+  ];
+
+  const colors = [
+    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
+  ];
+
+  const datasets = [];
+  const activeTypes = [];
+
+  originalTypes.forEach((type, index) => {
+    const data = sortedYears.map(year => yearData[year][type] || 0);
+    const total = data.reduce((a, b) => a + b, 0);
+    if (total > 0) {
+      datasets.push({
+        label: displayLabels[index],
+        backgroundColor: colors[index],
+        data: data,
+        stack: 'stack1'
+      });
+      activeTypes.push(type);
+    }
+  });
+
+  let cumulativeSum = 0;
+  const cumulativeArray = sortedYears.map(year => {
+    const total = activeTypes.reduce((sum, type) => sum + (yearData[year][type] || 0), 0);
+    cumulativeSum += total;
+    return cumulativeSum;
+  });
+
+  datasets.push({
+    label: '累積記録数',
+    data: cumulativeArray,
+    type: 'line',
+    borderColor: 'black',
+    backgroundColor: 'black',
+    fill: false,
+    yAxisID: 'y-axis-2',
+    tension: 0.1,
+    pointRadius: 0
+  });
+
+  const ctx = document.getElementById("publication-chart").getContext("2d");
+  if (window.publicationChart) {
+    window.publicationChart.destroy();
+  }
+
+  window.publicationChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sortedYears,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          onClick: null // ← 凡例クリック無効化
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      },
+      scales: {
+        x: {
+          stacked: true
+        },
+        y: {
+          stacked: true,
+          title: {
+            display: true,
+            text: '記録数'
+          }
+        },
+        'y-axis-2': {
+          type: 'linear',
+          position: 'right',
+          grid: {
+            drawOnChartArea: false
+          },
+          title: {
+            display: true,
+            text: '累積記録数'
+          }
+        }
+      }
+    }
+  });
+}
+
+function generateCollectionChart(rows) {
+  const yearData = {};
+
+  rows.forEach(row => {
+    const year = parseInt(row.collectionYear);
+    const type = row.recordType;
+    if (!Number.isInteger(year)) return;
+    if (!yearData[year]) yearData[year] = {};
+    if (!yearData[year][type]) yearData[year][type] = 0;
+    yearData[year][type]++;
+  });
+
+  const sortedYears = Object.keys(yearData).map(y => parseInt(y)).sort((a, b) => a - b);
+
+  const originalTypes = [
+    "1_タイプ産地",
+    "2_統合された種のタイプ産地",
+    "3_疑わしいタイプ産地",
+    "4_疑わしい統合された種のタイプ産地",
+    "5_標本記録",
+    "6_文献記録",
+    "7_疑わしい文献記録"
+  ];
+
+  const displayLabels = [
+    "タイプ",
+    "統合された種のタイプ",
+    "疑わしいタイプ",
+    "疑わしい統合された種のタイプ",
+    "標本記録",
+    "文献記録",
+    "疑わしい文献記録"
+  ];
+
+  const colors = [
+    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
+  ];
+
+  const datasets = [];
+  const activeTypes = [];
+
+  originalTypes.forEach((type, index) => {
+    const data = sortedYears.map(year => yearData[year][type] || 0);
+    const total = data.reduce((a, b) => a + b, 0);
+    if (total > 0) {
+      datasets.push({
+        label: displayLabels[index],
+        backgroundColor: colors[index],
+        data: data,
+        stack: 'stack1'
+      });
+      activeTypes.push(type);
+    }
+  });
+
+  let cumulativeSum = 0;
+  const cumulativeArray = sortedYears.map(year => {
+    const total = activeTypes.reduce((sum, type) => sum + (yearData[year][type] || 0), 0);
+    cumulativeSum += total;
+    return cumulativeSum;
+  });
+
+  datasets.push({
+    label: '累積記録数',
+    data: cumulativeArray,
+    type: 'line',
+    borderColor: 'black',
+    backgroundColor: 'black',
+    fill: false,
+    yAxisID: 'y-axis-2',
+    tension: 0.1,
+    pointRadius: 0
+  });
+
+  const ctx = document.getElementById("collection-chart").getContext("2d");
+  if (window.collectionChart) {
+    window.collectionChart.destroy();
+  }
+
+  window.collectionChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sortedYears,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          onClick: null // ← 凡例クリック無効化
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      },
+      scales: {
+        x: {
+          stacked: true
+        },
+        y: {
+          stacked: true,
+          title: {
+            display: true,
+            text: '記録数'
+          }
+        },
+        'y-axis-2': {
+          type: 'linear',
+          position: 'right',
+          grid: {
+            drawOnChartArea: false
+          },
+          title: {
+            display: true,
+            text: '累積記録数'
+          }
+        }
+      }
     }
   });
 }
@@ -1930,6 +2184,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (filteredRows && filteredRows.length > 0) {
       generateMonthlyChart(filteredRows);
       generatePrefectureChart(filteredRows);
+      generatePublicationChart(filteredRows);
+      generateCollectionChart(filteredRows);
     }
   });
 
