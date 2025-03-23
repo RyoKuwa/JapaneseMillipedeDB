@@ -1925,7 +1925,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   generatePrefectureChart(filteredRows);
 
-  window.addEventListener("resize", adjustSearchContainerAndLegend);
+  window.addEventListener("resize", () => {
+    adjustSearchContainerAndLegend();
+    if (filteredRows && filteredRows.length > 0) {
+      generateMonthlyChart(filteredRows);
+      generatePrefectureChart(filteredRows);
+    }
+  });
+
   adjustSearchContainerAndLegend();
 
   applyFilters(true);
