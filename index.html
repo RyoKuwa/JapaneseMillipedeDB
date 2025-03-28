@@ -11,7 +11,7 @@
   
     <!-- MapLibre JS -->
     <script src="https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.js"></script>
-
+  
     <!-- ページ独自のCSS -->
     <link rel="stylesheet" href="style.css">
   
@@ -20,12 +20,6 @@
   
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
-
-    <!-- Select2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
   </head>
 <body>
   <header>
@@ -37,10 +31,9 @@
   <div id="selected-labels"></div>
 
   <div id="mapid">
-    <div id="touch-hint">2本指で地図を操作<br><br>マーカークリックで詳細表示</div>
     <!-- 検索とセレクトボックス -->
     <div class="search-container">
-      <h2 class="select-box-title">フィルタリング</h2>
+      <h2 class="select-box-title">セレクトボックス</h2>
       <!-- 各セレクトボックスにナビゲーションボタンを追加 -->      
       <div class="select-container">
         <select id="filter-order"></select>
@@ -85,8 +78,14 @@
         <button class="nav-button" id="prev-literature">&lt;</button>
         <button class="nav-button" id="next-literature">&gt;</button>
       </div>
-      <button id="reset-button">リセット</button>
       <div class="select-box-divider-two"></div>
+      <div class="search-box-container">
+        <input type="text" id="search-all" placeholder="検索">
+        <button id="clear-search-button" class="clear-button">✖</button>
+      </div>
+      <button id="search-button">セレクトボックスを検索</button>
+      <div class="select-box-divider-two"></div>
+      <button id="reset-button">リセット</button>
       <div id="checkbox-container">
         <label>
           <input type="checkbox" id="exclude-unpublished"> 未公表データを除外
@@ -97,19 +96,13 @@
         <label>
           <input type="checkbox" id="exclude-citation" checked> 引用記録を除外
         </label>
-        <label>
-          <input type="checkbox" id="exclude-undescribed"> 未記載種を除外
-        </label>
-        <label>
-          <input type="checkbox" id="exclude-unspecies"> 種同定されていない記録を除外
-        </label>
       </div>
       <p>レコード数: <span id="record-count">0</span><br>地点数: <span id="location-count">0</span></p>
       <div id="toggle-button" class="toggle-button">&#9650;</div> <!-- 上向き三角形 -->
     </div>
     <div class="legend">
       <div class="legend-header">
-        <input type="checkbox" id="legend-master-checkbox">
+        <input type="checkbox" id="legend-master-checkbox" checked>
         <span>マーカーの種類</span>
         <button class="legend-toggle-button"></button>
       </div>
@@ -160,20 +153,16 @@
       <li data-tab="tab-island">島 Island</li>
       <li data-tab="tab-reference">引用文献 Reference</li>
     </ul>
-
+  
     <!-- タブの内容 -->
     <div id="tab-data" class="tab-content active">
-
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
       <!-- 出現期 -->
-      <h2 id="month-chart-title" class="external-chart-title"></h2>
-      <div id="chart-wrapper"  class="chart-container-scroll">
+      <div id="chart-wrapper">
         <!-- グラフを表示するキャンバス -->
         <div id="chart-container">
           <canvas id="month-chart"></canvas>
         </div>
+    
         <!-- 右側に縦並びのチェックボックス -->
         <div id="chart-legend">
           <label>
@@ -186,39 +175,18 @@
           </label>
         </div>
       </div>
-      
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
-      <!-- 各都道府県の記録数（タイトル） -->
-      <h2 id="prefecture-chart-title" class="external-chart-title"></h2>
-      <div id="classification-radio">
-        <div class="radio-group">
-          <label><input type="radio" name="classification" value="order" checked> 目</label>
-          <label><input type="radio" name="classification" value="family"> 科</label>
-        </div>
-        <div class="radio-group">
-          <label><input type="radio" name="chart-mode" value="count" checked> 種数</label>
-          <label><input type="radio" name="chart-mode" value="ratio"> 割合</label>
-        </div>
-      </div>
-      <div id="chart-area" style="position: relative; width: 100%;">
-        <div id="prefecture-chart-wrapper" class="chart-container-scroll">
-          <canvas id="prefecture-chart"></canvas>
-        </div>        
-      </div>
     </div>
   
     <div id="tab-species" class="tab-content">
-      <ol id="species-list"></ol>
+      <p>ここに種ごとのデータやグラフを表示する予定です。</p>
     </div>
   
     <div id="tab-prefecture" class="tab-content">
-      <ol id="prefecture-list"></ol>
+      <p>ここに都道府県ごとのデータやグラフを表示する予定です。</p>
     </div>
   
     <div id="tab-island" class="tab-content">
-      <ol id="island-list"></ol>
+      <p>ここに島ごとのデータやグラフを表示する予定です。</p>
     </div>
   
     <div id="tab-reference" class="tab-content">
