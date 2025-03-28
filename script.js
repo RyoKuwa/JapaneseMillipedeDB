@@ -55,8 +55,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadLiteratureCSV();
   logTime("📚 文献CSV 読み込み完了");
 
-  await loadDistributionCSV();
-  logTime("🗾️ DistributionRecord 読み込み完了");
+  await loadDistributionJSON();
+  logTime("🗾️ DistributionRecord JSON 読み込み完了");
 
   setupCheckboxListeners();
   setupSelectListeners();
@@ -64,6 +64,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   setupResetButton();
   logTime("⚙️ イベントリスナーセットアップ完了");
 });
+
+const loadDistributionJSON = async () => {
+  const response = await fetch("DistributionRecord_web.json");
+  distributionData = await response.json();
+};
 
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
@@ -2376,15 +2381,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadOrderCSV("Island.csv", islandOrder, "island");
   await loadLiteratureCSV();
   await loadDistributionCSV(); // rowsにデータが入る
-
-  setTimeout(() => {
-    applyFilters(true); // 描画処理を後回しに
-    setupCheckboxListeners();
-    setupSelectListeners();
-    setupNavButtonListeners();
-    setupResetButton();
-    logTime("⚙️ イベントリスナーセットアップ完了");
-  }, 0);
 
   updateRecordInfo(rows.length, new Set(rows.map(r => `${r.latitude},${r.longitude}`)).size);
 
