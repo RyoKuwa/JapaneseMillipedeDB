@@ -29,66 +29,6 @@ let prefectureChart = null;
 let currentClassification = "order";  // "order" or "family"
 let currentChartMode = "count";       // "count" or "ratio"
 
-// タイムログ用ユーティリティ
-const timeLog = {};
-const logTime = (label) => {
-  const now = performance.now();
-  timeLog[label] = now;
-  console.log(`⏱️ ${label}: ${Math.round(now)} ms`);
-};
-
-logTime("🟡 ページ読み込み開始");
-
-window.addEventListener("DOMContentLoaded", async () => {
-  logTime("🟢 DOMContentLoaded");
-
-  initMap();
-  logTime("🗌️ 地図初期化完了");
-
-  loadTaxonNameCSV();
-  logTime("🧬 TaxonName.csv 読み込み開始");
-
-  await loadOrderCSV("Prefecture.csv", prefectureOrder, "prefecture");
-  await loadOrderCSV("Island.csv", islandOrder, "island");
-  logTime("📍 地理データ読み込み完了");
-
-  await loadLiteratureCSV();
-  logTime("📚 文献CSV 読み込み完了");
-
-  await loadDistributionJSON();
-  logTime("🗾️ DistributionRecord 読み込み完了");
-
-  setupCheckboxListeners();
-  setupSelectListeners();
-  setupNavButtonListeners();
-  setupResetButton();
-  logTime("⚙️ イベントリスナーセットアップ完了");
-});
-
-const loadDistributionJSON = async () => {
-  const start = performance.now();
-  console.log("⏱️ [JSON] fetch 開始");
-
-  const response = await fetch("DistributionRecord_web.json.gz");
-  const fetchEnd = performance.now();
-  console.log(`⏱️ [JSON] fetch 完了: ${Math.round(fetchEnd - start)} ms`);
-
-  const jsonStart = performance.now();
-  const data = await response.json();  // 自動で gzip 解凍＋JSON.parse
-  const jsonEnd = performance.now();
-  console.log(`⏱️ [JSON] json() 完了: ${Math.round(jsonEnd - jsonStart)} ms`);
-
-  rows = data;
-
-  const total = performance.now();
-  console.log(`✅ [JSON] loadDistributionJSON 完了: ${Math.round(total - start)} ms`);
-
-  initYearRanges();
-  initYearSliders();
-  applyFilters(true);
-};
-
-
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -338,26 +278,12 @@ const parseCSV = (text) => {
 };
 
 const loadDistributionCSV = async () => {
-  const start = performance.now();
-  console.log("⏱️ [CSV] fetch 開始");
-
   try {
     const response = await fetch("DistributionRecord_web.csv");
-    const fetchEnd = performance.now();
-    console.log(`⏱️ [CSV] fetch 完了: ${Math.round(fetchEnd - start)} ms`);
-
     if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
-
     const csvText = await response.text();
-    const textEnd = performance.now();
-    console.log(`⏱️ [CSV] text() 完了: ${Math.round(textEnd - fetchEnd)} ms`);
 
-    const parseStart = performance.now();
     const parsedData = parseCSV(csvText);
-    const parseEnd = performance.now();
-    console.log(`⏱️ [CSV] parseCSV 完了: ${Math.round(parseEnd - parseStart)} ms`);
-
-    const mapStart = performance.now();
     rows = parsedData.map(record => ({
       recordType: record["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] || "-",
       japaneseName: record["和名"] || "-",
@@ -388,22 +314,16 @@ const loadDistributionCSV = async () => {
       taxonRank: record["階級"] || "-",
       undescribedSpecies: record["未記載種の可能性が高い_幼体等で同定が困難な場合はno"] || "-"
     }));
-    const mapEnd = performance.now();
-    console.log(`⏱️ [CSV] map() 完了: ${Math.round(mapEnd - mapStart)} ms`);
 
     initYearRanges();   // rows から最小値・最大値を計算
     initYearSliders();  // スライダーを生成
 
     // 読み込み後、初回フィルタを実行
     applyFilters(true);
-
-    const total = performance.now();
-    console.log(`✅ [CSV] loadDistributionCSV 完了: ${Math.round(total - start)} ms`);
   } catch (error) {
     console.error("CSV の読み込みエラー:", error);
   }
 };
-
 
 // ==================== フィルタリングロジック ====================
 function initYearRanges() {
@@ -2419,7 +2339,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadOrderCSV("Prefecture.csv", prefectureOrder, "prefecture");
   await loadOrderCSV("Island.csv", islandOrder, "island");
   await loadLiteratureCSV();
-  await loadDistributionJSON(); // rowsにデータが入る
+  await loadDistributionCSV(); // rowsにデータが入る
 
   updateRecordInfo(rows.length, new Set(rows.map(r => `${r.latitude},${r.longitude}`)).size);
 
