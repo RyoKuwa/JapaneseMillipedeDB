@@ -356,6 +356,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 #literature-list {
   position: relative;
   width: 100%; /* 横幅を少し狭める */
+  max-width: 85%; /* 最大幅を調整 */
   margin: 0 auto; /* 中央寄せ */
   padding: 10px;
   box-sizing: border-box; /* パディング含む幅計算 */
@@ -646,55 +647,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   border-top: 4px solid #ccc;  /* 線の太さと色 */
   margin: 40px 0;              /* 上下の余白 */
   width: 100%;
-}
-
-#species-list {
-  list-style: none;
-  padding-left: 0;
-}
-
-/* 出版年・採集年グラフ共通ラッパー */
-#publication-chart-wrapper,
-#collection-chart-wrapper {
-  width: 100%;
-  min-height: 400px;
-  overflow-x: auto;
-  overflow-y: auto;
-  margin: 20px 0;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
-  position: relative;
-}
-
-/* 出版年・採集年グラフ canvas */
-#publication-chart,
-#collection-chart {
-  min-width: 1500px;   /* 年数が多くても表示できるように横長に */
-  min-height: 400px;
-  margin: 0 auto;
-}
-
-/* ポップアップ全体のラッパー */
-.popup-wrapper {
-  display: flex;
-  flex-direction: column;
-  max-height: unset; /* ← JSで設定する */
-}
-
-/* 本文をスクロール可能にする */
-.popup-scroll-container {
-  overflow-y: auto;
-  flex: 1;
-  padding-right: 8px;
-}
-
-/* 前/次ボタンは常に下部に固定（本文の外） */
-.popup-nav-fixed {
-  padding: 6px 0;
-  text-align: center;
-  border-top: 1px solid #ccc;
-  background: white;
-  flex-shrink: 0;
 }
 
 @media (max-width: 711px) {

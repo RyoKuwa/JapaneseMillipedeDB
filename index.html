@@ -40,7 +40,7 @@
     <div id="touch-hint">2本指で地図を操作<br><br>マーカークリックで詳細表示</div>
     <!-- 検索とセレクトボックス -->
     <div class="search-container">
-      <h2 class="select-box-title">フィルター</h2>
+      <h2 class="select-box-title">フィルタリング</h2>
       <!-- 各セレクトボックスにナビゲーションボタンを追加 -->      
       <div class="select-container">
         <select id="filter-order"></select>
@@ -109,7 +109,7 @@
     </div>
     <div class="legend">
       <div class="legend-header">
-        <input type="checkbox" id="legend-master-checkbox" checked>
+        <input type="checkbox" id="legend-master-checkbox">
         <span>マーカーの種類</span>
         <button class="legend-toggle-button"></button>
       </div>
@@ -199,7 +199,6 @@
         </div>
         <div class="radio-group">
           <label><input type="radio" name="chart-mode" value="count" checked> 種数</label>
-          <label><input type="radio" name="chart-mode" value="record"> 記録数</label>
           <label><input type="radio" name="chart-mode" value="ratio"> 割合</label>
         </div>
       </div>
@@ -208,28 +207,10 @@
           <canvas id="prefecture-chart"></canvas>
         </div>        
       </div>
-
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
-      <!-- 出版年グラフ -->
-      <div class="external-chart-title">記録数と累積記録数（出版年）</div>
-      <div id="publication-chart-wrapper" class="chart-container-scroll">
-        <canvas id="publication-chart"></canvas>
-      </div>
-
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
-      <!-- 採集年グラフ -->
-      <div class="external-chart-title">記録数と累積記録数（採集年）</div>
-      <div id="collection-chart-wrapper" class="chart-container-scroll">
-        <canvas id="collection-chart"></canvas>
-      </div>
     </div>
   
     <div id="tab-species" class="tab-content">
-      <ul id="species-list"></ul>
+      <ol id="species-list"></ol>
     </div>
   
     <div id="tab-prefecture" class="tab-content">

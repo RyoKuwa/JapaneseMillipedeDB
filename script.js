@@ -175,15 +175,14 @@ const loadTaxonNameCSV = () => {
       if (idx === 0) return;
 
       const columns = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g)?.map(col => col.replace(/^"|"$/g, '').trim());
-      if (!columns || columns.length < 5) return;
+      if (!columns || columns.length < 3) return;
 
-      const [no, japaneseName, scientificName, authorYear, rank] = columns;
+      const [japaneseName, scientificName, ...authorYearParts] = columns;
+      let authorYear = authorYearParts.join(", ").replace(/,\s*$/, "").trim();
 
       taxonMap[scientificName] = {
-        no: parseInt(no, 10),
         japaneseName: japaneseName || "-",
-        authorYear: authorYear || "-",
-        rank: rank || "-"
+        authorYear: authorYear || "-"
       };
     });
   });
@@ -301,9 +300,7 @@ const loadDistributionCSV = async () => {
       adultPresence: record["成体の有無"] || "-",
       collectorJp: record["採集者_jp"] || "-",
       collectorEn: record["採集者_en"] || "-",
-      collectionMonth: record["採集月"] || "-",
-      collectionYear: record["採集年"] || "-",
-      publicationYear: record["出版年"] || "-",
+      collectedMonth: record["採集月"] || "-",
       taxonRank: record["階級"] || "-",
       undescribedSpecies: record["未記載種の可能性が高い_幼体等で同定が困難な場合はno"] || "-"
     }));
@@ -425,9 +422,6 @@ const populateSelect = (id, options, defaultText, selectedValue) => {
   if (!select) return;
 
   const currentVal = select.value;
-  const currentOpt = select.querySelector(`option[value="${CSS.escape(currentVal)}"]`);
-  const currentLabel = currentOpt ? currentOpt.textContent : currentVal;
-
   $(select).empty();
 
   $(select).append(new Option(defaultText, "", false, false));
@@ -436,14 +430,11 @@ const populateSelect = (id, options, defaultText, selectedValue) => {
     $(select).append(new Option(opt.label, opt.value, false, false));
   });
 
-  // currentValがまだ候補にないなら追加しておく
-  const exists = options.some(opt => opt.value === currentVal);
-  if (currentVal && !exists) {
-    $(select).append(new Option(currentLabel, currentVal, true, true));
+  if (options.some(opt => opt.value === currentVal)) {
+    $(select).val(currentVal).trigger("change");
+  } else {
+    $(select).val("").trigger("change");
   }
-
-  // 選択状態を再設定
-  $(select).val(currentVal).trigger("change");
 };
 
 const updateSelectBoxes = (filters, selectOptions) => {
@@ -478,23 +469,12 @@ const updateSelectBoxes = (filters, selectOptions) => {
 };
 
 const updateFilters = (filteredData) => {
-  // 最新のセレクトボックスの選択状態を取得（保持するため）
-  const filters = {
-    species: document.getElementById("filter-species")?.value || "",
-    genus: document.getElementById("filter-genus")?.value || "",
-    family: document.getElementById("filter-family")?.value || "",
-    order: document.getElementById("filter-order")?.value || "",
-    prefecture: document.getElementById("filter-prefecture")?.value || "",
-    island: document.getElementById("filter-island")?.value || "",
-    literature: document.getElementById("filter-literature")?.value || ""
-  };
-
+  const { filters, checkboxes } = getFilterStates();
   const selectOptions = gatherSelectOptions(filteredData);
   updateSelectBoxes(filters, selectOptions);
-
-  updateSpeciesListInTab();
-  updatePrefectureListInTab();
-  updateIslandListInTab();
+  updateSpeciesListInTab();// 種タブ更新
+  updatePrefectureListInTab();// 都道府県タブ更新
+  updateIslandListInTab();// 島タブ更新
 };
 
 const applyFilters = async (updateMap = true) => {
@@ -519,7 +499,6 @@ const applyFilters = async (updateMap = true) => {
     });
 
     filteredRowsLocal = filterByCheckbox(filteredRowsLocal, checkboxes);
-    filteredRows = filteredRowsLocal;
     updateFilters(filteredRowsLocal);
     initializeSelect2();
     updateSelectedLabels();
@@ -535,11 +514,10 @@ const applyFilters = async (updateMap = true) => {
       displayMarkers(filteredRowsLocal);
       generateMonthlyChart(filteredRowsLocal);
       generatePrefectureChart(filteredRowsLocal);
-      generatePublicationChart(filteredRowsLocal);
-      generateCollectionChart(filteredRowsLocal);
     }
 
     updateDropdownPlaceholders();
+    filteredRows = filteredRowsLocal;
 
   } catch (error) {
     console.error("applyFilters中にエラー:", error);
@@ -626,22 +604,14 @@ const initializeSelect2 = () => {
 
   const safelyInitSelect2 = (id, options) => {
     try {
-      const currentVal = $(id).val(); // 現在の選択値を保存
-  
-      $(id).select2(options); // 初期化
-  
-      // 選択値を再設定（Select2が options にない値でも表示される）
-      if (currentVal) {
-        $(id).val(currentVal).trigger("change");
-      }
-  
+      $(id).select2(options);
       return true;
     } catch (e) {
       console.error(`Select2初期化エラー(${id}):`, e);
       return false;
     }
   };
-  
+
   const setupCustomClearButton = (id) => {
     const selectElement = $(id);
     const selectContainer = selectElement.next('.select2-container');
@@ -1126,13 +1096,10 @@ const showPopup = (index) => {
   if (activePopup) activePopup.remove();
 
   const { popupContent } = preparePopupContent([record]).popupContents[0];
-
   const popupHtml = `
     <div>
-      <div class="popup-wrapper" style="overflow-y: auto;">
-        ${popupContent}
-      </div>
-      <div class="popup-footer" style="margin-top: 5px; text-align: center;">
+      <div>${popupContent}</div>
+      <div style="margin-top: 5px; text-align: center;">
         <button id="prev-popup">前へ</button>
         <span>${index + 1} / ${total}</span>
         <button id="next-popup">次へ</button>
@@ -1149,7 +1116,6 @@ const showPopup = (index) => {
     .setHTML(popupHtml)
     .addTo(map);
 
-  // 前へ/次へボタンのイベント設定
   document.getElementById("prev-popup").addEventListener("click", () => {
     currentPopupIndex = (currentPopupIndex - 1 + total) % total;
     showPopup(currentPopupIndex);
@@ -1158,22 +1124,6 @@ const showPopup = (index) => {
     currentPopupIndex = (currentPopupIndex + 1) % total;
     showPopup(currentPopupIndex);
   });
-
-  // 表示後に高さを調整
-  setTimeout(() => {
-    const popupWrapper = document.querySelector(".popup-wrapper");
-    if (!popupWrapper) return;
-
-    // マーカー位置を取得
-    const markerPixel = map.project([record.longitude, record.latitude]);
-
-    // 上端からの距離を計算（少し余裕を持たせる）
-    const distanceFromTop = markerPixel.y;
-    const safeMargin = 80; // フッター高さ + 余裕
-    const maxHeight = Math.max(100, distanceFromTop - safeMargin);
-
-    popupWrapper.style.maxHeight = `${maxHeight}px`;
-  }, 0);
 };
 
 const preparePopupContent = (filteredData) => {
@@ -1234,7 +1184,7 @@ function generateMonthlyChart(allRows) {
   const monthlySetJuvenile = Array.from({ length: 12 }, () => new Set());
 
   allRows.forEach(row => {
-    const m = parseInt(row.collectionMonth, 10);
+    const m = parseInt(row.collectedMonth, 10);
     if (m >= 1 && m <= 12 && row.latitude && row.longitude) {
       const key = `${row.latitude},${row.longitude},${row.scientificName},${row.adultPresence}`;
       if (row.adultPresence?.toLowerCase() === "yes") {
@@ -1310,12 +1260,13 @@ function setupChartLegendToggles() {
 }
 
 function generatePrefectureChart(allRows) {
+  // ★★★ タイトルを外部HTML要素に設定する例 ★★★
   const prefTitleEl = document.getElementById("prefecture-chart-title");
   if (prefTitleEl) {
+    // 目/科 & 種数/割合からタイトルを組み立て
     const classTxt = (currentClassification === "order") ? "目別" : "科別";
-    const measureTxt = 
-      (currentChartMode === "ratio") ? "割合" :
-      (currentChartMode === "record") ? "記録数" : "種数";
+    const measureTxt = (currentChartMode === "ratio") ? "割合" : "種数";
+    
     prefTitleEl.textContent = `各都道府県の${classTxt}${measureTxt}`;
   }
 
@@ -1336,8 +1287,6 @@ function generatePrefectureChart(allRows) {
   });
 
   const prefectureTaxonMap = {};
-  const prefectureRecordMap = {};
-
   function getNormalizedSpeciesName(row) {
     const rank = row.taxonRank?.toLowerCase();
     const sciName = row.scientificName?.trim() || "";
@@ -1357,16 +1306,13 @@ function generatePrefectureChart(allRows) {
     if (!pref || pref === "-" || !keyValue || keyValue === "-") return;
 
     const nm = getNormalizedSpeciesName(row);
-
-    // 種数カウント
-    if (!prefectureTaxonMap[pref]) prefectureTaxonMap[pref] = {};
-    if (!prefectureTaxonMap[pref][keyValue]) prefectureTaxonMap[pref][keyValue] = new Set();
+    if (!prefectureTaxonMap[pref]) {
+      prefectureTaxonMap[pref] = {};
+    }
+    if (!prefectureTaxonMap[pref][keyValue]) {
+      prefectureTaxonMap[pref][keyValue] = new Set();
+    }
     prefectureTaxonMap[pref][keyValue].add(nm);
-
-    // 記録数カウント
-    if (!prefectureRecordMap[pref]) prefectureRecordMap[pref] = {};
-    if (!prefectureRecordMap[pref][keyValue]) prefectureRecordMap[pref][keyValue] = 0;
-    prefectureRecordMap[pref][keyValue]++;
   });
 
   let sortedPrefectures = [];
@@ -1378,21 +1324,13 @@ function generatePrefectureChart(allRows) {
     });
     arr.sort((a, b) => b.total - a.total);
     sortedPrefectures = arr.map(i => i.pref);
-  } else if (chartMode === "record") {
-    const arr = Object.keys(prefectureRecordMap).map(pref => {
-      const obj = prefectureRecordMap[pref];
-      const total = Object.values(obj).reduce((sum, count) => sum + count, 0);
-      return { pref, total };
-    });
-    arr.sort((a, b) => b.total - a.total);
-    sortedPrefectures = arr.map(i => i.pref);
   } else {
     sortedPrefectures = prefectureOrder.filter(p => !!prefectureTaxonMap[p]);
   }
 
   const taxonSet = new Set();
-  for (const pref in (chartMode === "record" ? prefectureRecordMap : prefectureTaxonMap)) {
-    for (const tKey in (chartMode === "record" ? prefectureRecordMap[pref] : prefectureTaxonMap[pref])) {
+  for (const pref in prefectureTaxonMap) {
+    for (const tKey in prefectureTaxonMap[pref]) {
       taxonSet.add(tKey);
     }
   }
@@ -1403,21 +1341,17 @@ function generatePrefectureChart(allRows) {
     const absData = [];
 
     sortedPrefectures.forEach(pref => {
-      let count = 0;
-
-      if (chartMode === "record") {
-        count = prefectureRecordMap[pref]?.[taxon] || 0;
-      } else {
-        count = prefectureTaxonMap[pref]?.[taxon]?.size || 0;
-      }
-
+      const count = prefectureTaxonMap[pref][taxon]?.size || 0;
       absData.push(count);
-
       if (chartMode === "ratio") {
         const totalOfPref = Object.values(prefectureTaxonMap[pref])
           .reduce((s, st) => s + st.size, 0);
-        const ratioNum = totalOfPref === 0 ? 0 : ((count / totalOfPref) * 100).toFixed(1);
-        data.push(parseFloat(ratioNum));
+        if (totalOfPref === 0) {
+          data.push(0);
+        } else {
+          const ratioNum = ((count / totalOfPref) * 100).toFixed(1);
+          data.push(parseFloat(ratioNum));
+        }
       } else {
         data.push(count);
       }
@@ -1480,14 +1414,7 @@ function generatePrefectureChart(allRows) {
           stacked: true,
           beginAtZero: true,
           max: (chartMode === "ratio") ? 100 : undefined,
-          title: {
-            display: true,
-            text: (chartMode === "ratio")
-              ? "割合(%)"
-              : (chartMode === "record")
-                ? "記録数"
-                : "種数"
-          }
+          title: { display: true, text: (chartMode === "ratio") ? "割合(%)" : "種数" }
         }
       },
       plugins: {
@@ -1529,260 +1456,10 @@ function generatePrefectureChart(allRows) {
           }
         },
         title: {
-          display: false
+          display: false // Chart.js内蔵タイトルはオフ
         }
       },
       barThickness: 20
-    }
-  });
-}
-
-function generatePublicationChart(rows) {
-  const yearData = {};  // {year: {recordType: count}}
-
-  rows.forEach(row => {
-    const year = parseInt(row.publicationYear);
-    const type = row.recordType;
-    if (!Number.isInteger(year)) return;
-    if (!yearData[year]) yearData[year] = {};
-    if (!yearData[year][type]) yearData[year][type] = 0;
-    yearData[year][type]++;
-  });
-
-  const sortedYears = Object.keys(yearData).map(y => parseInt(y)).sort((a, b) => a - b);
-
-  const originalTypes = [
-    "1_タイプ産地",
-    "2_統合された種のタイプ産地",
-    "3_疑わしいタイプ産地",
-    "4_疑わしい統合された種のタイプ産地",
-    "5_標本記録",
-    "6_文献記録",
-    "7_疑わしい文献記録"
-  ];
-
-  const displayLabels = [
-    "タイプ",
-    "統合された種のタイプ",
-    "疑わしいタイプ",
-    "疑わしい統合された種のタイプ",
-    "標本記録",
-    "文献記録",
-    "疑わしい文献記録"
-  ];
-
-  const colors = [
-    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
-  ];
-
-  const datasets = [];
-  const activeTypes = [];
-
-  originalTypes.forEach((type, index) => {
-    const data = sortedYears.map(year => yearData[year][type] || 0);
-    const total = data.reduce((a, b) => a + b, 0);
-    if (total > 0) {
-      datasets.push({
-        label: displayLabels[index],
-        backgroundColor: colors[index],
-        data: data,
-        stack: 'stack1'
-      });
-      activeTypes.push(type);
-    }
-  });
-
-  let cumulativeSum = 0;
-  const cumulativeArray = sortedYears.map(year => {
-    const total = activeTypes.reduce((sum, type) => sum + (yearData[year][type] || 0), 0);
-    cumulativeSum += total;
-    return cumulativeSum;
-  });
-
-  datasets.push({
-    label: '累積記録数',
-    data: cumulativeArray,
-    type: 'line',
-    borderColor: 'black',
-    backgroundColor: 'black',
-    fill: false,
-    yAxisID: 'y-axis-2',
-    tension: 0.1,
-    pointRadius: 0
-  });
-
-  const ctx = document.getElementById("publication-chart").getContext("2d");
-  if (window.publicationChart) {
-    window.publicationChart.destroy();
-  }
-
-  window.publicationChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: sortedYears,
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          onClick: null // ← 凡例クリック無効化
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false
-        }
-      },
-      scales: {
-        x: {
-          stacked: true
-        },
-        y: {
-          stacked: true,
-          title: {
-            display: true,
-            text: '記録数'
-          }
-        },
-        'y-axis-2': {
-          type: 'linear',
-          position: 'right',
-          grid: {
-            drawOnChartArea: false
-          },
-          title: {
-            display: true,
-            text: '累積記録数'
-          }
-        }
-      }
-    }
-  });
-}
-
-function generateCollectionChart(rows) {
-  const yearData = {};
-
-  rows.forEach(row => {
-    const year = parseInt(row.collectionYear);
-    const type = row.recordType;
-    if (!Number.isInteger(year)) return;
-    if (!yearData[year]) yearData[year] = {};
-    if (!yearData[year][type]) yearData[year][type] = 0;
-    yearData[year][type]++;
-  });
-
-  const sortedYears = Object.keys(yearData).map(y => parseInt(y)).sort((a, b) => a - b);
-
-  const originalTypes = [
-    "1_タイプ産地",
-    "2_統合された種のタイプ産地",
-    "3_疑わしいタイプ産地",
-    "4_疑わしい統合された種のタイプ産地",
-    "5_標本記録",
-    "6_文献記録",
-    "7_疑わしい文献記録"
-  ];
-
-  const displayLabels = [
-    "タイプ",
-    "統合された種のタイプ",
-    "疑わしいタイプ",
-    "疑わしい統合された種のタイプ",
-    "標本記録",
-    "文献記録",
-    "疑わしい文献記録"
-  ];
-
-  const colors = [
-    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
-  ];
-
-  const datasets = [];
-  const activeTypes = [];
-
-  originalTypes.forEach((type, index) => {
-    const data = sortedYears.map(year => yearData[year][type] || 0);
-    const total = data.reduce((a, b) => a + b, 0);
-    if (total > 0) {
-      datasets.push({
-        label: displayLabels[index],
-        backgroundColor: colors[index],
-        data: data,
-        stack: 'stack1'
-      });
-      activeTypes.push(type);
-    }
-  });
-
-  let cumulativeSum = 0;
-  const cumulativeArray = sortedYears.map(year => {
-    const total = activeTypes.reduce((sum, type) => sum + (yearData[year][type] || 0), 0);
-    cumulativeSum += total;
-    return cumulativeSum;
-  });
-
-  datasets.push({
-    label: '累積記録数',
-    data: cumulativeArray,
-    type: 'line',
-    borderColor: 'black',
-    backgroundColor: 'black',
-    fill: false,
-    yAxisID: 'y-axis-2',
-    tension: 0.1,
-    pointRadius: 0
-  });
-
-  const ctx = document.getElementById("collection-chart").getContext("2d");
-  if (window.collectionChart) {
-    window.collectionChart.destroy();
-  }
-
-  window.collectionChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: sortedYears,
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          onClick: null // ← 凡例クリック無効化
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false
-        }
-      },
-      scales: {
-        x: {
-          stacked: true
-        },
-        y: {
-          stacked: true,
-          title: {
-            display: true,
-            text: '記録数'
-          }
-        },
-        'y-axis-2': {
-          type: 'linear',
-          position: 'right',
-          grid: {
-            drawOnChartArea: false
-          },
-          title: {
-            display: true,
-            text: '累積記録数'
-          }
-        }
-      }
     }
   });
 }
@@ -1873,43 +1550,23 @@ const formatGenusName = (name) => {
 
 const formatSpeciesName = (name) => {
   if (!name.includes(" / ")) return name;
-
   let [jName, sciName] = name.split(" / ");
+  let formatted = sciName
+    .replace(/\(/g, '<span class="non-italic">(</span>')
+    .replace(/\)/g, '<span class="non-italic">)</span>');
   const cleanSciName = sciName.replace(/<\/?i>/g, "").trim();
   const taxonInfo = taxonMap[cleanSciName] || { authorYear: "-" };
   const authorYear = taxonInfo.authorYear === "-" ? "" : ` <span class="non-italic">${taxonInfo.authorYear}</span>`;
 
-  // 括弧を非斜体に置換
-  let sciFormatted = sciName
-    .replace(/\(/g, '<span class="non-italic">(</span>')
-    .replace(/\)/g, '<span class="non-italic">)</span>');
-
-  // ord., fam., gen. が含まれている場合は全体を非斜体
-  if (/\bord\.|\bfam\.|\bgen\./.test(sciFormatted)) {
-    return `${jName} / <span class="non-italic">${sciFormatted}</span>${authorYear}`;
+  if (formatted.match(/ord\.|fam\.|gen\./)) {
+    return `${jName} / <span class="non-italic">${formatted}</span>${authorYear}`;
   }
-
-  // sp. を含む場合は sp. 以降を非斜体に
-  if (/ sp\./.test(sciFormatted)) {
-    const [beforeSp, afterSp] = sciFormatted.split(/ sp\./, 2);
-    const italicPart = beforeSp.trim().split(/\s+/).map(word => {
-      if (["cf.", "aff."].includes(word)) {
-        return `<span class="non-italic">${word}</span>`;
-      }
-      return `<i>${word}</i>`;
-    }).join(" ");
-    const nonItalicSp = `<span class="non-italic"> sp.${afterSp ? afterSp : ""}</span>`;
-    return `${jName} / ${italicPart} ${nonItalicSp}${authorYear}`;
+  if (formatted.includes("sp.") && !formatted.match(/ord\.|fam\.|gen\./)) {
+    formatted = formatted.replace(/(.*?)(sp\..*)/, '<i>$1</i><span class="non-italic">$2</span>');
+  } else {
+    formatted = `<i>${formatted}</i>`;
   }
-
-  // 通常パターン：cf.やaff.のみ非斜体、それ以外は斜体
-  const formattedParts = sciFormatted.split(/\s+/).map(part => {
-    return ["cf.", "aff."].includes(part)
-      ? `<span class="non-italic">${part}</span>`
-      : `<i>${part}</i>`;
-  });
-
-  return `${jName} / ${formattedParts.join(" ")}${authorYear}`;
+  return `${jName} / ${formatted}${authorYear}`;
 };
 
 function linkMasterAndDubiousCheckboxes() {
@@ -2064,104 +1721,33 @@ function updateIslandListInTab() {
 }
 
 function updateSpeciesListInTab() {
+  const select = document.getElementById('filter-species');
   const listContainer = document.getElementById('species-list');
-  listContainer.innerHTML = '';
+  listContainer.innerHTML = ''; // 既存リストをクリア
 
-  const validRows = filteredRows.filter(r => r.scientificName && r.scientificName !== "-");
+  Array.from(select.options).forEach(option => {
+    if (option.value !== '') {
+      const li = document.createElement('li');
 
-  const tree = {};
-  validRows.forEach(row => {
-    const { order, family, genus, scientificName, taxonRank, japaneseName } = row;
-    if (!tree[order]) tree[order] = {};
-    if (!tree[order][family]) tree[order][family] = {};
-    if (!tree[order][family][genus]) tree[order][family][genus] = {};
-    if (!tree[order][family][genus][scientificName]) {
-      tree[order][family][genus][scientificName] = {
-        rank: taxonRank,
-        japaneseName,
-        subspecies: new Set()
-      };
+      const [scientificName, japaneseName] = option.value.split(' / ');
+      const taxonInfo = taxonMap[scientificName?.trim()] || { authorYear: "-" };
+      const authorYear = taxonInfo.authorYear !== "-" ? ` <span class="non-italic">${taxonInfo.authorYear}</span>` : "";
+
+      let formattedSci = scientificName
+        .replace(/\(/g, '<span class="non-italic">(</span>')
+        .replace(/\)/g, '<span class="non-italic">)</span>');
+
+      if (formattedSci.includes("sp.") && !formattedSci.includes("ord.") && !formattedSci.includes("fam.") && !formattedSci.includes("gen.")) {
+        formattedSci = formattedSci.replace(/(.*?)(sp\..*)/, '<i>$1</i><span class="non-italic">$2</span>');
+      } else if (formattedSci.match(/ord\.|fam\.|gen\./)) {
+        formattedSci = `<span class="non-italic">${formattedSci}</span>`;
+      } else {
+        formattedSci = `<i>${formattedSci}</i>`;
+      }
+
+      li.innerHTML = `${japaneseName} / ${formattedSci}${authorYear}`;
+      listContainer.appendChild(li);
     }
-    if (taxonRank === "subspecies") {
-      tree[order][family][genus][scientificName].subspecies.add(japaneseName);
-    }
-  });
-
-  let speciesCounter = 1;
-
-  const getNo = (name, rank) => {
-    const entry = Object.entries(taxonMap).find(([sci, data]) =>
-      data && data.rank === rank && sci === name
-    );
-    return entry ? parseInt(entry[1].no) || Infinity : Infinity;
-  };
-
-  const sortByNo = (names, rank) => {
-    return names.sort((a, b) => getNo(a, rank) - getNo(b, rank));
-  };
-
-  const createLi = (html, indent = 0) => {
-    const li = document.createElement('li');
-    li.style.marginLeft = `${indent * 1.2}em`;
-    li.innerHTML = html;
-    listContainer.appendChild(li);
-  };
-
-  const getDisplayName = (sci) => {
-    const entry = taxonMap[sci] || {};
-    const jpn = entry.japaneseName || "-";
-    const author = entry.authorYear && entry.authorYear !== "-" ? ` <span class="non-italic">${entry.authorYear}</span>` : "";
-    return { jpn, sci, author };
-  };
-
-  sortByNo(Object.keys(tree), "order").forEach(order => {
-    const orderFormatted = formatOrderFamilyName(`${getDisplayName(order).jpn} / ${order}`);
-    createLi(orderFormatted, 0);
-
-    sortByNo(Object.keys(tree[order]), "family").forEach(family => {
-      const familyFormatted = formatOrderFamilyName(`${getDisplayName(family).jpn} / ${family}`);
-      createLi(familyFormatted, 1);
-
-      sortByNo(Object.keys(tree[order][family]), "genus").forEach(genus => {
-        const genusFormatted = formatGenusName(`${getDisplayName(genus).jpn} / ${genus}`);
-        createLi(genusFormatted, 2);
-
-        const speciesList = Object.entries(tree[order][family][genus]);
-
-        speciesList.sort((a, b) => {
-          const aNo = getNo(a[0], a[1].rank);
-          const bNo = getNo(b[0], b[1].rank);
-          return aNo - bNo;
-        }).forEach(([sci, data]) => {
-          if (data.rank === "subspecies") return;
-
-          const label = `${speciesCounter}. ${formatSpeciesName(`${data.japaneseName} / ${sci}`)}`;
-          createLi(label, 3);
-
-          Array.from(data.subspecies).sort().forEach((subJpn, idx) => {
-            const subEntry = Object.entries(taxonMap).find(([k, v]) =>
-              v.japaneseName === subJpn && v.rank === "subspecies"
-            );
-            const subSci = subEntry?.[0] || "-";
-            const subInfo = taxonMap[subSci] || {};
-            const subAuthor = subInfo.authorYear && subInfo.authorYear !== "-" ? ` <span class="non-italic">${subInfo.authorYear}</span>` : "";
-            let formattedSubSci = subSci.match(/ord\.|fam\.|gen\./)
-              ? `<span class="non-italic">${subSci}</span>`
-              : `<i>${subSci}</i>`;
-
-            // cf., aff. は非斜体化
-            formattedSubSci = formattedSubSci
-              .replace(/\bcf\./g, '<span class="non-italic">cf.</span>')
-              .replace(/\baff\./g, '<span class="non-italic">aff.</span>');
-
-            const subLabel = `${speciesCounter}.${idx + 1} ${subJpn} / ${formattedSubSci}${subAuthor}`;
-            createLi(subLabel, 4);
-          });
-
-          speciesCounter++;
-        });
-      });
-    });
   });
 }
 
@@ -2222,16 +1808,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   generatePrefectureChart(filteredRows);
 
-  window.addEventListener("resize", () => {
-    adjustSearchContainerAndLegend();
-    if (filteredRows && filteredRows.length > 0) {
-      generateMonthlyChart(filteredRows);
-      generatePrefectureChart(filteredRows);
-      generatePublicationChart(filteredRows);
-      generateCollectionChart(filteredRows);
-    }
-  });
-
+  window.addEventListener("resize", adjustSearchContainerAndLegend);
   adjustSearchContainerAndLegend();
 
   applyFilters(true);
