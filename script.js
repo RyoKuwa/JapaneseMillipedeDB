@@ -362,33 +362,30 @@ function initYearSliders() {
     max: publicationYearMaxValue,
     values: [publicationYearMinValue, publicationYearMaxValue],
     slide: function(event, ui) {
-      // 1) スライダー操作中の値を即テキストボックスに反映
-      $("#publication-year-min").val(ui.values[0]);
-      $("#publication-year-max").val(ui.values[1]);
+      const $inputMin = $("#publication-year-min");
+      const $inputMax = $("#publication-year-max");
 
-      // 2) 既存タイマーが走っていればクリア
+      if (document.activeElement !== $inputMin[0]) {
+        $inputMin.val(ui.values[0]);
+      }
+      if (document.activeElement !== $inputMax[0]) {
+        $inputMax.val(ui.values[1]);
+      }
+
       if (publicationTimerId) {
         clearTimeout(publicationTimerId);
       }
-      // 3) 新しいタイマーを設定。DEBOUNCE_DELAY だけ操作が無ければフィルタ実行
       publicationTimerId = setTimeout(() => {
-        applyFilters(true); // 実際のフィルタリング
+        applyFilters(true);
         publicationTimerId = null;
       }, DEBOUNCE_DELAY);
     },
     stop: function(event, ui) {
       // スライダー操作が止まった瞬間に即フィルタしたい場合は、こちらで行うパターンも
       // ただしデバウンスと重複するので、ここでは呼ばないのが無難
-      /*
-      if (publicationTimerId) {
-        clearTimeout(publicationTimerId);
-      }
-      applyFilters(true);
-      */
     }
   });
 
-  // テキストボックスにもスライダー初期値を反映
   $("#publication-year-min").val(publicationYearMinValue);
   $("#publication-year-max").val(publicationYearMaxValue);
 
@@ -399,14 +396,19 @@ function initYearSliders() {
     max: collectionYearMaxValue,
     values: [collectionYearMinValue, collectionYearMaxValue],
     slide: function(event, ui) {
-      $("#collection-year-min").val(ui.values[0]);
-      $("#collection-year-max").val(ui.values[1]);
+      const $inputMin = $("#collection-year-min");
+      const $inputMax = $("#collection-year-max");
 
-      // 既存タイマーが走っていればキャンセル
+      if (document.activeElement !== $inputMin[0]) {
+        $inputMin.val(ui.values[0]);
+      }
+      if (document.activeElement !== $inputMax[0]) {
+        $inputMax.val(ui.values[1]);
+      }
+
       if (collectionTimerId) {
         clearTimeout(collectionTimerId);
       }
-      // 新しいタイマーセット
       collectionTimerId = setTimeout(() => {
         applyFilters(true);
         collectionTimerId = null;
@@ -425,7 +427,6 @@ function initYearSliders() {
     publicationTimerId = setTimeout(() => {
       const minVal = parseInt($("#publication-year-min").val(), 10);
       const maxVal = parseInt($("#publication-year-max").val(), 10);
-      // スライダーに反映
       $("#publication-year-slider").slider("values", 0, minVal);
       $("#publication-year-slider").slider("values", 1, maxVal);
 
