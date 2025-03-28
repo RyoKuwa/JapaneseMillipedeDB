@@ -65,6 +65,30 @@ window.addEventListener("DOMContentLoaded", async () => {
   logTime("⚙️ イベントリスナーセットアップ完了");
 });
 
+const loadDistributionJSON = async () => {
+  const start = performance.now();
+  console.log("⏱️ [JSON] fetch 開始");
+
+  const response = await fetch("DistributionRecord_web.json.gz");
+  const fetchEnd = performance.now();
+  console.log(`⏱️ [JSON] fetch 完了: ${Math.round(fetchEnd - start)} ms`);
+
+  const jsonStart = performance.now();
+  const data = await response.json();  // 自動で gzip 解凍＋JSON.parse
+  const jsonEnd = performance.now();
+  console.log(`⏱️ [JSON] json() 完了: ${Math.round(jsonEnd - jsonStart)} ms`);
+
+  rows = data;
+
+  const total = performance.now();
+  console.log(`✅ [JSON] loadDistributionJSON 完了: ${Math.round(total - start)} ms`);
+
+  initYearRanges();
+  initYearSliders();
+  applyFilters(true);
+};
+
+
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
