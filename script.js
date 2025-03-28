@@ -29,6 +29,42 @@ let prefectureChart = null;
 let currentClassification = "order";  // "order" or "family"
 let currentChartMode = "count";       // "count" or "ratio"
 
+// タイムログ用ユーティリティ
+const timeLog = {};
+const logTime = (label) => {
+  const now = performance.now();
+  timeLog[label] = now;
+  console.log(`⏱️ ${label}: ${Math.round(now)} ms`);
+};
+
+logTime("🟡 ページ読み込み開始");
+
+window.addEventListener("DOMContentLoaded", async () => {
+  logTime("🟢 DOMContentLoaded");
+
+  initMap();
+  logTime("🗌️ 地図初期化完了");
+
+  loadTaxonNameCSV();
+  logTime("🧬 TaxonName.csv 読み込み開始");
+
+  await loadOrderCSV("Prefecture.csv", prefectureOrder, "prefecture");
+  await loadOrderCSV("Island.csv", islandOrder, "island");
+  logTime("📍 地理データ読み込み完了");
+
+  await loadLiteratureCSV();
+  logTime("📚 文献CSV 読み込み完了");
+
+  await loadDistributionCSV();
+  logTime("🗾️ DistributionRecord 読み込み完了");
+
+  setupCheckboxListeners();
+  setupSelectListeners();
+  setupNavButtonListeners();
+  setupResetButton();
+  logTime("⚙️ イベントリスナーセットアップ完了");
+});
+
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
