@@ -314,12 +314,26 @@ const parseCSV = (text) => {
 };
 
 const loadDistributionCSV = async () => {
+  const start = performance.now();
+  console.log("⏱️ [CSV] fetch 開始");
+
   try {
     const response = await fetch("DistributionRecord_web.csv");
-    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
-    const csvText = await response.text();
+    const fetchEnd = performance.now();
+    console.log(`⏱️ [CSV] fetch 完了: ${Math.round(fetchEnd - start)} ms`);
 
+    if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
+
+    const csvText = await response.text();
+    const textEnd = performance.now();
+    console.log(`⏱️ [CSV] text() 完了: ${Math.round(textEnd - fetchEnd)} ms`);
+
+    const parseStart = performance.now();
     const parsedData = parseCSV(csvText);
+    const parseEnd = performance.now();
+    console.log(`⏱️ [CSV] parseCSV 完了: ${Math.round(parseEnd - parseStart)} ms`);
+
+    const mapStart = performance.now();
     rows = parsedData.map(record => ({
       recordType: record["記録の分類_タイプ産地or標本記録or文献記録or疑わしいかどうか"] || "-",
       japaneseName: record["和名"] || "-",
@@ -350,16 +364,22 @@ const loadDistributionCSV = async () => {
       taxonRank: record["階級"] || "-",
       undescribedSpecies: record["未記載種の可能性が高い_幼体等で同定が困難な場合はno"] || "-"
     }));
+    const mapEnd = performance.now();
+    console.log(`⏱️ [CSV] map() 完了: ${Math.round(mapEnd - mapStart)} ms`);
 
     initYearRanges();   // rows から最小値・最大値を計算
     initYearSliders();  // スライダーを生成
 
     // 読み込み後、初回フィルタを実行
     applyFilters(true);
+
+    const total = performance.now();
+    console.log(`✅ [CSV] loadDistributionCSV 完了: ${Math.round(total - start)} ms`);
   } catch (error) {
     console.error("CSV の読み込みエラー:", error);
   }
 };
+
 
 // ==================== フィルタリングロジック ====================
 function initYearRanges() {
@@ -668,24 +688,12 @@ const updateFilters = (filteredData) => {
 };
 
 const applyFilters = async (updateMap = true) => {
-  const start = performance.now();
-  console.log("⏱️ applyFilters 開始");
-
   try {
-    const logStep = (label) => {
-      const now = performance.now();
-      console.log(`⏱️ ${label}: ${Math.round(now - start)} ms`);
-    };
-
     const { filters, checkboxes } = getFilterStates();
-    logStep("✅ フィルター取得");
-
     if (activePopup) {
       activePopup.remove();
       activePopup = null;
     }
-
-    logStep("🧪 ポップアップ削除");
 
     let filteredRowsLocal = rows.filter(row => {
       const combinedName = `${row.scientificName} / ${row.japaneseName}`;
@@ -699,10 +707,8 @@ const applyFilters = async (updateMap = true) => {
         (filters.literature === "" || row.literatureID === filters.literature)
       );
     });
-    logStep("🔍 基本フィルター適用");
 
     filteredRowsLocal = filterByCheckbox(filteredRowsLocal, checkboxes);
-    logStep("🔘 チェックボックスフィルター適用");
 
     // 年フィルタ: 出版年
     const usePublicationYear = $("#filter-publication-year-active").is(":checked");
@@ -711,9 +717,11 @@ const applyFilters = async (updateMap = true) => {
       const maxPub = parseInt($("#publication-year-max").val(), 10);
       filteredRowsLocal = filteredRowsLocal.filter(r => {
         const py = parseInt(r.publicationYear, 10);
-        return !isNaN(py) && py >= minPub && py <= maxPub;
+        // 非数値は弾く
+        if (isNaN(py)) return false;
+        // 範囲内ならOK
+        return (py >= minPub && py <= maxPub);
       });
-      logStep("📅 出版年フィルター適用");
     }
 
     // 年フィルタ: 採集年
@@ -723,43 +731,32 @@ const applyFilters = async (updateMap = true) => {
       const maxCol = parseInt($("#collection-year-max").val(), 10);
       filteredRowsLocal = filteredRowsLocal.filter(r => {
         const cy = parseInt(r.collectionYear, 10);
-        return !isNaN(cy) && cy >= minCol && cy <= maxCol;
+        if (isNaN(cy)) return false;
+        return (cy >= minCol && cy <= maxCol);
       });
-      logStep("🧪 採集年フィルター適用");
     }
 
     filteredRows = filteredRowsLocal;
     updateFilters(filteredRowsLocal);
-    logStep("📤 フィルター UI 更新");
-
     initializeSelect2();
     updateSelectedLabels();
-    logStep("🎛️ Select2・ラベル更新");
 
     updateRecordInfo(
       filteredRowsLocal.length,
       new Set(filteredRowsLocal.map(r => `${r.latitude},${r.longitude}`)).size
     );
-    logStep("📊 件数とユニーク座標集計");
 
     generateLiteratureList(filteredRowsLocal);
-    logStep("📚 文献リスト生成");
 
     if (updateMap) {
       displayMarkers(filteredRowsLocal);
-      logStep("📍 マーカー描画");
-
       generateMonthlyChart(filteredRowsLocal);
       generatePrefectureChart(filteredRowsLocal);
       generatePublicationChart(filteredRowsLocal);
       generateCollectionChart(filteredRowsLocal);
-      logStep("📈 グラフ生成完了");
     }
 
     updateDropdownPlaceholders();
-    logStep("📝 ドロップダウンプレースホルダ更新");
-
-    console.log(`✅ applyFilters 完了: ${Math.round(performance.now() - start)} ms`);
 
   } catch (error) {
     console.error("applyFilters中にエラー:", error);
