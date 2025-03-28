@@ -420,6 +420,20 @@ function initYearSliders() {
   $("#collection-year-max").val(collectionYearMaxValue);
 
   // ▼ テキストボックス編集時もデバウンス
+  $("#publication-year-min, #publication-year-max").on("focus", function() {
+    const input = this;
+    setTimeout(() => {
+      input.focus();
+    }, 300);
+  });
+
+  $("#collection-year-min, #collection-year-max").on("focus", function() {
+    const input = this;
+    setTimeout(() => {
+      input.focus();
+    }, 300);
+  });
+
   $("#publication-year-min, #publication-year-max").on("change", function() {
     if (publicationTimerId) {
       clearTimeout(publicationTimerId);
@@ -450,7 +464,6 @@ function initYearSliders() {
     }, DEBOUNCE_DELAY);
   });
 }
-
 const getFilterStates = () => {
   const filters = {
     species: document.getElementById("filter-species").value,
