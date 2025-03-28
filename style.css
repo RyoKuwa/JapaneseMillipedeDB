@@ -791,8 +791,9 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     width: 100%;
     border: 1px solid #ccc;
     box-sizing: border-box;
-    max-height: none;
-    overflow: visible;
+    transition: max-height 0.3s ease-out;
+    max-height: 765px;
+    overflow: hidden;
   }
 
   .search-body {
