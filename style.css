@@ -795,12 +795,8 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     overflow: visible;
   }
 
-  .search-container.closed {
-    max-height: 40px; /* 高さを0にして隠す */
-  }
-
   .search-body {
-    max-height: none;      /* 高さ制限を解除 */
+    max-height: none !important;      /* 高さ制限を解除 */
     overflow-y: visible;   /* 縦スクロールを無効化 */
   }
 
