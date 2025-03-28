@@ -55,7 +55,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadLiteratureCSV();
   logTime("📚 文献CSV 読み込み完了");
 
-  await loadDistributionCSV();
+  await loadDistributionJSON();
   logTime("🗾️ DistributionRecord 読み込み完了");
 
   setupCheckboxListeners();
@@ -2419,7 +2419,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadOrderCSV("Prefecture.csv", prefectureOrder, "prefecture");
   await loadOrderCSV("Island.csv", islandOrder, "island");
   await loadLiteratureCSV();
-  await loadDistributionCSV(); // rowsにデータが入る
+  await loadDistributionJSON(); // rowsにデータが入る
 
   updateRecordInfo(rows.length, new Set(rows.map(r => `${r.latitude},${r.longitude}`)).size);
 
