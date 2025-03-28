@@ -2377,6 +2377,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadLiteratureCSV();
   await loadDistributionCSV(); // rowsにデータが入る
 
+  setTimeout(() => {
+    applyFilters(true); // 描画処理を後回しに
+    setupCheckboxListeners();
+    setupSelectListeners();
+    setupNavButtonListeners();
+    setupResetButton();
+    logTime("⚙️ イベントリスナーセットアップ完了");
+  }, 0);
+
   updateRecordInfo(rows.length, new Set(rows.map(r => `${r.latitude},${r.longitude}`)).size);
 
   setupSelectListeners();
