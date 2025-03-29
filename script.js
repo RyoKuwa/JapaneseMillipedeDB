@@ -389,8 +389,8 @@ function initYearSliders() {
   });
 
   // テキストボックスにもスライダー初期値を反映
-  document.getElementById("publication-year-min").setAttribute("value", publicationYearMinValue);
-  document.getElementById("publication-year-max").setAttribute("value", publicationYearMaxValue);
+  $("#publication-year-min").val(publicationYearMinValue);
+  $("#publication-year-max").val(publicationYearMaxValue);
 
   // ▼ 採集年スライダー初期化
   $("#collection-year-slider").slider({
