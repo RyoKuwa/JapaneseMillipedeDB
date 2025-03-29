@@ -754,7 +754,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   width: 60px; /* サイズをお好みで */
   font-size: 12px;
   text-align: right; /* 年の桁数が4桁なので右寄せでもよい */
-  touch-action: manipulation;
 }
 
 @media (max-width: 711px) {
