@@ -3,7 +3,6 @@ body {
   padding: 0;
   font-family: 'Times New Roman';
   background-color: #f0f0f0; /* 背景色 */
-  min-height: 200vh;
 }
 
 /* ヘッダー部分のスタイル */
@@ -12,7 +11,6 @@ header {
   margin-top: 20px; /* 上部の余白 */
   padding: 20px;
   width: 100%; /* 幅を100%に設定 */
-  box-sizing: border-box;
 }
 
 /* タイトルのフォントサイズを調整 */
@@ -27,65 +25,51 @@ header h1 {
   position: relative; /* 地図を基準とする */
   top: 0;
   bottom: 0;
-  width: 85%;
-  height: 680px;
-  z-index: 1;
+  width: 90%;
+  height: 900px;
+  z-index: 0;
   margin: 0 auto; /* ページ中央揃え */
-}
-
-.maplibregl-ctrl-bottom-left {
-  z-index: 2 !important;
 }
 
 /* 検索コンテナの基本スタイル */
 .search-container {
-  position: absolute;
-  width: auto;
-  top: 10px;
-  left: 10px;
+  position: absolute; /* mapid を基準に配置 */
+  top: 10px;          /* mapid の上から 10px */
+  left: 10px;         /* mapid の左から 10px */
   background: white;
-  padding: 0; /* 内側の余白はヘッダー・ボディ各自で確保する */
+  padding: 10px;
   border: 1px solid #ccc;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  z-index: 30;
+  z-index: 30;        /* 常に地図の上に表示 */
   display: flex;
-  flex-direction: column;
-  transition: max-height 0.3s ease-out;
-  max-height: 540px;
-}
-
-.search-header {
-  position: relative;   /* 必要に応じて */
-  display: flex;
-  align-items: center;
-  padding: 10px;        /* 余白を適宜調整 */
-  border-bottom: 1px solid #ccc;
-  box-sizing: border-box;
-}
-
-.search-header .toggle-button {
-  margin-right: 8px; /* タイトルとの間隔 */
-  /* rotate 周りの transition はそのまま */
-}
-
-.search-body {
-  max-height: 488px !important;
-  padding: 10px;
-  overflow-y: auto;     /* 縦スクロールを有効に */
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;            /* 各要素の間隔 */
-}
-
-.search-container p {
-  font-size: 12px;
+  flex-direction: column; /* 子要素を縦並びに配置 */
+  gap: 10px;         /* 各セクション間の間隔を調整 */
+  transition: max-height 0.5s ease-out; /* アニメーション */
+  max-height: 540px; /* 初期の最大高さ */
+  overflow: hidden;
 }
 
 /* searchContainerが閉じられている時のスタイル */
 .search-container.closed {
-  max-height: 40px; /* 高さを0にして隠す */
+  max-height: 20px; /* 高さを0にして隠す */
   overflow: hidden;
+}
+
+/* 検索ボックスのクリアボタン（検索窓の内部右側） */
+.clear-button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #666;
+  margin-left: -30px; /* 右側に寄せる */
+  padding: 5px;
+  position: relative;
+  z-index: 10;
+}
+
+.clear-button:hover {
+  color: black;
 }
 
 /* toggle-button（三角形）のスタイル */
@@ -98,16 +82,32 @@ header h1 {
   font-size: 18px;
   cursor: pointer;
   transition: transform 0.5s ease; /* 回転アニメーション */
-  transform: rotate(180deg);
 }
 
 /* 三角印が回転した状態 */
 .toggle-button.rotate {
-  transform: rotate(360deg); /* 180度回転 */
+  transform: rotate(180deg); /* 180度回転 */
 }
 
-#reset-button {
-  height: 30px;  /* ボタンの高さを60pxに設定 */
+/* 検索ボックスとクリアボタンを横並びに */
+.search-box-container {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* 間隔を調整 */
+}
+
+/* 検索窓 */
+#search-all {
+  flex-grow: 1; /* 検索窓をコンテナ幅いっぱいに広げる */
+  padding: 5px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding-right: 25px;
+}
+
+#search-button, #reset-button {
+  height: 60px;  /* ボタンの高さを60pxに設定 */
   font-size: 14px;
   cursor: pointer;
   text-align: center;
@@ -123,10 +123,22 @@ header h1 {
   border: 1px solid black;
   box-shadow: 1px 1px 5px black;
   z-index: 50;
-  width: 30vw;
+  max-width: 300px; /* ポップアップの最大幅を設定 */
+  overflow-wrap: break-word; /* 長い単語を折り返す */
   word-wrap: break-word; /* 長い単語を折り返す */
   word-break: break-word; /* 必要に応じて単語を途中で改行 */
   white-space: normal; /* 折り返しを有効にする */
+}
+
+/* ポップアップ内のリンクを折り返し表示するためのスタイル */
+.maplibregl-popup-content a.popup-link {
+  word-wrap: break-word;      /* 長いURLを折り返す */
+  white-space: normal;        /* 折り返しを有効にする */
+  word-break: break-all;      /* 必要に応じて単語を途中で改行 */
+}
+
+#searchContainer input[type="checkbox"] {
+  margin-right: 5px;
 }
 
 ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right {
@@ -148,13 +160,14 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 /* Legendの基本スタイル */
 .legend {
   position: absolute;
-  width: 340px;
   bottom: 30px;
   right: 10px;
   background-color: rgba(255, 255, 255, 1);
   padding: 10px;
+  width: 340px;
   font-size: 14px;
   border: 1px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   z-index: 30;
   max-width: calc(100% - 20px);
   box-sizing: border-box;
@@ -165,51 +178,25 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 /* Legend ヘッダー部分のスタイル */
 .legend-header {
-  display: grid;
-  grid-template-columns: 20px 30px auto; /* [チェックボックス] [スペース] [タイトル] */
-  align-items: center;
+  display: flex;
+  align-items: center; /* 縦方向の中央揃え */
   font-weight: bold;
   padding-bottom: 5px;
-  margin-bottom: 10px;
-  position: relative; /* トグルボタンの配置を調整 */
-  border-bottom: 2px solid #909090;
-}
-
-/* ダミーのマーカー用スペースを確保 */
-.legend-header::before {
-  content: "";
-  width: 30px; /* マーカーのサイズと同じ幅 */
-  height: 1px; /* 実際には見えない要素 */
-  grid-column: 2; /* 2列目に配置 */
-}
-
-.legend-header input[type="checkbox"] {
-  grid-column: 1; /* 1列目（他のチェックボックスと統一） */
-}
-
-/* 「マーカーの種類」のタイトルをテキスト列に移動 */
-.legend-header span {
-  grid-column: 3; /* 2列目に配置（チェックボックスの横） */
-  text-align: left;
-  padding-left: 20px; /* テキストとチェックボックスの間隔調整 */
+  gap: 8px; /* ボタンとテキストの間に適度な余白 */
 }
 
 /* トグルボタンのスタイル */
 .legend-toggle-button {
-  position: absolute;
-  right: 0px;
-  top: 0px;
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   transition: transform 0.3s ease;
-  font-size: 18px;
 }
 
 /* 折りたたみ時のスタイル（高さを0に） */
 .legend.collapsed {
-  max-height: 47px; /* タイトル部分だけを表示 */
+  max-height: 38px; /* タイトル部分だけを表示 */
   overflow: hidden;
 }
 
@@ -221,25 +208,30 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   content: "▼"; /* 開いているときは「▼」 */
 }
 
-/* Legend アイテムのレイアウト */
 .legend-item {
   display: grid;
-  grid-template-columns: 20px 30px auto; /* [チェックボックス] [マーカー] [テキスト] */
+  grid-template-columns: 30px auto 20px; /* マーカー, テキスト, チェックボックス */
   align-items: center;
-  column-gap: 10px;
+  column-gap: 10px; /* マーカーとテキストの間隔 */
+  margin-bottom: 5px;
 }
 
 .legend-item input[type="checkbox"] {
-  margin-right: 5px; /* チェックボックスとマーカーの間隔 */
-  width: 13px;
-  height: 13px;
+  margin-left: auto;
 }
 
-.legend-item .marker {
+.legend-item span {
+  width: 20px;  /* マーカーの最大幅 */
+  min-width: 20px; /* 小さいマーカーでも固定 */
+  height: 20px;  /* マーカーの最大高さ */
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin: auto; /* 上下左右の中央配置 */
+  justify-content: center;
+}
+
+#legend-master-checkbox {
+  margin-left: auto; /* 右上に配置 */
+  cursor: pointer;
 }
 
 /* テキスト部分（左揃え） */
@@ -248,11 +240,9 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   display: flex;
   align-items: center;
   white-space: nowrap; /* 長いテキストの折り返し防止 */
-  display: inline-block;
-  padding: 2px 5px;
 }
 
-.legend-item-text::after {
+.legend-item::after {
   content: attr(data-tooltip);
   position: absolute;
   bottom: 100%;
@@ -274,7 +264,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   z-index: 50; /* 地図より前面に表示 */
 }
 
-.legend-item-text:hover::after {
+.legend-item:hover::after {
   opacity: 1;
   visibility: visible;
 }
@@ -292,11 +282,19 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   display: none; /* 初期状態では非表示 */
 }
 
+/* マーカーのスタイル */
+.marker {
+  width: 20px;
+  height: 20px;
+  background-color: gray;
+}
+
 /* 星のマーカー（サイズを大きくする） */
 .marker-star {
   width: 20px;
   height: 20px;
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  background-color: pink;
   border: none;
 }
 
@@ -308,6 +306,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     0% 12%, 12% 0%, 50% 38%, 88% 0%, 100% 12%, 62% 50%, 
     100% 88%, 88% 100%, 50% 62%, 12% 100%, 0% 88%, 38% 50%
   );
+  background-color: pink;
   border: none;
 }
 
@@ -316,7 +315,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: 3px solid darkred;
+  border: 3px solid black;
 }
 
 /* 四角形のマーカー */
@@ -324,6 +323,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   width: 10px;
   height: 10px;
   border-radius: 0;
+  background-color: gray;
   border: 3px solid black;
 }
 
@@ -377,8 +377,10 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 #literature-list {
+  display: none; /* 初期状態で非表示 */
   position: relative;
   width: 100%; /* 横幅を少し狭める */
+  max-width: 90%; /* 最大幅を調整 */
   margin: 0 auto; /* 中央寄せ */
   padding: 10px;
   box-sizing: border-box; /* パディング含む幅計算 */
@@ -437,46 +439,12 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 .select-container select {
   flex-grow: 1; /* 幅を一定にするために調整 */
   width: 0px; /* 絶対幅を設定 */
-  max-width: none;
-  min-width: 200px;
+  max-width: 190px;
+  min-width: 190px;
   height: 24px; /* 高さを適切に調整 */
   font-size: 14px;
   padding: 2px; /* 内部の余白を調整 */
   box-sizing: border-box; /* 幅計算を内側の要素に含める */
-}
-
-/* Select2 のスタイル調整 */
-.select2-container {
-  font-size: 14px;
-}
-
-.custom-select2-clear {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  z-index: 10;
-  font-size: 16px;
-  color: #666;
-  display: none;
-  user-select: none;
-  background: none;
-  border: none;
-  padding: 0;
-  line-height: 1;
-}
-
-.custom-select2-clear:hover {
-  color: #e60000;
-}
-
-/* 更新中のメッセージ */
-.update-message {
-  font-size: 12px;
-  color: gray;
-  margin-bottom: 3px;
-  text-align: left;
 }
 
 /* 左右ボタンのスタイル */
@@ -498,8 +466,9 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   background-color: #ddd;
 }
 
-#selected-labels {
-  width: calc(85% - 20px); /* 地図の幅に合わせつつ、paddingの影響を排除 */
+.selected-labels {
+  width: 80%;
+  max-width: 900px;
   margin: 0 auto; /* 中央揃え */
   background: rgba(255, 255, 255, 0.9);
   padding: 8px 10px;
@@ -509,330 +478,19 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   border-bottom: 1px solid #ccc;
   display: none; /* 初期状態は非表示 */
   white-space: pre-line; /* 改行を有効化 */
-  overflow-wrap: break-word;
-  border: 1px solid #ccc;
 }
 
-/* タブ全体のコンテナ */
-.tab-container {
-  width: 85%;
-  margin: 0px auto;
-  background: #fff;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
-}
-
-/* タブの見出し部分 */
-.tab-header {
-  list-style: none;
-  display: flex;
-  margin: 0;
-  padding: 0;
-  white-space: nowrap;
-  border-bottom: 2px solid #ccc;
-  overflow-x: auto;
-}
-
-.tab-header li {
-  flex: 1;                    /* 均等に幅を割り当て */
-  text-align: center;         /* 見出しの文字を中央揃え */
-  padding: 10px;
-  cursor: pointer;
-  background-color: #f5f5f5;
-  border-right: 1px solid #ccc;
-  font-weight: bold;
-  user-select: none;          /* テキスト選択防止 (お好みで) */
-}
-
-.tab-header li:last-child {
-  border-right: none;         /* 最後のタブは右枠線を消す */
-}
-
-/* アクティブなタブの見た目 */
-.tab-header li.active {
-  background-color: #e1e1e1;
-}
-
-/* タブ切り替えコンテンツの共通スタイル */
-.tab-content {
-  display: none;  /* 非表示にしておき、active だけ表示 */
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-/* アクティブなタブを表示 */
-.tab-content.active {
-  display: block;
-}
-
-#chart-container {
-  flex: 1;
-  max-width: 600px;
-  min-height: 200px;
-  max-height: 400px;
-  position: relative;  /* Chart.jsが幅を自動調整できるように */
-}
-
-#chart-legend {
-  display: flex;
-  flex-direction: column; /* 縦に並べる */
-  gap: 10px;              /* 各ラベル間の余白 */
-  flex: none;             /* 幅を自動拡張しない */
-}
-
-#chart-wrapper {
-  display: flex;          /* 横並びにする */
-  gap: 10px;              /* グラフとチェックボックスの間隔 */
-  align-items: center;    /* 上下方向で中央揃え（任意） */
-}
-
-#month-chart {
-  height: 40vh;
-}
-
-/* 都道府県グラフを包むラッパに対するスクロール指定 */
-.chart-container-scroll {
-  width: 100%;              /* 親要素いっぱいに広げる */
-  max-height: 920px;        /* 必要に応じて高さを拡大 (例: 600px) */
-  overflow-x: auto;         /* 横スクロールを許可 */
-  overflow-y: hidden;       /* 縦スクロールは要らなければ隠す */
-  margin: 20px 0;           /* 上下余白 (お好みで) */
-  border: 1px solid #ccc;   /* 視覚的に領域がわかりやすいように (任意) */
-  box-sizing: border-box;
-}
-
-/* chart を包むラッパ要素：横スクロール・縦スクロールを許可 */
-#prefecture-chart-wrapper.chart-container-scroll {
-  width: 100%;             /* 横幅いっぱい */
-  min-height: 800px;       /* 高さを確保 -> グラフが縦に潰れにくい */
-  overflow-x: auto;        /* 横スクロール許可 */
-  overflow-y: auto;        /* 縦方向も必要ならスクロール可 */
-  margin: 20px 0;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
-  position: relative;     /* 内部要素をabsolute配置するため */
-}
-
-/* canvas 本体: レスポンシブで伸びるよう width 100% */
-#prefecture-chart {
-  /* 凡例 + 47都道府県を並べるため、最低幅を広めに取る */
-  min-width: 1500px;       /* 数値は任意で調整 */
-  /* 高さは親要素に合わせるなら min-height で可変 */
-  min-height: 800px;       /* これにより上画像のように縦に大きく描画 */
-  margin: 0 auto;          /* 中央寄せ（任意） */
-}
-
-/* ラジオボタン同士の間隔や配置を制御 */
-#classification-radio {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin: 10px auto;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #aaa;
-  border-radius: 4px;
-  font-size: 14px;
-  flex-wrap: wrap;
-}
-
-#classification-radio label {
-  margin-right: 10px;
-}
-
-#touch-hint {
-  position: absolute;
-  top: 50%;                 /* 地図の中央あたりに表示する例 */
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 9999;            /* 地図より前面に表示 */
-  
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 16px;
-  text-align: center;
-  
-  display: none;            /* 初期状態で非表示 */
-  pointer-events: none;     /* タップ操作をブロックしない */
-}
-
-.external-chart-title {
-  text-align: center;   /* 中央揃え */
-  font-size: 16px;      /* 適度なサイズ */
-  font-weight: bold;    /* 太字 */
-  margin: 10px 0;       /* 上下の余白を調整 */
-}
-
-.chart-divider {
-  border-top: 4px solid #ccc;  /* 線の太さと色 */
-  margin: 40px 0;              /* 上下の余白 */
-  width: 100%;
-}
-
-#species-list {
-  list-style: none;
-  padding-left: 0;
-}
-
-/* 出版年・採集年グラフ共通ラッパー */
-#publication-chart-wrapper,
-#collection-chart-wrapper {
-  width: 100%;
-  min-height: 400px;
-  overflow-x: auto;
-  overflow-y: auto;
-  margin: 20px 0;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
-  position: relative;
-}
-
-/* 出版年・採集年グラフ canvas */
-#publication-chart,
-#collection-chart {
-  min-width: 1500px;   /* 年数が多くても表示できるように横長に */
-  min-height: 400px;
-  margin: 0 auto;
-}
-
-/* ポップアップ全体のラッパー */
-.popup-wrapper {
-  display: flex;
-  flex-direction: column;
-  max-height: unset; /* ← JSで設定する */
-}
-
-/* 本文をスクロール可能にする */
-.popup-scroll-container {
-  overflow-y: auto;
-  flex: 1;
-  padding-right: 8px;
-}
-
-/* 前/次ボタンは常に下部に固定（本文の外） */
-.popup-nav-fixed {
-  padding: 6px 0;
-  text-align: center;
-  border-top: 1px solid #ccc;
-  background: white;
-  flex-shrink: 0;
-}
-
-.year-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 4px 0;
-}
-
-.year-filter label {
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.slider-container {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-#publication-year-slider,
-#collection-year-slider {
-  margin: 0 6px; /* スライダー左右余白調整 */
-}
-
-.year-inputs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 6px;
-}
-
-.year-inputs input[type="text"] {
-  width: 60px; /* サイズをお好みで */
-  font-size: 12px;
-  text-align: right; /* 年の桁数が4桁なので右寄せでもよい */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 711px) {
-  /* タイトル部分 */
-  header {
-    width: 100%;
-    left: 0;
-  }
-
-  /* タイトルのフォントサイズを調整 */
-  header h1 {
-    font-size: 1.2em; /* 文字サイズを調整 */
-  }
-
-  /* タブコンテナ */
-  .tab-container {
-    width: 100%;
-    margin-left: 0%;
-    margin-right: 0;
-  }
-
-  #selected-labels{
-    margin-left: 0;
-    width: 100%;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-
-  .search-container {
-    margin-left: 0;
-    left: 0;
-    top: 0;
-    box-shadow: none;
-    position: relative;
-    width: 100%;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    transition: max-height 0.3s ease-out;
-    max-height: 765px;
-    overflow: hidden;
-  }
-
-  .search-body {
-    max-height: none !important;      /* 高さ制限を解除 */
-    overflow-y: visible;   /* 縦スクロールを無効化 */
-  }
-
   .legend {
-    position: relative;
-    width: 100%;
-    bottom: auto;
-    margin-left: 0;
-    left: 0;
-    right: auto;
-    top: 0;
-    box-shadow: none;
-  }
-
-  .toggle-button {
-    right: 10px;
-    top:auto;
-    bottom: auto;
-    transform: rotate(180deg);
-    font-size: 18px;
-  }
-  .toggle-button.rotate {
-    transform: rotate(0deg); /* クリック時に元の向きに戻す */
-  }
-
-  #mapid {
-    height: 400px;
-    width: 100%;
-  }
-
-  .maplibregl-popup-content {
-    width: 50vw;
-  }
-
-  .legend {
-    max-width: 100%;
+    bottom: 40px;
   }
 }

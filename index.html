@@ -1,39 +1,14 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="faviconMilli.ico" type="image/x-icon">
-    <title>日本産ヤスデ類の分布</title>
-  
-    <!-- MapLibre CSS -->
-    <link href="https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.css" rel="stylesheet" />
-  
-    <!-- MapLibre JS -->
-    <script src="https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.js"></script>
-
-    <!-- ページ独自のCSS -->
-    <link rel="stylesheet" href="style.css">
-  
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-
-    <!-- ▼ jQuery UI 読み込み -->
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-
-    <!-- jQuery UI Touch Punch -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
-
-    <!-- Select2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
-  </head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日本産ヤスデ類の分布</title>
+  <link href='https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.css' rel='stylesheet' />
+  <script src='https://unpkg.com/maplibre-gl@1.15.3/dist/maplibre-gl.js'></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
 <body>
   <header>
     <h1>日本産ヤスデ類の分布 (作成中)<br>Distribution of Japanese Millipedes (Uncompleted Version)</h1>
@@ -41,18 +16,13 @@
   </div>
 
   <!-- 選択中のセレクトボックスのラベル -->
-  <div id="selected-labels"></div>
+  <div id="selected-labels" class="selected-labels"></div>
 
   <div id="mapid">
-    <div id="touch-hint">2本指で地図を操作<br><br>マーカークリックで詳細表示</div>
     <!-- 検索とセレクトボックス -->
-    <div class="search-container">
-      <div class="search-header">
-        <div id="toggle-button" class="toggle-button">&#9650;</div> <!-- 上向き三角形 -->
-        <h2 class="select-box-title">フィルター</h2>
-      </div>
-      <div class="search-body">
-      <!-- 各セレクトボックスにナビゲーションボタンを追加 -->
+    <div id="searchContainer" class="search-container">
+      <h2 class="select-box-title">セレクトボックス</h2>
+      <!-- 各セレクトボックスにナビゲーションボタンを追加 -->      
       <div class="select-container">
         <select id="filter-order"></select>
         <button class="nav-button" id="prev-order">&lt;</button>
@@ -96,202 +66,70 @@
         <button class="nav-button" id="prev-literature">&lt;</button>
         <button class="nav-button" id="next-literature">&gt;</button>
       </div>
+      <div class="select-box-divider-two"></div>
+      <div class="search-box-container">
+        <input type="text" id="search-all" placeholder="検索">
+        <button id="clear-search-button" class="clear-button">✖</button>
+      </div>
+      <button id="search-button">セレクトボックスを検索</button>
+      <div class="select-box-divider-two"></div>
       <button id="reset-button">リセット</button>
-
-      <!-- 既存の「リセット」ボタンやチェックボックス類の下に追加 -->
-      <div class="select-box-divider-two"></div>
-
-      <!-- ▼ 出版年フィルタ -->
-      <div class="year-filter">
-        <label>
-          <input type="checkbox" id="filter-publication-year-active">
-          出版年で絞り込み
-        </label>
-        <div class="slider-container">
-          <div id="publication-year-slider"></div>
-          <div class="year-inputs">
-            <input type="text" id="publication-year-min" size="4" readonly>
-            <span>～</span>
-            <input type="text" id="publication-year-max" size="4">
-          </div>
-        </div>
-      </div>
-
-      <!-- ▼ 採集年フィルタ -->
-      <div class="year-filter">
-        <label>
-          <input type="checkbox" id="filter-collection-year-active">
-          採集年で絞り込み
-        </label>
-        <div class="slider-container">
-          <div id="collection-year-slider"></div>
-          <div class="year-inputs">
-            <input type="text" id="collection-year-min" size="4">
-            <span>～</span>
-            <input type="text" id="collection-year-max" size="4">
-          </div>
-        </div>
-      </div>
-
-      <div class="select-box-divider-two"></div>
       <div id="checkbox-container">
         <label>
           <input type="checkbox" id="exclude-unpublished"> 未公表データを除外
         </label>
         <label>
-          <input type="checkbox" id="exclude-dubious" checked> 疑わしい記録を除外
+          <input type="checkbox" id="exclude-dubious"> 疑わしい記録を除外
         </label>
         <label>
-          <input type="checkbox" id="exclude-citation" checked> 引用記録を除外
-        </label>
-        <label>
-          <input type="checkbox" id="exclude-undescribed"> 未記載種を除外
-        </label>
-        <label>
-          <input type="checkbox" id="exclude-unspecies"> 種同定されていない記録を除外
+          <input type="checkbox" id="exclude-citation"> 引用記録を除外
         </label>
       </div>
       <p>レコード数: <span id="record-count">0</span><br>地点数: <span id="location-count">0</span></p>
-      </div>
+      <div id="toggle-button" class="toggle-button">&#9650;</div> <!-- 上向き三角形 -->
+    </div>
+    <div id="selected-labels">
+      <p>現在の選択:</p>
+      <ul id="selected-labels-list"></ul>
     </div>
     <div class="legend">
       <div class="legend-header">
-        <input type="checkbox" id="legend-master-checkbox" checked>
-        <span>マーカーの種類</span>
         <button class="legend-toggle-button"></button>
+        <span>マーカーの種類</span>
+        <input type="checkbox" id="legend-master-checkbox" checked>
       </div>
-      <div class="legend-item">
+      <div class="legend-item" data-tooltip="種の基準となる標本が採集された場所です。">
+        <span class="marker marker-star blue"></span>タイプ産地
         <input type="checkbox" id="filter-type" class="marker-filter-checkbox" checked>
-        <span class="marker marker-star blue"></span>
-        <span class="legend-item-text" data-tooltip="タイプ産地：種の基準となる標本が採集された場所です。">タイプ産地</span>
       </div>
-      <div class="legend-item">
+      <div class="legend-item" data-tooltip="現在、有効とは見なされていないものの、過去に別種として扱われていた種のタイプ産地です。">
+        <span class="marker marker-square purple"></span>統合された種のタイプ産地
         <input type="checkbox" id="filter-integrated-type" class="marker-filter-checkbox" checked>
-        <span class="marker marker-square purple"></span>
-        <span class="legend-item-text" data-tooltip="統合された種のタイプ産地：現在、有効とは見なされていないものの、過去には別種として扱われていた種のタイプ産地です。">統合された種のタイプ産地</span>
       </div>
-      <div class="legend-item">
-        <input type="checkbox" id="filter-doubtful-type" class="marker-filter-checkbox">
-        <span class="marker marker-star pink"></span>
-        <span class="legend-item-text" data-tooltip="疑わしいタイプ産地：タイプ産地とされたものの、実際には誤りの可能性が高いと考えられる産地です。">疑わしいタイプ産地</span>
+      <div class="legend-item" data-tooltip="タイプ産地とされたものの、実際には誤りの可能性が高いと考えられる産地です。">
+        <span class="marker marker-star pink"></span>疑わしいタイプ産地
+        <input type="checkbox" id="filter-doubtful-type" class="marker-filter-checkbox" checked>
       </div>
-      <div class="legend-item">
-        <input type="checkbox" id="filter-doubtful-integrated-type" class="marker-filter-checkbox">
-        <span class="marker marker-square pink"></span>
-        <span class="legend-item-text" data-tooltip="統合された種の疑わしいタイプ産地：現在、有効とは見なされていないものの、過去には別の種として扱われていた種の、疑わしいタイプ産地です。">統合された種の疑わしいタイプ産地</span>
+      <div class="legend-item" data-tooltip="現在、有効とは見なされていないものの、過去には別の種として扱われていた種の、疑わしいタイプ産地です。">
+        <span class="marker marker-square pink"></span>統合された種の疑わしいタイプ産地
+        <input type="checkbox" id="filter-doubtful-integrated-type" class="marker-filter-checkbox" checked>
       </div>
-      <div class="legend-item">
+      <div class="legend-item" data-tooltip="本データベースの作成者が同定に責任をもつ記録です。具体的には、データベースの作成者が観察した標本と、共著論文の著者が標本を確認した記録が含まれます。">
+        <span class="marker marker-circle red"></span>標本記録
         <input type="checkbox" id="filter-specimen" class="marker-filter-checkbox" checked>
-        <span class="marker marker-circle red"></span>
-        <span class="legend-item-text" data-tooltip="標本記録：本データベースの作成者が責任をもつ記録です。具体的には、データベースの作成者が標本を観察した記録と、共著論文の著者が標本を観察した記録が含まれます。">標本記録</span>
       </div>
-      <div class="legend-item">
+      <div class="legend-item" data-tooltip="標本記録を除く、文献に掲載された記録です。一部の記録は、将来的に疑わしい記録に変化する可能性があります。">
+        <span class="marker marker-circle white"></span>文献記録
         <input type="checkbox" id="filter-literature-record" class="marker-filter-checkbox" checked>
-        <span class="marker marker-circle white"></span>
-        <span class="legend-item-text" data-tooltip="文献記録：標本記録を除く、文献に掲載された記録です。証拠が十分ではない記録も含まれており、一部の記録は将来、疑わしい記録に変わる可能性があります。">文献記録</span>
       </div>
-      <div class="legend-item">
-        <input type="checkbox" id="filter-doubtful-literature" class="marker-filter-checkbox">
-        <span class="marker marker-cross pink"></span>
-        <span class="legend-item-text" data-tooltip="疑わしい記録：標本の再確認により、誤同定が明らかになった記録や、疑わしい記録が含まれます。分布する可能性がある記録でも、同定の精度が高くない著者による、十分な証拠が示されていない記録は、疑わしい記録として扱っていることがあります。">疑わしい記録</span>
+      <div class="legend-item" data-tooltip="標本の再確認により、誤同定が明らかになった記録や、疑わしい記録が含まれます。誤同定が著しい著者による、十分な証拠が示されていない記録は、分布する可能性がある記録でも、疑わしい記録として扱っていることがあります。">
+        <span class="marker marker-cross pink"></span>疑わしい記録
+        <input type="checkbox" id="filter-doubtful-literature" class="marker-filter-checkbox" checked>
       </div>
     </div>
   </div>
-  <!-- タブ部分 -->
-  <div class="tab-container">
-    <!-- タブの見出し -->
-    <ul class="tab-header">
-      <li class="active" data-tab="tab-data">データ Data</li>
-      <li data-tab="tab-species">種 Species</li>
-      <li data-tab="tab-prefecture">都道府県 Prefecture</li>
-      <li data-tab="tab-island">島 Island</li>
-      <li data-tab="tab-reference">引用文献 Reference</li>
-    </ul>
-
-    <!-- タブの内容 -->
-    <div id="tab-data" class="tab-content active">
-
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
-      <!-- 出現期 -->
-      <h2 id="month-chart-title" class="external-chart-title"></h2>
-      <div id="chart-wrapper"  class="chart-container-scroll">
-        <!-- グラフを表示するキャンバス -->
-        <div id="chart-container">
-          <canvas id="month-chart"></canvas>
-        </div>
-        <!-- 右側に縦並びのチェックボックス -->
-        <div id="chart-legend">
-          <label>
-            <input type="checkbox" id="toggle-adult" checked>
-            成体
-          </label>
-          <label>
-            <input type="checkbox" id="toggle-juvenile" checked>
-            幼体・不明
-          </label>
-        </div>
-      </div>
-      
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
-      <!-- 各都道府県の記録数（タイトル） -->
-      <h2 id="prefecture-chart-title" class="external-chart-title"></h2>
-      <div id="classification-radio">
-        <div class="radio-group">
-          <label><input type="radio" name="classification" value="order" checked> 目</label>
-          <label><input type="radio" name="classification" value="family"> 科</label>
-        </div>
-        <div class="radio-group">
-          <label><input type="radio" name="chart-mode" value="count" checked> 種数</label>
-          <label><input type="radio" name="chart-mode" value="record"> 記録数</label>
-          <label><input type="radio" name="chart-mode" value="ratio"> 割合</label>
-        </div>
-      </div>
-      <div id="chart-area" style="position: relative; width: 100%;">
-        <div id="prefecture-chart-wrapper" class="chart-container-scroll">
-          <canvas id="prefecture-chart"></canvas>
-        </div>        
-      </div>
-
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
-      <!-- 出版年グラフ -->
-      <div class="external-chart-title">記録数と累積記録数（出版年）</div>
-      <div id="publication-chart-wrapper" class="chart-container-scroll">
-        <canvas id="publication-chart"></canvas>
-      </div>
-
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
-      <!-- 採集年グラフ -->
-      <div class="external-chart-title">記録数と累積記録数（採集年）</div>
-      <div id="collection-chart-wrapper" class="chart-container-scroll">
-        <canvas id="collection-chart"></canvas>
-      </div>
-    </div>
-  
-    <div id="tab-species" class="tab-content">
-      <ul id="species-list"></ul>
-    </div>
-  
-    <div id="tab-prefecture" class="tab-content">
-      <ol id="prefecture-list"></ol>
-    </div>
-  
-    <div id="tab-island" class="tab-content">
-      <ol id="island-list"></ol>
-    </div>
-  
-    <div id="tab-reference" class="tab-content">
-      <div id="literature-list">
-        <!-- 文献リストがここに動的に表示される -->
-      </div>
-    </div>
+  <div id="literature-list">
+    <!-- 文献リストがここに動的に表示されます -->
   </div>
   <script src="script.js"></script>
 </body>

@@ -1,109 +1,107 @@
-﻿No,Island_jp,Island_en
-1,北海道,Hokkaidô Island
-2,本州,Honshû Island
-3,四国,Shikoku Island
-4,九州,Kyûshû Island
-5,択捉島,Etorofu-tô Island
-6,国後島,Kunashiri-tô Island (Kunashir Island)
-7,色丹島,Shikotan-tô Island
-8,礼文島,Rebun-tô Island
-9,利尻島,Rishiri-tô Island
-10,奥尻島,Okushiri-tô Island
-11,伊豆大島,Izuô-shima Island
-12,新島,Nii-jima Island
-13,三宅島,Miyake-jima Island
-14,八丈島,Hachijô-jima Island
-15,青ヶ島,Aoga-shima Island
-16,聟島,Muko-jima Island
-17,弟島,Otôto-jima Island
-18,兄島,Ani-jima Island
-19,父島,Chichi-jima Island
-20,母島,Haha-jima Island
-21,猿島,Saru-shima Island
-22,佐渡島,Sadoga-shima Island
-23,宝来島,Hôrai-jima Island
-24,能登島,Noto-jima Island
-25,瓜島,Uri-shima Island
-26,赤根島,Akane-jima Island
-27,篠島,Shino-jima Island
-28,竹生島,Chikubu-shima Island
-29,沖島,Oki-shima Island
-30,淡路島,Awaji-shima Island
-31,孔島,Ku-shima Island
-32,九竜島,Kuro-shima Island (Higashimuro-gun)
-33,紀伊大島,Kii-oshima Island
-34,稲積島,Inazumi-jima Island
-35,沖ノ黒島,Okinokuro-shima Island
-36,神島 (和歌山県),Ka-shima (Wakayama Prefecture)
-37,黒島 (和歌山県),Kuro-shima (Hidaka-gun)
-38,青島 (鳥取県),Ao-shima Island (Tottori Prefecture)
-39,島後,Dôgo Island
-40,西ノ島,Nishino-shima Island
-41,大根島,Daikon-jima Island
-42,真鍋島,Manabe-shima Island
-43,厳島,Itsuku-shima Island
-44,屋代島,Yashiro-jima Island
-45,見島,Mi-shima Island
-46,角島,Tsuno-shima Island
-47,彦島,Hiko-shima Island
-48,竹ヶ島,Takega-shima Island
-49,小豆島,Shôdo-shima Island
-50,新居大島,Niiô-shima Island
-51,大三島,Ômi-sima Island
-52,馬島,Uma-shima Island
-53,興居島,Gogo-shima Island
-54,日振島,Hiburi-shima Island
-55,鹿島 (南宇和郡),Ka-shima Island (Minamiuwa-gun)
-56,大島 (高知県),Ô-shima Island (Kôchi Prefecture)
-57,沖の島 (高知県),Okino-shima Island (Kôchi Prefecture)
-58,対馬,Tsushima Island
-59,壱岐島,Ikino-shima Island
-60,中通島,Nakadôri-jima Island
-61,福江島,Fukue-jima Island
-62,上島,Kami-shima Island
-63,青島,Ao-shima Island
-64,下甑島,Shimokoshiki-shima Island
-65,屋久島,Yaku-shima Island
-66,種子島,Tanega-shima Island
-67,口之島,Kuchino-shima Island
-68,中之島,Nakano-shima Island
-69,宝島,Takara-jima Island
-70,奄美大島,Amamiô-shima Island
-71,徳之島,Tokuno-shima Island
-72,沖永良部島,Okinoerabu-jima Island
-73,与論島,Yoron-jima Island
-74,硫黄鳥島,Iôtori-shima Island
-75,伊平屋島,Iheya-jima Island
-76,野甫島,Noho-jima Island
-77,伊是名島,Izena-jima Island
-78,古宇利島,Kouri-jima Island
-79,屋我地島,Yagaji-shima Island
-80,伊江島,Ie-jima Island
-81,瀬底島,Sesoko-jima Island
-82,沖縄島,Okinawa-jima Island
-83,伊計島,Ikei-jima Island
-84,宮城島 (うるま市),Miyagi-jima Island (Uruma-shi)
-85,平安座島,Henza-jima Island
-86,浜比嘉島,Hamahiga-jima Island
-87,藪地島,Yabuchi-jima Island
-88,久高島,Kudaka-jima Island
-89,瀬長島,Senaga-jima Island
-90,粟国島,Aguni-jima Island
-91,渡嘉敷島,Tokashiki-jima Island
-92,座間味島,Zamami-jima Island
-93,阿嘉島,Aka-jima Island
-94,慶留間島,Geruma-jima Island
-95,久米島,Kume-jima Island
-96,大神島,Ôgami-jima Island
-97,宮古島,Miyako-jima Island
-98,伊良部島,Irabu-jima Island
-99,石垣島,Ishigaki-jima Island
-100,竹富島,Taketomi-jima Island
-101,小浜島,Kohama-jima Island
-102,黒島 (沖縄県),Kuro-shima (Okinawa Prefecture)
-103,西表島,Iriomote-jima Island
-104,波照間島,Hateruma-jima Island
-105,与那国島,Yonaguni-jima Island
-106,魚釣島,Uotsuri-jima Island
-107,北大東島,Kitadaitô-jima Island
-108,南大東島,Minamidaitô-jima Island
+﻿Island
+北海道
+本州
+四国
+九州
+択捉島
+国後島
+色丹島
+礼文島
+利尻島
+奥尻島
+伊豆大島
+新島
+三宅島
+八丈島
+青ヶ島
+聟島
+弟島
+兄島
+父島
+母島
+猿島
+佐渡島
+能登島
+瓜島
+赤根島
+篠島
+竹生島
+沖島
+淡路島
+孔島
+九竜島
+稲積島
+沖ノ黒島
+神島 (和歌山県)
+黒島 (和歌山県)
+青島 (鳥取県)
+島後
+西ノ島
+大根島
+真鍋島
+厳島
+屋代島
+見島
+角島
+彦島
+竹ヶ島
+小豆島
+新居大島
+大三島
+馬島
+興居島
+日振島
+鹿島 (南宇和郡)
+大島 (高知県)
+沖の島 (高知県)
+対馬
+壱岐島
+中通島
+福江島
+上島
+青島
+下甑島
+屋久島
+種子島
+口之島
+中之島
+宝島
+奄美大島
+徳之島
+沖永良部島
+与論島
+硫黄鳥島
+伊平屋島
+野甫島
+伊是名島
+古宇利島
+屋我地島
+伊江島
+瀬底島
+沖縄島
+伊計島
+宮城島 (うるま市)
+平安座島
+浜比嘉島
+藪地島
+久高島
+瀬長島
+粟国島
+渡嘉敷島
+座間味島
+阿嘉島
+慶留間島
+久米島
+大神島
+宮古島
+伊良部島
+石垣島
+竹富島
+小浜島
+黒島 (沖縄県)
+西表島
+波照間島
+与那国島
+魚釣島
+北大東島
+南大東島
