@@ -748,8 +748,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   align-items: center;
   gap: 4px;
   margin-left: 6px;
-  position: relative;
-  z-index: 9999;
 }
 
 .year-inputs input[type="text"] {
@@ -794,7 +792,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     border: 1px solid #ccc;
     box-sizing: border-box;
     transition: max-height 0.3s ease-out;
-    max-height: 765px;
+    max-height: none !important;
     overflow: hidden;
   }
 
