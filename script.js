@@ -385,6 +385,12 @@ function initYearSliders() {
       }
       applyFilters(true);
       */
+      ["publication-year-min", "publication-year-max", "collection-year-min", "collection-year-max"].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener("touchstart", function () {
+          setTimeout(() => this.focus(), 10);
+        });
+      });
     }
   });
 
