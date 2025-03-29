@@ -105,7 +105,7 @@
       <div class="year-filter">
         <label>
           <input type="checkbox" id="filter-publication-year-active">
-          出版年で絞り込み
+          <strong>出版年</strong>
         </label>
         <div class="slider-container">
           <div id="publication-year-slider"></div>
@@ -121,7 +121,7 @@
       <div class="year-filter">
         <label>
           <input type="checkbox" id="filter-collection-year-active">
-          採集年で絞り込み
+          <strong>採集年</strong>
         </label>
         <div class="slider-container">
           <div id="collection-year-slider"></div>
@@ -130,6 +130,56 @@
             <span>～</span>
             <input type="text" id="collection-year-max" size="4">
           </div>
+        </div>
+      </div>
+
+      <!-- 隔年発生 -->
+      <div class="biennial-filter">
+        <label>
+          <input type="checkbox" id="filter-biennial-active">
+          <strong>隔年発生</strong>
+        </label>
+        <div class="biennial-inputs">
+          <div class="select-container">
+            <select id="biennial-target-year">
+              <option value="">-- 年を選択 --</option>
+              <!-- JavaScriptで 2000〜2020 を追加 -->
+            </select>
+            <button class="nav-button" id="prev-biennial-year">&lt;</button>
+            <button class="nav-button" id="next-biennial-year">&gt;</button>
+          </div>
+          <div>年を含む</div>
+          <div class="select-container">
+            <select id="biennial-interval">
+              <option value="">-- 周期を選択 --</option>
+              <!-- JavaScriptで 2〜20 を追加 -->
+            </select>
+            <button class="nav-button" id="prev-biennial-interval">&lt;</button>
+            <button class="nav-button" id="next-biennial-interval">&gt;</button>
+          </div>
+          <div>年周期</div>
+        </div>
+      </div>
+
+      <!-- 採集月フィルタを追加 -->
+      <div class="month-filter">
+        <label>
+          <input type="checkbox" id="filter-collection-month-active">
+          <strong style="font-size: 14px;">採集月</strong>
+        </label>
+        <div id="collection-month-checkboxes">
+          <label><input type="checkbox" class="collection-month" value="1" checked>1月</label>
+          <label><input type="checkbox" class="collection-month" value="2" checked>2月</label>
+          <label><input type="checkbox" class="collection-month" value="3" checked>3月</label>
+          <label><input type="checkbox" class="collection-month" value="4" checked>4月</label>
+          <label><input type="checkbox" class="collection-month" value="5" checked>5月</label>
+          <label><input type="checkbox" class="collection-month" value="6" checked>6月</label><br>
+          <label><input type="checkbox" class="collection-month" value="7" checked>7月</label>
+          <label><input type="checkbox" class="collection-month" value="8" checked>8月</label>
+          <label><input type="checkbox" class="collection-month" value="9" checked>9月</label>
+          <label><input type="checkbox" class="collection-month" value="10" checked>10月</label>
+          <label><input type="checkbox" class="collection-month" value="11" checked>11月</label>
+          <label><input type="checkbox" class="collection-month" value="12" checked>12月</label>
         </div>
       </div>
 

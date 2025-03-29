@@ -116,9 +116,35 @@ const initMap = () => {
     });
   }
 
+  // 隔年セレクトボックスの初期化
+  initBiennialSelects();
+
   // 既存の呼び出し（選択ラベル更新など）
   updateSelectedLabels();
 };
+
+function initBiennialSelects() {
+  const targetSelect = document.getElementById("biennial-target-year");
+  const intervalSelect = document.getElementById("biennial-interval");
+
+  if (!targetSelect || !intervalSelect) return;
+
+  // 2000〜2020年の選択肢
+  for (let y = 2000; y <= 2020; y++) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    targetSelect.appendChild(opt);
+  }
+
+  // 2〜20年周期
+  for (let i = 2; i <= 20; i++) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = i;
+    intervalSelect.appendChild(opt);
+  }
+}
 
 // ==================== CSV 読み込み関連 ====================
 const loadCSV = async (url, callback) => {
@@ -448,13 +474,6 @@ function initYearSliders() {
       collectionTimerId = null;
     }, DEBOUNCE_DELAY);
   });
-
-  ["publication-year-min", "publication-year-max", "collection-year-min", "collection-year-max"].forEach(id => {
-    const el = document.getElementById(id);
-    el.addEventListener("touchstart", function () {
-      setTimeout(() => this.focus(), 10);
-    });
-  });
 }
 
 const getFilterStates = () => {
@@ -668,9 +687,7 @@ const applyFilters = async (updateMap = true) => {
       const maxPub = parseInt($("#publication-year-max").val(), 10);
       filteredRowsLocal = filteredRowsLocal.filter(r => {
         const py = parseInt(r.publicationYear, 10);
-        // 非数値は弾く
         if (isNaN(py)) return false;
-        // 範囲内ならOK
         return (py >= minPub && py <= maxPub);
       });
     }
@@ -685,6 +702,34 @@ const applyFilters = async (updateMap = true) => {
         if (isNaN(cy)) return false;
         return (cy >= minCol && cy <= maxCol);
       });
+    }
+
+    // 隔年発生
+    const useBiennial = $("#filter-biennial-active").is(":checked");
+    if (useBiennial) {
+      const targetYear = parseInt($("#biennial-target-year").val(), 10);
+      const interval = parseInt($("#biennial-interval").val(), 10);
+      if (!isNaN(targetYear) && !isNaN(interval) && interval > 0) {
+        filteredRowsLocal = filteredRowsLocal.filter(r => {
+          const cy = parseInt(r.collectionYear, 10);
+          if (isNaN(cy)) return false;
+          return (cy - targetYear) % interval === 0;
+        });
+      }
+    }
+
+    // 採集月フィルタ（有効時のみ適用）
+    const useCollectionMonth = $("#filter-collection-month-active").is(":checked");
+    if (useCollectionMonth) {
+      const selectedMonths = $(".collection-month:checked").map(function () {
+        return parseInt(this.value, 10);
+      }).get();
+      if (selectedMonths.length > 0) {
+        filteredRowsLocal = filteredRowsLocal.filter(r => {
+          const cm = parseInt(r.collectionMonth, 10);
+          return selectedMonths.includes(cm);
+        });
+      }
     }
 
     filteredRows = filteredRowsLocal;
@@ -985,7 +1030,9 @@ function setupCheckboxListeners() {
     "exclude-undescribed",
     "exclude-unspecies",
     "filter-publication-year-active",
-    "filter-collection-year-active"
+    "filter-collection-year-active",
+    "filter-biennial-active",
+    "filter-collection-month-active"
   ];
   
   // 既存のイベントリスナーを全て解除
@@ -996,12 +1043,12 @@ function setupCheckboxListeners() {
       cb.parentNode.replaceChild(clone, cb);
     }
   });
-  
+
   document.querySelectorAll(".marker-filter-checkbox").forEach(checkbox => {
     const clone = checkbox.cloneNode(true);
     checkbox.parentNode.replaceChild(clone, checkbox);
   });
-  
+
   // 新しいイベントリスナーを設定
   checkboxIds.forEach(id => {
     const cb = document.getElementById(id);
@@ -1012,6 +1059,11 @@ function setupCheckboxListeners() {
 
   document.querySelectorAll(".marker-filter-checkbox").forEach(checkbox => {
     checkbox.addEventListener("change", () => applyFilters(true));
+  });
+
+  // 採集月チェックボックスにリスナー追加
+  document.querySelectorAll(".collection-month").forEach(cb => {
+    cb.addEventListener("change", () => applyFilters(true));
   });
 }
 
@@ -1024,11 +1076,16 @@ const setupNavButtonListeners = () => {
     { prevBtn: "prev-order", nextBtn: "next-order", selId: "filter-order" },
     { prevBtn: "prev-prefecture", nextBtn: "next-prefecture", selId: "filter-prefecture" },
     { prevBtn: "prev-island", nextBtn: "next-island", selId: "filter-island" },
-    { prevBtn: "prev-literature", nextBtn: "next-literature", selId: "filter-literature" }
+    { prevBtn: "prev-literature", nextBtn: "next-literature", selId: "filter-literature" },
+    // ▼ 隔年発生
+    { prevBtn: "prev-biennial-year", nextBtn: "next-biennial-year", selId: "biennial-target-year" },
+    { prevBtn: "prev-biennial-interval", nextBtn: "next-biennial-interval", selId: "biennial-interval" }
   ];
+
   config.forEach(({ prevBtn, nextBtn, selId }) => {
     const prev = document.getElementById(prevBtn);
     const next = document.getElementById(nextBtn);
+
     if (prev) {
       prev.addEventListener("click", () => navigateOption(selId, "prev"));
     }
@@ -1734,8 +1791,8 @@ function generatePublicationChart(rows) {
   ];
 
   const displayLabels = [
-    "タイプ",
-    "統合された種のタイプ",
+    "原記載",
+    "統合された種の原記載",
     "疑わしいタイプ",
     "疑わしい統合された種のタイプ",
     "標本記録",
@@ -1859,8 +1916,8 @@ function generateCollectionChart(rows) {
   ];
 
   const displayLabels = [
-    "タイプ",
-    "統合された種のタイプ",
+    "原記載",
+    "統合された種の原記載",
     "疑わしいタイプ",
     "疑わしい統合された種のタイプ",
     "標本記録",
@@ -2011,6 +2068,44 @@ function updateSelectedLabels() {
       .replace(/\]/g, "&#93;");
     return labelText;
   }).filter(x => x);
+
+  // ▼ 年・隔年発生の条件を追加（1行ずつ）
+  // 出版年
+  if ($("#filter-publication-year-active").is(":checked")) {
+    const min = $("#publication-year-min").val();
+    const max = $("#publication-year-max").val();
+    if (min && max) {
+      labels.push(`${min}〜${max}年に出版`);
+    }
+  }
+
+  // 採集年
+  if ($("#filter-collection-year-active").is(":checked")) {
+    const min = $("#collection-year-min").val();
+    const max = $("#collection-year-max").val();
+    if (min && max) {
+      labels.push(`${min}〜${max}年に採集`);
+    }
+  }
+
+  // 隔年発生
+  if ($("#filter-biennial-active").is(":checked")) {
+    const target = $("#biennial-target-year").val();
+    const interval = $("#biennial-interval").val();
+    if (target && interval) {
+      labels.push(`${target}年を含む${interval}年周期`);
+    }
+  }
+
+  // 採集月
+  if ($("#filter-collection-month-active").is(":checked")) {
+    const selectedMonths = $(".collection-month:checked").map(function () {
+      return `${this.value}月`;
+    }).get();
+    if (selectedMonths.length > 0) {
+      labels.push(`採集月：${selectedMonths.join(", ")}`);
+    }
+  }
 
   if (labels.length > 0) {
     labelContainer.innerHTML = labels.join("<br>");

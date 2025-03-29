@@ -756,6 +756,20 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   text-align: right; /* 年の桁数が4桁なので右寄せでもよい */
 }
 
+.biennial-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.biennial-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 14px;
+}
+
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {
@@ -792,7 +806,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     border: 1px solid #ccc;
     box-sizing: border-box;
     transition: max-height 0.3s ease-out;
-    max-height: 765px;
+    max-height: 1010px;
     overflow: hidden;
   }
 
