@@ -6,6 +6,7 @@ let prefectureOrder = [];
 let islandOrder = [];
 let markers = [];
 let literatureArray = [];
+let clusterGroup;
 let prefectureMeta = []; // [{ jp: "北海道", en: "Hokkaidō" }, ...]
 let islandMeta = [];     // [{ jp: "本州", en: "Honshū Island" }, ...]
 let publicationYearMinValue = Number.POSITIVE_INFINITY;
@@ -22,7 +23,7 @@ let nearbyRecords = [];
 let activePopup = null;
 let filteredRows = []; // フィルタリングされたデータ
 let currentAnchor = null;
-let currentShowAbove = null; // ナビ位置や高さ計算用
+let currentShowAbove = null;
 
 // グラフ関連
 let monthChart = null;
@@ -404,7 +405,14 @@ function initYearSliders() {
       }, DEBOUNCE_DELAY);
     },
     stop: function(event, ui) {
-
+      // スライダー操作が止まった瞬間に即フィルタしたい場合は、こちらで行うパターンも
+      // ただしデバウンスと重複するので、ここでは呼ばないのが無難
+      /*
+      if (publicationTimerId) {
+        clearTimeout(publicationTimerId);
+      }
+      applyFilters(true);
+      */
     }
   });
 
@@ -2441,23 +2449,8 @@ document.getElementById("toggle-higher-taxonomy").addEventListener("change", fun
       generateMonthlyChart(filteredRows);
       generatePrefectureChart(filteredRows);
       generateYearChart(filteredRows, document.querySelector('input[name="year-mode"]:checked').value);
-      
-      // 件数と地点数を再描画（この行を追加）
-      updateRecordInfo(
-        filteredRows.length,
-        new Set(filteredRows.map(r => `${r.latitude},${r.longitude}`)).size
-      );
     }
-  
-    $(".select2-hidden-accessible").each(function () {
-      $(this).select2("close");
-      $(this).select2("destroy").select2({
-        minimumResultsForSearch: 0,
-        dropdownAutoWidth: true,
-        allowClear: false
-      });
-    });
-  });  
+  });
 
   adjustSearchContainerAndLegend();
 
