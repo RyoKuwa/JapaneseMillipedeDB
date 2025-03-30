@@ -450,15 +450,6 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   font-size: 14px;
 }
 
-/* Select2保護スタイル（非常に重要） */
-.select2-container,
-.select2-container *,
-.select2-dropdown,
-.select2-dropdown * {
-  display: block !important;
-  box-sizing: border-box !important;
-}
-
 .custom-select2-clear {
   position: absolute;
   right: 8px;
@@ -743,18 +734,9 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   padding: 4px 0;
 }
 
-/* ラベルはクリック判定を最小に保つためinlineに限定 */
-.year-filter > .compact-label {
-  display: inline;
+.year-filter label {
   font-size: 14px;
   cursor: pointer;
-  width: auto;
-}
-
-.year-filter input[type="checkbox"] {
-  cursor: pointer;
-  vertical-align: middle;
-  margin-right: 4px;
 }
 
 .slider-container {
