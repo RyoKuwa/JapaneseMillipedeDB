@@ -734,20 +734,10 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   padding: 4px 0;
 }
 
-/* コンパクトなラベルでクリック範囲を制限 */
-.year-filter .compact-label {
+.year-filter label {
   font-size: 14px;
   cursor: pointer;
-  display: inline-flex; /* 必要最小幅に制限 */
-  align-items: center;
-  width: fit-content; /* コンテンツの幅だけに制限 */
 }
-
-.year-filter .compact-label input[type="checkbox"] {
-  cursor: pointer;
-  margin-right: 4px;
-}
-
 
 .slider-container {
   display: flex;
