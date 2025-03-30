@@ -131,15 +131,26 @@ function initBiennialSelects() {
 
   if (!targetSelect || !intervalSelect) return;
 
-  // 2000〜2020年の選択肢
-  for (let y = 2000; y <= 2020; y++) {
+  // 🔁 セレクト初期化
+  targetSelect.innerHTML = "";
+  intervalSelect.innerHTML = "";
+
+  // ✅ rows から採集年を動的に取得
+  const years = rows
+    .map(r => parseInt(r.collectionYear, 10))
+    .filter(y => !isNaN(y));
+  const minYear = Math.min(...years);
+  const maxYear = Math.max(...years);
+
+  // 🔢 採集年：min〜max
+  for (let y = minYear; y <= maxYear; y++) {
     const opt = document.createElement("option");
     opt.value = y;
     opt.textContent = y;
     targetSelect.appendChild(opt);
   }
 
-  // 2〜20年周期
+  // 🔁 周期（2〜20年）
   for (let i = 2; i <= 20; i++) {
     const opt = document.createElement("option");
     opt.value = i;
@@ -345,6 +356,8 @@ const loadDistributionCSV = async () => {
 
     initYearRanges();   // rows から最小値・最大値を計算
     initYearSliders();  // スライダーを生成
+
+    initBiennialSelects();
 
     // 読み込み後、初回フィルタを実行
     applyFilters(true);
@@ -720,7 +733,7 @@ const applyFilters = async (updateMap = true) => {
       }
     }
 
-    // 採集月フィルタ（有効時のみ適用）
+    // 採集月フィルタ
     const useCollectionMonth = $("#filter-collection-month-active").is(":checked");
     if (useCollectionMonth) {
       const selectedMonths = $(".collection-month:checked").map(function () {
@@ -730,6 +743,21 @@ const applyFilters = async (updateMap = true) => {
         filteredRowsLocal = filteredRowsLocal.filter(r => {
           const cm = parseInt(r.collectionMonth, 10);
           return selectedMonths.includes(cm);
+        });
+      }
+    }
+
+    // ライフステージフィルタ
+    const useLifeStage = $("#filter-life-stage-active").is(":checked");
+    if (useLifeStage) {
+      const selectedStages = $(".life-stage:checked").map(function () {
+        return this.value;
+      }).get();
+      if (selectedStages.length > 0) {
+        filteredRowsLocal = filteredRowsLocal.filter(r => {
+          const raw = (r.adultPresence || "").trim().toLowerCase();
+          const normalized = (raw === "yes") ? "yes" : "no";  // yes以外は全てno扱い
+          return selectedStages.includes(normalized);
         });
       }
     }
@@ -1034,7 +1062,8 @@ function setupCheckboxListeners() {
     "filter-publication-year-active",
     "filter-collection-year-active",
     "filter-biennial-active",
-    "filter-collection-month-active"
+    "filter-collection-month-active",
+    "filter-life-stage-active"
   ];
 
   // 既存のイベントリスナーを全て解除
@@ -1064,6 +1093,10 @@ function setupCheckboxListeners() {
   });
 
   document.querySelectorAll(".collection-month").forEach(cb => {
+    cb.addEventListener("change", () => applyFilters(true));
+  });
+
+  document.querySelectorAll(".life-stage").forEach(cb => {
     cb.addEventListener("change", () => applyFilters(true));
   });
 
@@ -1987,6 +2020,16 @@ function updateSelectedLabels() {
     }).get();
     if (selectedMonths.length > 0) {
       labels.push(`採集月：${selectedMonths.join(", ")}`);
+    }
+  }
+
+  // ライフステージ
+  if ($("#filter-life-stage-active").is(":checked")) {
+    const selectedStages = $(".life-stage:checked").map(function () {
+      return this.value === "yes" ? "成体" : "幼体・不明";
+    }).get();
+    if (selectedStages.length > 0) {
+      labels.push(`ライフステージ：${selectedStages.join(", ")}`);
     }
   }
 

@@ -812,6 +812,18 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   font-size: 0.95em;
 }
 
+.life-stage-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#life-stage-checkboxes label {
+  font-size: 14px;
+  display: inline-block;
+  margin-right: 10px;
+}
+
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {
