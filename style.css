@@ -735,19 +735,18 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 /* コンパクトなラベルでクリック範囲を制限 */
-.year-filter > .compact-label {
+.year-filter > label.compact-label {
   font-size: 14px;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
+  display: inline-block; /* inline-flex をやめ、inline-block に変更 */
+  width: auto;
 }
 
-.year-filter > .compact-label input[type="checkbox"] {
+.year-filter > label.compact-label input[type="checkbox"] {
   cursor: pointer;
+  vertical-align: middle;
   margin-right: 4px;
 }
-
 
 .slider-container {
   display: flex;
