@@ -748,8 +748,8 @@ const applyFilters = async (updateMap = true) => {
       displayMarkers(filteredRowsLocal);
       generateMonthlyChart(filteredRowsLocal);
       generatePrefectureChart(filteredRowsLocal);
-      generatePublicationChart(filteredRowsLocal);
-      generateCollectionChart(filteredRowsLocal);
+      const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
+      generateYearChart(filteredRows, mode);
     }
 
     updateDropdownPlaceholders();
@@ -1451,7 +1451,6 @@ const preparePopupContent = (filteredData) => {
 
 // ==================== グラフ系 ====================
 function generateMonthlyChart(allRows) {
-  // ★★★ タイトルを外部HTML要素に設定する例 ★★★
   const monthTitleEl = document.getElementById("month-chart-title");
   if (monthTitleEl) {
     monthTitleEl.textContent = "出現期（月別）";
@@ -1513,27 +1512,16 @@ function generateMonthlyChart(allRows) {
         }
       },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            boxWidth: 20,
+            padding: 12
+          }
+        },
         title: { display: false } // Chart.js内蔵タイトルはオフ
       }
-    }
-  });
-}
-
-function setupChartLegendToggles() {
-  const toggleAdult = document.getElementById("toggle-adult");
-  const toggleJuvenile = document.getElementById("toggle-juvenile");
-
-  toggleAdult.addEventListener("change", () => {
-    if (monthChart) {
-      monthChart.data.datasets[0].hidden = !toggleAdult.checked;
-      monthChart.update();
-    }
-  });
-  toggleJuvenile.addEventListener("change", () => {
-    if (monthChart) {
-      monthChart.data.datasets[1].hidden = !toggleJuvenile.checked;
-      monthChart.update();
     }
   });
 }
@@ -1766,136 +1754,11 @@ function generatePrefectureChart(allRows) {
   });
 }
 
-function generatePublicationChart(rows) {
-  const yearData = {};  // {year: {recordType: count}}
-
-  rows.forEach(row => {
-    const year = parseInt(row.publicationYear);
-    const type = row.recordType;
-    if (!Number.isInteger(year)) return;
-    if (!yearData[year]) yearData[year] = {};
-    if (!yearData[year][type]) yearData[year][type] = 0;
-    yearData[year][type]++;
-  });
-
-  const sortedYears = Object.keys(yearData).map(y => parseInt(y)).sort((a, b) => a - b);
-
-  const originalTypes = [
-    "1_タイプ産地",
-    "2_統合された種のタイプ産地",
-    "3_疑わしいタイプ産地",
-    "4_疑わしい統合された種のタイプ産地",
-    "5_標本記録",
-    "6_文献記録",
-    "7_疑わしい文献記録"
-  ];
-
-  const displayLabels = [
-    "原記載",
-    "統合された種の原記載",
-    "疑わしいタイプ",
-    "疑わしい統合された種のタイプ",
-    "標本記録",
-    "文献記録",
-    "疑わしい文献記録"
-  ];
-
-  const colors = [
-    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
-  ];
-
-  const datasets = [];
-  const activeTypes = [];
-
-  originalTypes.forEach((type, index) => {
-    const data = sortedYears.map(year => yearData[year][type] || 0);
-    const total = data.reduce((a, b) => a + b, 0);
-    if (total > 0) {
-      datasets.push({
-        label: displayLabels[index],
-        backgroundColor: colors[index],
-        data: data,
-        stack: 'stack1'
-      });
-      activeTypes.push(type);
-    }
-  });
-
-  let cumulativeSum = 0;
-  const cumulativeArray = sortedYears.map(year => {
-    const total = activeTypes.reduce((sum, type) => sum + (yearData[year][type] || 0), 0);
-    cumulativeSum += total;
-    return cumulativeSum;
-  });
-
-  datasets.push({
-    label: '累積記録数',
-    data: cumulativeArray,
-    type: 'line',
-    borderColor: 'black',
-    backgroundColor: 'black',
-    fill: false,
-    yAxisID: 'y-axis-2',
-    tension: 0.1,
-    pointRadius: 0
-  });
-
-  const ctx = document.getElementById("publication-chart").getContext("2d");
-  if (window.publicationChart) {
-    window.publicationChart.destroy();
-  }
-
-  window.publicationChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: sortedYears,
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          onClick: null // ← 凡例クリック無効化
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false
-        }
-      },
-      scales: {
-        x: {
-          stacked: true
-        },
-        y: {
-          stacked: true,
-          title: {
-            display: true,
-            text: '記録数'
-          }
-        },
-        'y-axis-2': {
-          type: 'linear',
-          position: 'right',
-          grid: {
-            drawOnChartArea: false
-          },
-          title: {
-            display: true,
-            text: '累積記録数'
-          }
-        }
-      }
-    }
-  });
-}
-
-function generateCollectionChart(rows) {
+function generateYearChart(rows, mode) {
   const yearData = {};
 
   rows.forEach(row => {
-    const year = parseInt(row.collectionYear);
+    const year = parseInt(mode === 'publication' ? row.publicationYear : row.collectionYear);
     const type = row.recordType;
     if (!Number.isInteger(year)) return;
     if (!yearData[year]) yearData[year] = {};
@@ -1903,26 +1766,22 @@ function generateCollectionChart(rows) {
     yearData[year][type]++;
   });
 
-  const sortedYears = Object.keys(yearData).map(y => parseInt(y)).sort((a, b) => a - b);
+  const yearsWithData = Object.keys(yearData).map(y => parseInt(y));
+  const minYear = Math.min(...yearsWithData);
+  const maxYear = Math.max(...yearsWithData);
+  const sortedYears = [];
+  for (let y = minYear; y <= maxYear; y++) {
+    sortedYears.push(y);
+  }
 
   const originalTypes = [
-    "1_タイプ産地",
-    "2_統合された種のタイプ産地",
-    "3_疑わしいタイプ産地",
-    "4_疑わしい統合された種のタイプ産地",
-    "5_標本記録",
-    "6_文献記録",
-    "7_疑わしい文献記録"
+    "1_タイプ産地", "2_統合された種のタイプ産地", "3_疑わしいタイプ産地",
+    "4_疑わしい統合された種のタイプ産地", "5_標本記録", "6_文献記録", "7_疑わしい文献記録"
   ];
 
   const displayLabels = [
-    "原記載",
-    "統合された種の原記載",
-    "疑わしいタイプ",
-    "疑わしい統合された種のタイプ",
-    "標本記録",
-    "文献記録",
-    "疑わしい文献記録"
+    "原記載", "統合された種の原記載", "疑わしいタイプ",
+    "疑わしい統合された種のタイプ", "標本記録", "文献記録", "疑わしい文献記録"
   ];
 
   const colors = [
@@ -1933,7 +1792,7 @@ function generateCollectionChart(rows) {
   const activeTypes = [];
 
   originalTypes.forEach((type, index) => {
-    const data = sortedYears.map(year => yearData[year][type] || 0);
+    const data = sortedYears.map(year => yearData[year]?.[type] || 0);
     const total = data.reduce((a, b) => a + b, 0);
     if (total > 0) {
       datasets.push({
@@ -1948,7 +1807,7 @@ function generateCollectionChart(rows) {
 
   let cumulativeSum = 0;
   const cumulativeArray = sortedYears.map(year => {
-    const total = activeTypes.reduce((sum, type) => sum + (yearData[year][type] || 0), 0);
+    const total = activeTypes.reduce((sum, type) => sum + (yearData[year]?.[type] || 0), 0);
     cumulativeSum += total;
     return cumulativeSum;
   });
@@ -1965,12 +1824,12 @@ function generateCollectionChart(rows) {
     pointRadius: 0
   });
 
-  const ctx = document.getElementById("collection-chart").getContext("2d");
-  if (window.collectionChart) {
-    window.collectionChart.destroy();
+  const ctx = document.getElementById("year-chart").getContext("2d");
+  if (window.yearChart) {
+    window.yearChart.destroy();
   }
 
-  window.collectionChart = new Chart(ctx, {
+  window.yearChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: sortedYears,
@@ -1981,8 +1840,7 @@ function generateCollectionChart(rows) {
       animation: false,
       plugins: {
         legend: {
-          position: 'top',
-          onClick: null // ← 凡例クリック無効化
+          position: 'top'
         },
         tooltip: {
           mode: 'index',
@@ -1990,9 +1848,7 @@ function generateCollectionChart(rows) {
         }
       },
       scales: {
-        x: {
-          stacked: true
-        },
+        x: { stacked: true },
         y: {
           stacked: true,
           title: {
@@ -2014,6 +1870,9 @@ function generateCollectionChart(rows) {
       }
     }
   });
+
+  document.getElementById("year-chart-title").textContent =
+    mode === 'publication' ? "記録数と累積記録数（出版年）" : "記録数と累積記録数（採集年）";
 }
 
 // ==================== UI補助 ====================
@@ -2342,15 +2201,29 @@ function updateSpeciesListInTab() {
     if (!tree[order]) tree[order] = {};
     if (!tree[order][family]) tree[order][family] = {};
     if (!tree[order][family][genus]) tree[order][family][genus] = {};
-    if (!tree[order][family][genus][scientificName]) {
-      tree[order][family][genus][scientificName] = {
-        rank: taxonRank,
-        japaneseName,
-        subspecies: new Set()
-      };
-    }
+
     if (taxonRank === "subspecies") {
-      tree[order][family][genus][scientificName].subspecies.add(japaneseName);
+      const parentScientificName = scientificName.split(" ").slice(0, 2).join(" ");
+      const taxonEntry = taxonMap[parentScientificName] || {};
+
+      if (!tree[order][family][genus][parentScientificName]) {
+        tree[order][family][genus][parentScientificName] = {
+          rank: "species",
+          japaneseName: taxonEntry.japaneseName || "(親種名不明)",
+          subspecies: new Set()
+        };
+      }
+
+      const uniqueKey = `${scientificName}|||${japaneseName}`;
+      tree[order][family][genus][parentScientificName].subspecies.add(uniqueKey);
+    } else {
+      if (!tree[order][family][genus][scientificName]) {
+        tree[order][family][genus][scientificName] = {
+          rank: taxonRank,
+          japaneseName,
+          subspecies: new Set()
+        };
+      }
     }
   });
 
@@ -2367,10 +2240,11 @@ function updateSpeciesListInTab() {
     return names.sort((a, b) => getNo(a, rank) - getNo(b, rank));
   };
 
-  const createLi = (html, indent = 0) => {
+  const createLi = (html, indent = 0, className = '') => {
     const li = document.createElement('li');
     li.style.marginLeft = `${indent * 1.2}em`;
     li.innerHTML = html;
+    if (className) li.classList.add(className);
     listContainer.appendChild(li);
   };
 
@@ -2381,54 +2255,76 @@ function updateSpeciesListInTab() {
     return { jpn, sci, author };
   };
 
+  const isNominotypical = (subSci) => {
+    const parts = subSci.split(" ");
+    return parts.length === 3 && parts[1] === parts[2];
+  };
+
   sortByNo(Object.keys(tree), "order").forEach(order => {
     const orderFormatted = formatOrderFamilyName(`${getDisplayName(order).jpn} / ${order}`);
-    createLi(orderFormatted, 0);
+    createLi(orderFormatted, 0, 'higher-taxonomy');
 
     sortByNo(Object.keys(tree[order]), "family").forEach(family => {
       const familyFormatted = formatOrderFamilyName(`${getDisplayName(family).jpn} / ${family}`);
-      createLi(familyFormatted, 1);
+      createLi(familyFormatted, 1, 'higher-taxonomy');
 
       sortByNo(Object.keys(tree[order][family]), "genus").forEach(genus => {
         const genusFormatted = formatGenusName(`${getDisplayName(genus).jpn} / ${genus}`);
-        createLi(genusFormatted, 2);
+        createLi(genusFormatted, 2, 'higher-taxonomy');
 
         const speciesList = Object.entries(tree[order][family][genus]);
 
-        speciesList.sort((a, b) => {
-          const aNo = getNo(a[0], a[1].rank);
-          const bNo = getNo(b[0], b[1].rank);
-          return aNo - bNo;
-        }).forEach(([sci, data]) => {
-          if (data.rank === "subspecies") return;
+        speciesList
+          .sort((a, b) => {
+            const aNo = getNo(a[0], a[1].rank);
+            const bNo = getNo(b[0], b[1].rank);
+            if (aNo !== bNo) return aNo - bNo;
+            return a[0].localeCompare(b[0]);
+          })
+          .forEach(([sci, data]) => {
+            if (data.rank === "subspecies") return;
 
-          const label = `${speciesCounter}. ${formatSpeciesName(`${data.japaneseName} / ${sci}`)}`;
-          createLi(label, 3);
+            const label = `${speciesCounter}. ${formatSpeciesName(`${data.japaneseName} / ${sci}`)}`;
+            createLi(label, 3);
 
-          Array.from(data.subspecies).sort().forEach((subJpn, idx) => {
-            const subEntry = Object.entries(taxonMap).find(([k, v]) =>
-              v.japaneseName === subJpn && v.rank === "subspecies"
-            );
-            const subSci = subEntry?.[0] || "-";
-            const subInfo = taxonMap[subSci] || {};
-            const subAuthor = subInfo.authorYear && subInfo.authorYear !== "-" ? ` <span class="non-italic">${subInfo.authorYear}</span>` : "";
-            let formattedSubSci = subSci.match(/ord\.|fam\.|gen\./)
-              ? `<span class="non-italic">${subSci}</span>`
-              : `<i>${subSci}</i>`;
+            const subspeciesArray = Array.from(data.subspecies);
+            subspeciesArray.sort((a, b) => {
+              const [aSci] = a.split("|||");
+              const [bSci] = b.split("|||");
+              const aIsNom = isNominotypical(aSci);
+              const bIsNom = isNominotypical(bSci);
+              if (aIsNom && !bIsNom) return -1;
+              if (!aIsNom && bIsNom) return 1;
+              return aSci.localeCompare(bSci);
+            });
 
-            // cf., aff. は非斜体化
-            formattedSubSci = formattedSubSci
-              .replace(/\bcf\./g, '<span class="non-italic">cf.</span>')
-              .replace(/\baff\./g, '<span class="non-italic">aff.</span>');
+            subspeciesArray.forEach((entry, idx) => {
+              const [subSci, subJpn] = entry.split("|||");
+              const subInfo = taxonMap[subSci] || {};
+              const subAuthor = subInfo.authorYear && subInfo.authorYear !== "-" ? ` <span class="non-italic">${subInfo.authorYear}</span>` : "";
 
-            const subLabel = `${speciesCounter}.${idx + 1} ${subJpn} / ${formattedSubSci}${subAuthor}`;
-            createLi(subLabel, 4);
+              let formattedSubSci = subSci.match(/ord\.|fam\.|gen\./)
+                ? `<span class="non-italic">${subSci}</span>`
+                : `<i>${subSci}</i>`;
+
+              formattedSubSci = formattedSubSci
+                .replace(/\bcf\./g, '<span class="non-italic">cf.</span>')
+                .replace(/\baff\./g, '<span class="non-italic">aff.</span>');
+
+              const subLabel = `${speciesCounter}.${idx + 1} ${subJpn} / ${formattedSubSci}${subAuthor}`;
+              createLi(subLabel, 4);
+            });
+
+            speciesCounter++;
           });
-
-          speciesCounter++;
-        });
       });
     });
+  });
+
+  // チェック状態に応じて高次分類群を表示／非表示
+  const showHigher = document.getElementById("toggle-higher-taxonomy")?.checked;
+  document.querySelectorAll(".higher-taxonomy").forEach(el => {
+    el.style.display = showHigher ? "" : "none";
   });
 }
 
@@ -2457,9 +2353,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupLegendToggle();
   setupPopupClose();
   setupSearchContainerToggle();
-  setupChartLegendToggles();
   linkMasterAndDubiousCheckboxes();
   setupClassificationRadio();
+
+// 高次分類群表示/非表示チェックボックスの切り替え処理
+document.getElementById("toggle-higher-taxonomy").addEventListener("change", function () {
+  const show = this.checked;
+  document.querySelectorAll(".higher-taxonomy").forEach(el => {
+    el.style.display = show ? "" : "none";
+  });
+});
 
   const masterCb = document.getElementById("legend-master-checkbox");
   const allCbs = document.querySelectorAll(".marker-filter-checkbox");
@@ -2484,18 +2387,35 @@ document.addEventListener("DOMContentLoaded", async () => {
       item.classList.add("active");
       const targetId = item.getAttribute("data-tab");
       document.getElementById(targetId).classList.add("active");
+  
+      // ✅ 「データ」タブに切り替わったときにグラフを再描画
+      if (targetId === "tab-data" && filteredRows && filteredRows.length > 0) {
+        generateMonthlyChart(filteredRows);
+        generatePrefectureChart(filteredRows);
+        const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
+        generateYearChart(filteredRows, mode);
+      }
     });
   });
-
+  
   generatePrefectureChart(filteredRows);
+
+  // ✅ 年グラフ（year-chart）の初期表示とラジオボタン切り替え処理
+  generateYearChart(filteredRows, "publication");  // 初期は出版年
+
+  document.querySelectorAll('input[name="year-mode"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      const selected = document.querySelector('input[name="year-mode"]:checked').value;
+      generateYearChart(filteredRows, selected);
+    });
+  });
 
   window.addEventListener("resize", () => {
     adjustSearchContainerAndLegend();
     if (filteredRows && filteredRows.length > 0) {
       generateMonthlyChart(filteredRows);
       generatePrefectureChart(filteredRows);
-      generatePublicationChart(filteredRows);
-      generateCollectionChart(filteredRows);
+      generateYearChart(filteredRows, document.querySelector('input[name="year-mode"]:checked').value);
     }
   });
 

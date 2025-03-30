@@ -271,17 +271,6 @@
         <div id="chart-container">
           <canvas id="month-chart"></canvas>
         </div>
-        <!-- 右側に縦並びのチェックボックス -->
-        <div id="chart-legend">
-          <label>
-            <input type="checkbox" id="toggle-adult" checked>
-            成体
-          </label>
-          <label>
-            <input type="checkbox" id="toggle-juvenile" checked>
-            幼体・不明
-          </label>
-        </div>
       </div>
       
       <!-- 区切り線 -->
@@ -309,23 +298,32 @@
       <!-- 区切り線 -->
       <div class="chart-divider"></div>
 
-      <!-- 出版年グラフ -->
-      <div class="external-chart-title">記録数と累積記録数（出版年）</div>
-      <div id="publication-chart-wrapper" class="chart-container-scroll">
-        <canvas id="publication-chart"></canvas>
+      <!-- 記録数と累積記録数（出版年 or 採集年） -->
+      <h2 id="year-chart-title" class="external-chart-title">記録数と累積記録数（出版年）</h2>
+
+      <!-- 年グラフの切り替え用ラジオボタン -->
+      <div id="year-radio">
+        <div id="year-radio-group" class="classification-radio">
+          <label><input type="radio" name="year-mode" value="publication" checked> 出版年</label>
+          <label><input type="radio" name="year-mode" value="collection"> 採集年</label>
+        </div>
       </div>
 
-      <!-- 区切り線 -->
-      <div class="chart-divider"></div>
-
-      <!-- 採集年グラフ -->
-      <div class="external-chart-title">記録数と累積記録数（採集年）</div>
-      <div id="collection-chart-wrapper" class="chart-container-scroll">
-        <canvas id="collection-chart"></canvas>
+      <!-- グラフ描画エリア -->
+      <div id="year-chart-wrapper" class="chart-container-scroll">
+        <canvas id="year-chart"></canvas>
       </div>
+
     </div>
   
     <div id="tab-species" class="tab-content">
+      <!-- チェックボックス：右上配置 -->
+      <label style="float: right; font-weight: normal; margin: 0.5em;">
+        <input type="checkbox" id="toggle-higher-taxonomy" checked>
+        高次分類群を表示
+      </label>
+    
+      <!-- 種リスト -->
       <ul id="species-list"></ul>
     </div>
   
