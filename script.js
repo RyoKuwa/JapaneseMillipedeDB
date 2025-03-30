@@ -21,8 +21,6 @@ let currentPopupIndex = 0;
 let nearbyRecords = [];
 let activePopup = null;
 let filteredRows = []; // フィルタリングされたデータ
-let currentAnchor = null;
-let currentShowAbove = null; // ナビ位置や高さ計算用
 
 // グラフ関連
 let monthChart = null;
@@ -1346,79 +1344,62 @@ const getNearbyRecords = (clickedRecord) => {
   return near;
 };
 
-const showPopup = (index, preserveAnchor = false) => {
+const showPopup = (index) => {
   if (!nearbyRecords.length) return;
 
   const record = nearbyRecords[index];
   const total = nearbyRecords.length;
-
   if (activePopup) activePopup.remove();
 
-  const markerPixel = map.project([record.longitude, record.latitude]);
-  const mapHeight = map.getContainer().offsetHeight;
-
-  const margin = 80;
-  const distanceFromTop = markerPixel.y;
-  const distanceFromBottom = mapHeight - markerPixel.y;
-
-  let showAbove, anchor;
-
-  if (preserveAnchor && currentAnchor && currentShowAbove !== null) {
-    // ナビゲーション時：前回の anchor を維持
-    anchor = currentAnchor;
-    showAbove = currentShowAbove;
-  } else {
-    // 初回またはマーカークリック時：anchor 判定
-    showAbove = distanceFromTop >= distanceFromBottom;
-    anchor = showAbove ? "bottom" : "top";
-    currentAnchor = anchor;
-    currentShowAbove = showAbove;
-  }
-
-  // 高さを事前に計算
-  const maxHeight = showAbove
-    ? Math.max(100, distanceFromTop - margin)
-    : Math.max(100, distanceFromBottom - margin);
-
-  // 内容を取得
   const { popupContent } = preparePopupContent([record]).popupContents[0];
 
-  // ナビゲーションHTML
-  const navHtml = `
-    <div class="popup-nav-fixed">
-      <button id="prev-popup">前へ</button>
-      <span>${index + 1} / ${total}</span>
-      <button id="next-popup">次へ</button>
-    </div>`;
-
-  // ちらつき防止のため、max-height をインラインで指定
   const popupHtml = `
-    <div class="popup-wrapper">
-      ${!showAbove ? navHtml : ""}
-      <div class="popup-scroll-container" style="max-height: ${maxHeight}px;">
+    <div>
+      <div class="popup-wrapper" style="overflow-y: auto;">
         ${popupContent}
       </div>
-      ${showAbove ? navHtml : ""}
-    </div>`;
+      <div class="popup-footer" style="margin-top: 5px; text-align: center;">
+        <button id="prev-popup">前へ</button>
+        <span>${index + 1} / ${total}</span>
+        <button id="next-popup">次へ</button>
+      </div>
+    </div>
+  `;
 
   activePopup = new maplibregl.Popup({
     focusAfterOpen: false,
     closeOnClick: false,
-    anchor: anchor
+    anchor: "bottom"
   })
     .setLngLat([record.longitude, record.latitude])
     .setHTML(popupHtml)
     .addTo(map);
 
+  // 前へ/次へボタンのイベント設定
   document.getElementById("prev-popup").addEventListener("click", () => {
     currentPopupIndex = (currentPopupIndex - 1 + total) % total;
-    showPopup(currentPopupIndex, true);
+    showPopup(currentPopupIndex);
   });
-
   document.getElementById("next-popup").addEventListener("click", () => {
     currentPopupIndex = (currentPopupIndex + 1) % total;
-    showPopup(currentPopupIndex, true);
+    showPopup(currentPopupIndex);
   });
+
+  // 表示後に高さを調整
+  setTimeout(() => {
+    const popupWrapper = document.querySelector(".popup-wrapper");
+    if (!popupWrapper) return;
+
+    // マーカー位置を取得
+    const markerPixel = map.project([record.longitude, record.latitude]);
+
+    // 上端からの距離を計算（少し余裕を持たせる）
+    const distanceFromTop = markerPixel.y;
+    const safeMargin = 80; // フッター高さ + 余裕
+    const maxHeight = Math.max(100, distanceFromTop - safeMargin);
+
+    popupWrapper.style.maxHeight = `${maxHeight}px`;
+  }, 0);
 };
 
 const preparePopupContent = (filteredData) => {
