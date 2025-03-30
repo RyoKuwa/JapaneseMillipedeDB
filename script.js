@@ -6,7 +6,6 @@ let prefectureOrder = [];
 let islandOrder = [];
 let markers = [];
 let literatureArray = [];
-let clusterGroup;
 let prefectureMeta = []; // [{ jp: "北海道", en: "Hokkaidō" }, ...]
 let islandMeta = [];     // [{ jp: "本州", en: "Honshū Island" }, ...]
 let publicationYearMinValue = Number.POSITIVE_INFINITY;
@@ -22,6 +21,8 @@ let currentPopupIndex = 0;
 let nearbyRecords = [];
 let activePopup = null;
 let filteredRows = []; // フィルタリングされたデータ
+let currentAnchor = null;
+let currentShowAbove = null; // ナビ位置や高さ計算用
 
 // グラフ関連
 let monthChart = null;
@@ -403,14 +404,7 @@ function initYearSliders() {
       }, DEBOUNCE_DELAY);
     },
     stop: function(event, ui) {
-      // スライダー操作が止まった瞬間に即フィルタしたい場合は、こちらで行うパターンも
-      // ただしデバウンスと重複するので、ここでは呼ばないのが無難
-      /*
-      if (publicationTimerId) {
-        clearTimeout(publicationTimerId);
-      }
-      applyFilters(true);
-      */
+
     }
   });
 
@@ -1034,7 +1028,7 @@ function setupCheckboxListeners() {
     "filter-biennial-active",
     "filter-collection-month-active"
   ];
-  
+
   // 既存のイベントリスナーを全て解除
   checkboxIds.forEach(id => {
     const cb = document.getElementById(id);
@@ -1061,10 +1055,15 @@ function setupCheckboxListeners() {
     checkbox.addEventListener("change", () => applyFilters(true));
   });
 
-  // 採集月チェックボックスにリスナー追加
   document.querySelectorAll(".collection-month").forEach(cb => {
     cb.addEventListener("change", () => applyFilters(true));
   });
+
+  // 高次分類群の表示切替で種リストを更新
+  const toggle = document.getElementById("toggle-higher-taxonomy");
+  if (toggle) {
+    toggle.addEventListener("change", () => updateSpeciesListInTab());
+  }
 }
 
 // ==================== 前/次ボタンによる選択肢移動 ====================
@@ -1347,62 +1346,79 @@ const getNearbyRecords = (clickedRecord) => {
   return near;
 };
 
-const showPopup = (index) => {
+const showPopup = (index, preserveAnchor = false) => {
   if (!nearbyRecords.length) return;
 
   const record = nearbyRecords[index];
   const total = nearbyRecords.length;
+
   if (activePopup) activePopup.remove();
 
+  const markerPixel = map.project([record.longitude, record.latitude]);
+  const mapHeight = map.getContainer().offsetHeight;
+
+  const margin = 80;
+  const distanceFromTop = markerPixel.y;
+  const distanceFromBottom = mapHeight - markerPixel.y;
+
+  let showAbove, anchor;
+
+  if (preserveAnchor && currentAnchor && currentShowAbove !== null) {
+    // ナビゲーション時：前回の anchor を維持
+    anchor = currentAnchor;
+    showAbove = currentShowAbove;
+  } else {
+    // 初回またはマーカークリック時：anchor 判定
+    showAbove = distanceFromTop >= distanceFromBottom;
+    anchor = showAbove ? "bottom" : "top";
+    currentAnchor = anchor;
+    currentShowAbove = showAbove;
+  }
+
+  // 高さを事前に計算
+  const maxHeight = showAbove
+    ? Math.max(100, distanceFromTop - margin)
+    : Math.max(100, distanceFromBottom - margin);
+
+  // 内容を取得
   const { popupContent } = preparePopupContent([record]).popupContents[0];
 
+  // ナビゲーションHTML
+  const navHtml = `
+    <div class="popup-nav-fixed">
+      <button id="prev-popup">前へ</button>
+      <span>${index + 1} / ${total}</span>
+      <button id="next-popup">次へ</button>
+    </div>`;
+
+  // ちらつき防止のため、max-height をインラインで指定
   const popupHtml = `
-    <div>
-      <div class="popup-wrapper" style="overflow-y: auto;">
+    <div class="popup-wrapper">
+      ${!showAbove ? navHtml : ""}
+      <div class="popup-scroll-container" style="max-height: ${maxHeight}px;">
         ${popupContent}
       </div>
-      <div class="popup-footer" style="margin-top: 5px; text-align: center;">
-        <button id="prev-popup">前へ</button>
-        <span>${index + 1} / ${total}</span>
-        <button id="next-popup">次へ</button>
-      </div>
-    </div>
-  `;
+      ${showAbove ? navHtml : ""}
+    </div>`;
 
   activePopup = new maplibregl.Popup({
     focusAfterOpen: false,
     closeOnClick: false,
-    anchor: "bottom"
+    anchor: anchor
   })
     .setLngLat([record.longitude, record.latitude])
     .setHTML(popupHtml)
     .addTo(map);
 
-  // 前へ/次へボタンのイベント設定
   document.getElementById("prev-popup").addEventListener("click", () => {
     currentPopupIndex = (currentPopupIndex - 1 + total) % total;
-    showPopup(currentPopupIndex);
+    showPopup(currentPopupIndex, true);
   });
+
   document.getElementById("next-popup").addEventListener("click", () => {
     currentPopupIndex = (currentPopupIndex + 1) % total;
-    showPopup(currentPopupIndex);
+    showPopup(currentPopupIndex, true);
   });
-
-  // 表示後に高さを調整
-  setTimeout(() => {
-    const popupWrapper = document.querySelector(".popup-wrapper");
-    if (!popupWrapper) return;
-
-    // マーカー位置を取得
-    const markerPixel = map.project([record.longitude, record.latitude]);
-
-    // 上端からの距離を計算（少し余裕を持たせる）
-    const distanceFromTop = markerPixel.y;
-    const safeMargin = 80; // フッター高さ + 余裕
-    const maxHeight = Math.max(100, distanceFromTop - safeMargin);
-
-    popupWrapper.style.maxHeight = `${maxHeight}px`;
-  }, 0);
 };
 
 const preparePopupContent = (filteredData) => {
@@ -2242,7 +2258,16 @@ function updateSpeciesListInTab() {
 
   const createLi = (html, indent = 0, className = '') => {
     const li = document.createElement('li');
-    li.style.marginLeft = `${indent * 1.2}em`;
+    const showHigher = document.getElementById("toggle-higher-taxonomy")?.checked;
+    let adjustedIndent = indent;
+  
+    // 高次分類群を非表示にしている場合、種・亜種のインデントを減らす
+    if (!showHigher) {
+      if (indent === 3) adjustedIndent = 0;      // 種
+      if (indent === 4) adjustedIndent = 1;      // 亜種
+    }
+  
+    li.style.marginLeft = `${adjustedIndent * 1.2}em`;
     li.innerHTML = html;
     if (className) li.classList.add(className);
     listContainer.appendChild(li);
@@ -2417,6 +2442,16 @@ document.getElementById("toggle-higher-taxonomy").addEventListener("change", fun
       generatePrefectureChart(filteredRows);
       generateYearChart(filteredRows, document.querySelector('input[name="year-mode"]:checked').value);
     }
+
+    $(".select2-hidden-accessible").each(function () {
+      // 既存の select2 を破棄して再初期化（幅再調整）
+      $(this).select2("close"); // バグ回避：ドロップダウン開いたままを閉じる
+      $(this).select2("destroy").select2({
+        minimumResultsForSearch: 0,
+        dropdownAutoWidth: true,
+        allowClear: false
+      });
+    });
   });
 
   adjustSearchContainerAndLegend();

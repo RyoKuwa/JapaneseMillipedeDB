@@ -713,6 +713,8 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   overflow-y: auto;
   flex: 1;
   padding-right: 8px;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 
 /* 前/次ボタンは常に下部に固定（本文の外） */
