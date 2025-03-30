@@ -824,6 +824,17 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   margin-right: 10px;
 }
 
+.filter-body-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.filter-body-disabled input,
+.filter-body-disabled select,
+.filter-body-disabled button {
+  pointer-events: none;
+}
+
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {

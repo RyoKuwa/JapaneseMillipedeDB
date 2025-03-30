@@ -123,6 +123,7 @@ const initMap = () => {
 
   // 既存の呼び出し（選択ラベル更新など）
   updateSelectedLabels();
+
 };
 
 function initBiennialSelects() {
@@ -1066,7 +1067,15 @@ function setupCheckboxListeners() {
     "filter-life-stage-active"
   ];
 
-  // 既存のイベントリスナーを全て解除
+  const updateUIIds = new Set([
+    "filter-publication-year-active",
+    "filter-collection-year-active",
+    "filter-biennial-active",
+    "filter-collection-month-active",
+    "filter-life-stage-active"
+  ]);
+
+  // 既存のイベントリスナーを全て解除（クローンで置き換え）
   checkboxIds.forEach(id => {
     const cb = document.getElementById(id);
     if (cb) {
@@ -1084,7 +1093,12 @@ function setupCheckboxListeners() {
   checkboxIds.forEach(id => {
     const cb = document.getElementById(id);
     if (cb) {
-      cb.addEventListener("change", () => applyFilters(true));
+      cb.addEventListener("change", () => {
+        if (updateUIIds.has(id)) {
+          updateFilterActivationUI(); // ← フィルターUI更新
+        }
+        applyFilters(true);
+      });
     }
   });
 
@@ -1105,6 +1119,9 @@ function setupCheckboxListeners() {
   if (toggle) {
     toggle.addEventListener("change", () => updateSpeciesListInTab());
   }
+
+  // 初期状態のフィルターUI適用（ページロード時）
+  updateFilterActivationUI();
 }
 
 // ==================== 前/次ボタンによる選択肢移動 ====================
@@ -1933,6 +1950,38 @@ function generateYearChart(rows, mode) {
 }
 
 // ==================== UI補助 ====================
+// フィルター有効・無効を切り替える関数
+function updateFilterActivationUI() {
+  const setupFilterToggle = (checkboxId, containerId, sliderId = null) => {
+    const checkbox = document.getElementById(checkboxId);
+    const container = document.getElementById(containerId);
+    if (!checkbox || !container) return;
+
+    const enabled = checkbox.checked;
+
+    // label以外の子要素（スライダーやinput）に処理を適用
+    container.querySelectorAll(":scope > *:not(label)").forEach(child => {
+      child.classList.toggle("filter-body-disabled", !enabled);
+
+      // input, select, button を無効化
+      child.querySelectorAll("input, select, button").forEach(ctrl => {
+        ctrl.disabled = !enabled;
+      });
+    });
+
+    // jQuery UI スライダーの有効/無効切り替え
+    if (sliderId && $(`#${sliderId}`).hasClass("ui-slider")) {
+      $(`#${sliderId}`).slider("option", "disabled", !enabled);
+    }
+  };
+
+  setupFilterToggle("filter-publication-year-active", "publication-year-container", "publication-year-slider");
+  setupFilterToggle("filter-collection-year-active", "collection-year-container", "collection-year-slider");
+  setupFilterToggle("filter-biennial-active", "biennial-container");
+  setupFilterToggle("filter-collection-month-active", "month-container");
+  setupFilterToggle("filter-life-stage-active", "life-stage-container");
+}
+
 function updateRecordInfo(recordCount, locationCount) {
   document.getElementById("record-count").textContent = recordCount;
   document.getElementById("location-count").textContent = locationCount;
