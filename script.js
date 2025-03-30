@@ -2441,18 +2441,23 @@ document.getElementById("toggle-higher-taxonomy").addEventListener("change", fun
       generateMonthlyChart(filteredRows);
       generatePrefectureChart(filteredRows);
       generateYearChart(filteredRows, document.querySelector('input[name="year-mode"]:checked').value);
+      
+      // 件数と地点数を再描画（この行を追加）
+      updateRecordInfo(
+        filteredRows.length,
+        new Set(filteredRows.map(r => `${r.latitude},${r.longitude}`)).size
+      );
     }
-
+  
     $(".select2-hidden-accessible").each(function () {
-      // 既存の select2 を破棄して再初期化（幅再調整）
-      $(this).select2("close"); // バグ回避：ドロップダウン開いたままを閉じる
+      $(this).select2("close");
       $(this).select2("destroy").select2({
         minimumResultsForSearch: 0,
         dropdownAutoWidth: true,
         allowClear: false
       });
     });
-  });
+  });  
 
   adjustSearchContainerAndLegend();
 
