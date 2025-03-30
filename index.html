@@ -100,12 +100,9 @@
       <!-- 既存の「リセット」ボタンやチェックボックス類の下に追加 -->
       <div class="select-box-divider-two"></div>
 
-      <!-- ▼ 出版年フィルタ -->
       <div class="year-filter">
-        <label>
-          <input type="checkbox" id="filter-publication-year-active">
-          <strong>出版年</strong>
-        </label>
+        <input type="checkbox" id="filter-publication-year-active">
+        <label class="compact-label" for="filter-publication-year-active"><strong>出版年</strong></label>
         <div class="slider-container">
           <div id="publication-year-slider"></div>
           <div class="year-inputs">
@@ -115,13 +112,10 @@
           </div>
         </div>
       </div>
-
-      <!-- ▼ 採集年フィルタ -->
+      
       <div class="year-filter">
-        <label>
-          <input type="checkbox" id="filter-collection-year-active">
-          <strong>採集年</strong>
-        </label>
+        <input type="checkbox" id="filter-collection-year-active">
+        <label class="compact-label" for="filter-collection-year-active"><strong>採集年</strong></label>
         <div class="slider-container">
           <div id="collection-year-slider"></div>
           <div class="year-inputs">
@@ -131,6 +125,7 @@
           </div>
         </div>
       </div>
+      
 
       <!-- 隔年発生 -->
       <div class="biennial-filter">
