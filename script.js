@@ -1124,6 +1124,25 @@ function setupCheckboxListeners() {
   updateFilterActivationUI();
 }
 
+// ==================== チェックボックスのフォーカス制御 ====================
+document.addEventListener("DOMContentLoaded", function () {
+  // スマホで入力欄がタップされた直後にフォーカスを奪われるのを防ぐ
+  const pubCheckbox = document.getElementById("filter-publication-year-active");
+  if (pubCheckbox) {
+    pubCheckbox.addEventListener("mousedown", function (e) {
+      e.preventDefault(); // チェックボックスがフォーカスを奪うのを防ぐ
+    });
+  }
+
+  const colCheckbox = document.getElementById("filter-collection-year-active");
+  if (colCheckbox) {
+    colCheckbox.addEventListener("mousedown", function (e) {
+      e.preventDefault(); // こちらも同様に防ぐ
+    });
+  }
+});
+
+
 // ==================== 前/次ボタンによる選択肢移動 ====================
 const setupNavButtonListeners = () => {
   const config = [
@@ -2547,8 +2566,4 @@ document.getElementById("toggle-higher-taxonomy").addEventListener("change", fun
   adjustSearchContainerAndLegend();
 
   applyFilters(true);
-});
-
-$("#filter-publication-year-active").on("mousedown", function(e) {
-  e.preventDefault(); // チェックボックスへのフォーカスを防ぐ
 });
