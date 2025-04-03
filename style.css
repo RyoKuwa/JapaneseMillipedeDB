@@ -915,3 +915,10 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     max-width: 100%;
   }
 }
+
+@media (max-width: 768px) {
+  .slider-container > #publication-year-slider,
+  .slider-container > #collection-year-slider {
+    display: none;
+  }
+}
