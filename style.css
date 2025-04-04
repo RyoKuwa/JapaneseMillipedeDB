@@ -804,8 +804,8 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   vertical-align: middle;
 }
 
-#tab-species label[for="toggle-higher-taxonomy"],
-#tab-species label#toggle-higher-taxonomy-label {
+#tab-species-list label[for="toggle-higher-taxonomy"],
+#tab-species-list label#toggle-higher-taxonomy-label {
   float: right;
   margin: 0.5em;
   font-weight: normal;
@@ -833,6 +833,25 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 .filter-body-disabled select,
 .filter-body-disabled button {
   pointer-events: none;
+}
+
+#language-switcher {
+  text-align: right;
+  margin-bottom: 5px;
+  padding-right: 10px;
+  font-size: 14px;
+}
+
+#language-switcher label {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+#language-selector {
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #aaa;
 }
 
 @media (max-width: 711px) {
@@ -914,11 +933,14 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   .legend {
     max-width: 100%;
   }
-}
 
-@media (max-width: 768px) {
-  .slider-container > #publication-year-slider,
-  .slider-container > #collection-year-slider {
-    display: none;
+  #language-switcher {
+    font-size: 12px;
+    padding-right: 6px;
+  }
+
+  #language-selector {
+    font-size: 12px;
+    padding: 1px 4px;
   }
 }
