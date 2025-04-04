@@ -890,7 +890,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     border: 1px solid #ccc;
     box-sizing: border-box;
     transition: max-height 0.3s ease-out;
-    max-height: 1100px;
+    max-height: 1050px;
     overflow: hidden;
   }
 
