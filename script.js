@@ -1721,7 +1721,9 @@ function generatePrefectureChart(allRows) {
 
       chartTitle = `${titleHead}${classificationText}${unit}`;
     } else {
-      const unitEn = (currentChartMode === "count") ? "Number of Species" : (currentChartMode === "record") ? "Number of Records" : "Ratio";
+      const unitEn = (currentChartMode === "count") ? "Number of Species" 
+                     : (currentChartMode === "record") ? "Number of Records" 
+                     : "Ratio";
       const byTaxon = (currentClassification === "order") ? "Order" : "Family";
       chartTitle = `${unitEn} by ${byTaxon} in Each Prefecture`;
     }
@@ -1756,7 +1758,7 @@ function generatePrefectureChart(allRows) {
   }
 
   targetRows.forEach(row => {
-    const pref = row.prefecture;
+    const pref = row.prefecture;   // 日本語名
     const keyValue = (classificationKey === "order") ? row.order : row.family;
     if (!pref || pref === "-" || !keyValue || keyValue === "-") return;
 
@@ -1787,13 +1789,27 @@ function generatePrefectureChart(allRows) {
     arr.sort((a, b) => b.total - a.total);
     sortedPrefectures = arr.map(i => i.pref);
   } else {
+    // chartMode === "ratio" など
     sortedPrefectures = prefectureOrder.filter(p => !!prefectureTaxonMap[p]);
   }
 
+  let displayedPrefectures;
+  if (lang === "en") {
+    displayedPrefectures = sortedPrefectures.map(jpName => {
+      const match = prefectureMeta.find(m => m.jp === jpName);
+      return match ? match.en : jpName; // 該当が無ければ日本語表示 fallback
+    });
+  } else {
+    displayedPrefectures = sortedPrefectures; // 日本語のまま
+  }
+
+  // taxonSet から datasets を組み立て
   const taxonSet = new Set();
   const taxonSource = (chartMode === "record") ? prefectureRecordMap : prefectureTaxonMap;
   for (const pref in taxonSource) {
-    for (const key in taxonSource[pref]) taxonSet.add(key);
+    for (const key in taxonSource[pref]) {
+      taxonSet.add(key);
+    }
   }
   const taxons = Array.from(taxonSet).sort();
 
@@ -1839,7 +1855,10 @@ function generatePrefectureChart(allRows) {
   const ctx = document.getElementById("prefecture-chart").getContext("2d");
   prefectureChart = new Chart(ctx, {
     type: "bar",
-    data: { labels: sortedPrefectures, datasets },
+    data: { 
+      labels: displayedPrefectures,
+      datasets
+    },
     options: {
       animation: false,
       responsive: true,
@@ -1848,6 +1867,7 @@ function generatePrefectureChart(allRows) {
       scales: {
         x: {
           stacked: true,
+          // X軸タイトルも翻訳済みの pref / or fallback
           title: { display: true, text: translations[lang]?.prefecture || "都道府県" },
           ticks: { autoSkip: false, maxRotation: 60 }
         },
@@ -1889,7 +1909,9 @@ function generatePrefectureChart(allRows) {
             label: ctx => {
               const val = ctx.parsed.y;
               const abs = ctx.dataset._absData?.[ctx.dataIndex] || 0;
-              return (chartMode === "ratio") ? `${ctx.dataset.label}: ${val}% (${abs}種)` : `${ctx.dataset.label}: ${val}`;
+              return (chartMode === "ratio")
+                ? `${ctx.dataset.label}: ${val}% (${abs}種)`
+                : `${ctx.dataset.label}: ${val}`;
             }
           }
         },
