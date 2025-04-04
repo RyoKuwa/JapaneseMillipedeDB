@@ -204,20 +204,40 @@ const loadLiteratureCSV = async () => {
       }
       if (current) columns.push(current.trim());
 
-      const [order, id, litList, link] = columns;
-      if (id && litList) {
-        literatureArray.push({ 
-          id, 
-          label: litList.trim(),
-          link: link ? link.trim() : null,
-          order: parseInt(order, 10) || index
-        });
-      }
+      // 新: Lnumber, LID_CSV, LitList_en, LitList_jp, Link の順
+      const [lnumber, id, litList_en, litList_jp, link] = columns;
+
+      // 数値変換できなかった場合に備えて，lnumber はパース失敗時 index を使う
+      const lnum = parseInt(lnumber, 10);
+      literatureArray.push({
+        lnumber: isNaN(lnum) ? index : lnum,
+        id: (id || "").trim(),
+        label_jp: (litList_jp || "").trim(),
+        label_en: (litList_en || "").trim(),
+        link: link ? link.trim() : null,
+        // 旧コードで "order" と呼んでいたものは無理に入れなくてもOK
+        // 必要なら lnumber を兼用してソート順を使う
+      });
     });
   } catch (error) {
     console.error("Literature.csv の読み込みエラー:", error);
   }
 };
+
+function getLiteratureLabel(item) {
+  // item: { id, label_jp, label_en, link, ... } の想定
+  if (!item) {
+    // 見つからない場合
+    return (lang === "en") ? "Unknown" : "不明";
+  }
+  if (lang === "en") {
+    // 英語UIの場合 → 英語ラベルがあればそれを使い，無ければ日本語にfallback
+    return item.label_en || item.label_jp || "Unknown";
+  } else {
+    // 日本語UIの場合 → 日本語ラベルがあればそれを使い，無ければ英語にfallback
+    return item.label_jp || item.label_en || "不明";
+  }
+}
 
 const loadTaxonNameCSV = () => {
   loadCSV("TaxonName.csv", (csvText) => {
@@ -583,10 +603,14 @@ const gatherSelectOptions = (data) => {
     return arr;
   };
 
-  const getPrefIslandOptions = (dataKey, refArray) => {
+  const getPrefIslandOptions = (dataKey, refArray, metaArray) => {
     return refArray
       .filter(item => data.some(row => row[dataKey] === item))
-      .map(item => ({ value: item, label: item }));
+      .map(item => {
+        const match = metaArray.find(m => m.jp === item);
+        const label = (lang === "en" && match?.en) ? match.en : item;
+        return { value: item, label };
+      });
   };
 
   return {
@@ -595,8 +619,8 @@ const gatherSelectOptions = (data) => {
     genusOptions: getOptions("genus"),
     familyOptions: getOptions("family"),
     orderOptions: getOptions("order"),
-    prefectureOptions: getPrefIslandOptions("prefecture", prefectureOrder),
-    islandOptions: getPrefIslandOptions("island", islandOrder)
+    prefectureOptions: getPrefIslandOptions("prefecture", prefectureOrder, prefectureMeta),
+    islandOptions: getPrefIslandOptions("island", islandOrder, islandMeta),
   };
 };
 
@@ -654,15 +678,26 @@ const updateSelectBoxes = (filters, selectOptions) => {
     islandOptions
   } = selectOptions;
 
+  // ▼ filter-literature
+  //    map 内で fallback を適用するには、literatureArray から該当itemを探して
+  //    getLiteratureLabel() を呼ぶのが確実です
   populateSelect(
     "filter-literature",
-    literatureOptions.map(opt => ({
-      value: opt.value,
-      label: opt.label.replace(/<\/?i>/g, '')
-    })),
+    literatureOptions.map(opt => {
+      // opt.value が文献ID，opt.label が既存のラベル。
+      // もともと `opt.label.replace(/<\/?i>/g, '')` だけでしたが，
+      // 新CSVによりラベルが2種類になったので fallback を適用。
+      const item = literatureArray.find(i => i.id === opt.value);
+      const label = getLiteratureLabel(item).replace(/<\/?i>/g, '');
+      return {
+        value: opt.value,
+        label
+      };
+    }),
     filters.literature
   );
 
+  // 種リストなどは既存の combinedNames をそのまま使う
   populateSelect(
     "filter-species",
     combinedNames.map(name => ({ value: name, label: name })),
@@ -825,14 +860,21 @@ const updateLiteratureList = (titles) => {
   listContainer.style.display = "block";
   listContainer.innerHTML = "<h3>引用文献 Reference</h3>";
 
-  const ordered = literatureArray.filter(i => titles.includes(i.label));
+  // 新: getLiteratureLabel(item) を使って titles.includes(...) を判定する
+  const ordered = literatureArray.filter(item => {
+    const labelText = getLiteratureLabel(item);
+    return titles.includes(labelText);
+  });
+
   const ol = document.createElement('ol');
   ordered.forEach(item => {
-    const li = document.createElement('li');
-    let listItem = item.label;
+    // 表示するときも getLiteratureLabel(item) を使う
+    let listItem = getLiteratureLabel(item);
+
     if (item.link) {
       listItem += ` <a href="${item.link}" target="_blank">${item.link}</a>`;
     }
+    const li = document.createElement('li');
     li.innerHTML = listItem;
     ol.appendChild(li);
   });
@@ -852,10 +894,23 @@ const generateLiteratureList = (filteredData) => {
 };
 
 const getLiteratureInfo = (literatureID) => {
+  // literatureArray から対象の文献情報を探します
   const item = literatureArray.find(i => i.id === literatureID);
+
+  if (!item) {
+    // 見つからないときのフォールバック
+    return {
+      literatureName: (lang === "en") ? "Unknown" : "不明",
+      literatureLink: null
+    };
+  }
+
+  // 英語／日本語のラベルを取得
+  const name = getLiteratureLabel(item);
+
   return {
-    literatureName: item ? item.label : "不明",
-    literatureLink: item?.link || null
+    literatureName: name,
+    literatureLink: item.link || null
   };
 };
 
@@ -1029,7 +1084,7 @@ const updateDropdownPlaceholders = () => {
         const placeholderElement = select2Instance.$container.find('.select2-selection__placeholder');
         if (placeholderElement.length) {
           const placeholderText = getPlaceholderTextFor(key, count);
-+         placeholderElement.text(placeholderText);
+          placeholderElement.text(placeholderText);
         }
       }
 
@@ -1846,45 +1901,31 @@ function generatePrefectureChart(allRows) {
 }
 
 function generateYearChart(rows, mode) {
-  // 言語を取得
-  const lang = localStorage.getItem("preferredLanguage") || "ja";
 
-  // タイトル要素を取得して翻訳キーに従ってセット
   const yearChartTitleEl = document.getElementById("year-chart-title");
   if (yearChartTitleEl) {
     if (mode === 'publication') {
-      // e.g. "記録数と累積記録数（出版年）" / "Number of Records & Cumulative (Publication Year)"
       yearChartTitleEl.textContent =
         translations[lang]?.year_chart_publication || "記録数と累積記録数（出版年）";
     } else {
-      // "記録数と累積記録数（採集年）" / "Number of Records & Cumulative (Collection Year)"
       yearChartTitleEl.textContent =
         translations[lang]?.year_chart_collection || "記録数と累積記録数（採集年）";
     }
   }
 
-  // rows から (year -> recordType -> count) のマッピングを作る
   const yearData = {};
   rows.forEach(row => {
     const year = parseInt(mode === 'publication' ? row.publicationYear : row.collectionYear);
     const type = row.recordType;
     if (!Number.isInteger(year)) return;
-    if (!yearData[year]) {
-      yearData[year] = {};
-    }
-    if (!yearData[year][type]) {
-      yearData[year][type] = 0;
-    }
+    if (!yearData[year]) yearData[year] = {};
+    if (!yearData[year][type]) yearData[year][type] = 0;
     yearData[year][type]++;
   });
 
-  // yearData に含まれる year の範囲を決定
   const yearsWithData = Object.keys(yearData).map(y => parseInt(y));
   if (yearsWithData.length === 0) {
-    // データが無い場合、とりあえずグラフを破棄して終了
-    if (window.yearChart) {
-      window.yearChart.destroy();
-    }
+    if (window.yearChart) window.yearChart.destroy();
     return;
   }
   const minYear = Math.min(...yearsWithData);
@@ -1894,10 +1935,6 @@ function generateYearChart(rows, mode) {
     sortedYears.push(y);
   }
 
-  // レコードタイプに対する翻訳を定義
-  // 例: "1_タイプ産地" -> "原記載" or "Original description"
-  //     "2_統合された種のタイプ産地" -> "統合された種の原記載" or "Original description of synonymized species"
-  // など
   const originalTypes = [
     "1_タイプ産地",
     "2_統合された種のタイプ産地",
@@ -1908,14 +1945,6 @@ function generateYearChart(rows, mode) {
     "7_疑わしい文献記録"
   ];
 
-  // ★ユーザー指定の訳:
-  //   1: "Original description"
-  //   2: "Original description of synonymized species"
-  //   3: "Doubtful type"
-  //   4: "Doubtful & Synonymized type"
-  //   5: "Specimen record"
-  //   6: "Literature record"
-  //   7: "Doubtful literature record"
   const displayLabels = [
     translations[lang]?.year_type_1 || "Original description",
     translations[lang]?.year_type_2 || "Original description of synonymized species",
@@ -1926,7 +1955,6 @@ function generateYearChart(rows, mode) {
     translations[lang]?.year_type_7 || "Doubtful literature record"
   ];
 
-  // カラー設定
   const colors = [
     "#E69F00",
     "#56B4E9",
@@ -1937,19 +1965,15 @@ function generateYearChart(rows, mode) {
     "#CC79A7"
   ];
 
-  // stacked bar 用の datasets
   const datasets = [];
   const activeTypes = [];
 
   originalTypes.forEach((type, index) => {
-    // sortedYears をループして各 year の count を取得
     const data = sortedYears.map(year => yearData[year]?.[type] || 0);
     const total = data.reduce((a, b) => a + b, 0);
-
-    // その type が 0件 ばかりの場合は非表示にしている
     if (total > 0) {
       datasets.push({
-        label: displayLabels[index], // 上で翻訳済み
+        label: displayLabels[index],
         backgroundColor: colors[index],
         data: data,
         stack: 'stack1'
@@ -1958,17 +1982,17 @@ function generateYearChart(rows, mode) {
     }
   });
 
-  // 累積記録数 (折れ線) を描画
   let cumulativeSum = 0;
   const cumulativeArray = sortedYears.map(year => {
-    // activeTypes の合計
     const total = activeTypes.reduce((sum, type) => sum + (yearData[year]?.[type] || 0), 0);
     cumulativeSum += total;
     return cumulativeSum;
   });
 
+  const cumulativeLabel = translations[lang]?.year_chart_cumulative_label || "累積記録数";
+
   datasets.push({
-    label: translations[lang]?.year_chart_cumulative_label || "累積記録数", // fallback
+    label: cumulativeLabel,
     data: cumulativeArray,
     type: 'line',
     borderColor: 'black',
@@ -1979,15 +2003,11 @@ function generateYearChart(rows, mode) {
     pointRadius: 0
   });
 
-  // y軸ラベルの翻訳
   const leftAxisLabel = translations[lang]?.year_chart_left_axis || "記録数";
   const rightAxisLabel = translations[lang]?.year_chart_right_axis || "累積記録数";
 
-  // 実際の描画
   const ctx = document.getElementById("year-chart").getContext("2d");
-  if (window.yearChart) {
-    window.yearChart.destroy();
-  }
+  if (window.yearChart) window.yearChart.destroy();
 
   window.yearChart = new Chart(ctx, {
     type: 'bar',
@@ -2074,7 +2094,10 @@ function updateSelectedLabels() {
   const labelContainer = document.getElementById("selected-labels");
   if (!labelContainer) return;
 
-  const previousHeight = labelContainer.clientHeight;
+  // サブピクセル精度で高さ計測
+  const previousRect = labelContainer.getBoundingClientRect();
+  const previousHeight = previousRect.height;
+
   const selectIds = [
     "filter-order",
     "filter-family",
@@ -2084,6 +2107,7 @@ function updateSelectedLabels() {
     "filter-island",
     "filter-literature"
   ];
+
   const labels = selectIds.map(id => {
     const sel = document.getElementById(id);
     if (!sel) return "";
@@ -2091,39 +2115,100 @@ function updateSelectedLabels() {
     if (!opt || !opt.value) return "";
 
     let labelText = opt.text;
-    if (labelText.includes(" / ")) {
-      const parts = labelText.split(" / ");
-      labelText = `${parts[1]} / ${parts[0]}`;
+    
+    // -----------------------------
+    // 1) (目/科/属/種) → "和名 / 学名" に直す
+    // -----------------------------
+    if (["filter-order","filter-family","filter-genus","filter-species"].includes(id)) {
+      if (labelText.includes(" / ")) {
+        const parts = labelText.split(" / ");
+        const left = parts[0].trim();
+        const right = parts[1].trim();
+
+        // 学名判定の簡易ルール
+        const isLeftLikelySci = /[a-zA-Z]/.test(left);
+
+        let jName, sName; 
+        if (isLeftLikelySci) {
+          // 左:学名, 右:和名
+          jName = right;
+          sName = left;
+        } else {
+          // 左:和名, 右:学名
+          jName = left;
+          sName = right;
+        }
+        labelText = `${jName} / ${sName}`;
+      }
     }
 
-    if (id === "filter-order" || id === "filter-family") {
+    // -----------------------------
+    // 2) 都道府県・島 → 日本語UIなら日本語のみ, 英語UIなら英語のみ
+    // -----------------------------
+    if (id === "filter-prefecture" || id === "filter-island") {
+      if (labelText.includes(" / ")) {
+        const [enPart, jaPart] = labelText.split(" / ");
+        labelText = (lang === "ja") ? jaPart : enPart;
+      }
+    }
+
+    // -----------------------------
+    // 3) 文献 → getLiteratureInfo() で取得
+    // -----------------------------
+    if (id === "filter-literature") {
+      const litID = opt.value;
+      const { literatureName, literatureLink } = getLiteratureInfo(litID);
+      return literatureLink
+        ? `${literatureName} <a href="${literatureLink}" target="_blank">${literatureLink}</a>`
+        : literatureName;
+    }
+
+    // -----------------------------
+    // 4) format関数で 目/科/属/種 → 斜体化 + 著者年付与
+    // -----------------------------
+    if (id === "filter-order") {
+      labelText = formatOrderFamilyName(labelText);
+    } else if (id === "filter-family") {
       labelText = formatOrderFamilyName(labelText);
     } else if (id === "filter-genus") {
       labelText = formatGenusName(labelText);
     } else if (id === "filter-species") {
       labelText = formatSpeciesName(labelText);
-    } else if (id === "filter-literature") {
-      const litID = opt.value;
-      const { literatureName, literatureLink } = getLiteratureInfo(litID);
-      labelText = literatureLink
-        ? `${literatureName} <a href="${literatureLink}" target="_blank">${literatureLink}</a>`
-        : literatureName;
     }
 
+    // -----------------------------
+    // 5) 英語UIなら「和名 /」部分を除去
+    // -----------------------------
+    if (lang === "en") {
+      labelText = labelText.replace(/^.*?\/\s*/, "");
+    }
+
+    // -----------------------------
+    // 6) 記号のエンコード（不要なら削除）
+    // -----------------------------
     labelText = labelText
       .replace(/-/g, "&#8209;")
       .replace(/\[/g, "&#91;")
       .replace(/\]/g, "&#93;");
+
     return labelText;
   }).filter(x => x);
 
-  // ▼ 年・隔年発生の条件を追加（1行ずつ）
+  /****************************************
+   * 7) 年・隔年発生・採集月・ライフステージの追加ラベル
+   ****************************************/
+
   // 出版年
   if ($("#filter-publication-year-active").is(":checked")) {
     const min = $("#publication-year-min").val();
     const max = $("#publication-year-max").val();
     if (min && max) {
-      labels.push(`${min}〜${max}年に出版`);
+      if (lang === "ja") {
+        labels.push(`${min}〜${max}年に出版`);
+      } else {
+        // "Published from X to Y" など、お好みで
+        labels.push(`Published between ${min} and ${max}`);
+      }
     }
   }
 
@@ -2132,39 +2217,64 @@ function updateSelectedLabels() {
     const min = $("#collection-year-min").val();
     const max = $("#collection-year-max").val();
     if (min && max) {
-      labels.push(`${min}〜${max}年に採集`);
+      if (lang === "ja") {
+        labels.push(`${min}〜${max}年に採集`);
+      } else {
+        labels.push(`Collected between ${min} and ${max}`);
+      }
     }
   }
 
-  // 隔年発生
+  // 隔年発生 (周期)
   if ($("#filter-biennial-active").is(":checked")) {
     const target = $("#biennial-target-year").val();
     const interval = $("#biennial-interval").val();
     if (target && interval) {
-      labels.push(`${target}年を含む${interval}年周期`);
+      if (lang === "ja") {
+        labels.push(`${target}年を含む${interval}年周期`);
+      } else {
+        labels.push(`Records every ${interval} years, including ${target}`);
+      }
     }
   }
 
-  // 採集月
+  // 採集月（出現期）
   if ($("#filter-collection-month-active").is(":checked")) {
     const selectedMonths = $(".collection-month:checked").map(function () {
-      return `${this.value}月`;
+      return this.value;
     }).get();
     if (selectedMonths.length > 0) {
-      labels.push(`採集月：${selectedMonths.join(", ")}`);
+      if (lang === "ja") {
+        labels.push(`採集月：${selectedMonths.join(", ")}`);
+      } else {
+        // "Month(s) collected: X, Y, Z"
+        labels.push(`Month(s): ${selectedMonths.join(", ")}`);
+      }
     }
   }
 
   // ライフステージ
   if ($("#filter-life-stage-active").is(":checked")) {
     const selectedStages = $(".life-stage:checked").map(function () {
-      return this.value === "yes" ? "成体" : "幼体・不明";
+      // 日本語UIなら「成体 / 幼体・不明」 英語UIなら "Adult / Juvenile or Unknown" など
+      if (this.value === "yes") {
+        return (lang === "ja") ? "成体" : "Adult";
+      } else {
+        return (lang === "ja") ? "幼体・不明" : "Juvenile / Unknown";
+      }
     }).get();
     if (selectedStages.length > 0) {
-      labels.push(`ライフステージ：${selectedStages.join(", ")}`);
+      if (lang === "ja") {
+        labels.push(`ライフステージ：${selectedStages.join(", ")}`);
+      } else {
+        labels.push(`Life stage(s): ${selectedStages.join(", ")}`);
+      }
     }
   }
 
+  // -----------------------------
+  // 8) ラベル一覧を画面に反映
+  // -----------------------------
   if (labels.length > 0) {
     labelContainer.innerHTML = labels.join("<br>");
     labelContainer.style.display = "block";
@@ -2173,7 +2283,9 @@ function updateSelectedLabels() {
     labelContainer.style.display = "none";
   }
 
-  const newHeight = labelContainer.clientHeight;
+  // 高さ変動のスクロール補正（サブピクセル対応）
+  const newRect = labelContainer.getBoundingClientRect();
+  const newHeight = newRect.height;
   const diff = newHeight - previousHeight;
   if (window.innerWidth > 711 && diff !== 0) {
     window.scrollTo({ top: window.scrollY + diff, behavior: "instant" });
@@ -2679,6 +2791,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (filteredRows && filteredRows.length > 0) {
         generateMonthlyChart(filteredRows);
         generatePrefectureChart(filteredRows);
+        generateLiteratureList(filteredRows);
+        updateSelectedLabels();
   
         // 年グラフもあるなら
         const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';

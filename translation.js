@@ -95,7 +95,13 @@ const translations = {
     year_type_4: "疑わしい統合された種のタイプ",
     year_type_5: "標本記録",
     year_type_6: "文献記録",
-    year_type_7: "疑わしい文献記録"
+    year_type_7: "疑わしい文献記録",
+    order: "目",
+    family: "科",
+    number_of_species: "種数",
+    number_of_records: "記録数",
+    ratio: "割合",
+    year_chart_cumulative_label: "累積記録数"
 
   },
 
@@ -193,7 +199,13 @@ const translations = {
     year_type_4: "Doubtful & Synonymized type",
     year_type_5: "Specimen record",
     year_type_6: "Literature record",
-    year_type_7: "Doubtful literature record"
+    year_type_7: "Doubtful literature record",
+    order: "Order",
+    family: "Faimily",
+    number_of_species: "Number of species",
+    number_of_records: "Number of records",
+    ratio: "Ratio",
+    year_chart_cumulative_label: "Cumulative number of records"
   }
 };
 
