@@ -854,6 +854,11 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   border: 1px solid #aaa;
 }
 
+.select2-results__options {
+  max-height: 400px !important;
+  overflow-y: auto !important;
+}
+
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {
