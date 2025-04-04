@@ -117,7 +117,13 @@
         <div class="slider-container">
           <div id="publication-year-slider"></div>
           <div class="year-inputs">
-            <input type="text" id="publication-year-min" size="4">
+            <input
+            type="number"
+            id="publication-year-min"
+            step="1"
+            pattern="[0-9]*"
+            inputmode="numeric"
+            size="4">
             <span>～</span>
             <input type="text" id="publication-year-max" size="4">
           </div>

@@ -428,7 +428,6 @@ function initYearSliders() {
     max: publicationYearMaxValue,
     values: [publicationYearMinValue, publicationYearMaxValue],
     slide: function(event, ui) {
-      $("#publication-year-min").focus();
       // 1) スライダー操作中の値を即テキストボックスに反映
       $("#publication-year-min").val(ui.values[0]);
       $("#publication-year-max").val(ui.values[1]);
