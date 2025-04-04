@@ -30,7 +30,10 @@ let monthChart = null;
 let prefectureChart = null;
 let currentClassification = "order";  // "order" or "family"
 let currentChartMode = "count";       // "count" or "ratio"
+let chartTitle;
 
+// 翻訳
+let lang = localStorage.getItem("preferredLanguage") || "ja";
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -45,7 +48,8 @@ const initMap = () => {
         japan: {
           type: "geojson",
           data: "Japan.geojson",
-          attribution: "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
+          attribution: translations[lang]?.map_attribution 
+                       || "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
         }
       },
       layers: [
@@ -58,7 +62,7 @@ const initMap = () => {
     zoom: defaultZoom,
     maxZoom: 9,
     minZoom: 3,
-    dragPan: !isTouchDevice,  // タッチデバイスなら初期はOFF, PCはON
+    dragPan: !isTouchDevice,
     touchZoomRotate: true
   });
 
@@ -508,9 +512,9 @@ const getFilterStates = () => {
     excludeDubious: document.getElementById("exclude-dubious").checked,
     excludeCitation: document.getElementById("exclude-citation").checked,
     filterType: document.getElementById("filter-type").checked,
-    filterIntegratedType: document.getElementById("filter-integrated-type").checked,
+    filterIntegratedType: document.getElementById("filter-synonymized-type").checked,
     filterDoubtfulType: document.getElementById("filter-doubtful-type").checked,
-    filterDoubtfulIntegratedType: document.getElementById("filter-doubtful-integrated-type").checked,
+    filterDoubtfulIntegratedType: document.getElementById("filter-doubtful-synonymized-type").checked,
     filterSpecimen: document.getElementById("filter-specimen").checked,
     filterLiteratureRecord: document.getElementById("filter-literature-record").checked,
     filterDoubtfulLiterature: document.getElementById("filter-doubtful-literature").checked,
@@ -596,30 +600,47 @@ const gatherSelectOptions = (data) => {
   };
 };
 
-const populateSelect = (id, options, defaultText, selectedValue) => {
-  const select = document.getElementById(id);
-  if (!select) return;
+const populateSelect = (selectId, options, selectedValue) => {
+  const selectEl = document.getElementById(selectId);
+  if (!selectEl) return;
 
-  const currentVal = select.value;
-  const currentOpt = select.querySelector(`option[value="${CSS.escape(currentVal)}"]`);
+  // 「辞書からプレースホルダ文字列を取得」→ 無かったら fallback
+  const defaultText = SELECT_PLACEHOLDERS[selectId] || "選択";
+
+  const currentVal = selectEl.value;
+  const currentOpt = selectEl.querySelector(`option[value="${CSS.escape(currentVal)}"]`);
   const currentLabel = currentOpt ? currentOpt.textContent : currentVal;
 
-  $(select).empty();
+  // 一旦クリア
+  $(selectEl).empty();
 
-  $(select).append(new Option(defaultText, "", false, false));
+  // 先頭に「defaultText」を表示する option を追加
+  $(selectEl).append(new Option(defaultText, "", false, false));
 
+  // その後に動的オプションを追加
   options.forEach(opt => {
-    $(select).append(new Option(opt.label, opt.value, false, false));
+    $(selectEl).append(new Option(opt.label, opt.value, false, false));
   });
 
-  // currentValがまだ候補にないなら追加しておく
+  // 現在選択中の値がoptionsに無い場合は、再度optionを作り選択状態にしておく
   const exists = options.some(opt => opt.value === currentVal);
   if (currentVal && !exists) {
-    $(select).append(new Option(currentLabel, currentVal, true, true));
+    $(selectEl).append(new Option(currentLabel, currentVal, true, true));
+  } else {
+    // 辞書テキストを選択したい場合、ここでフォールバック
+    $(selectEl).val(currentVal).trigger("change");
   }
+};
 
-  // 選択状態を再設定
-  $(select).val(currentVal).trigger("change");
+// プレースホルダー辞書
+const SELECT_PLACEHOLDERS = {
+  "filter-order":      "select_order",
+  "filter-family":     "select_family",
+  "filter-genus":      "select_genus",
+  "filter-species":    "select_species",
+  "filter-prefecture": "select_prefecture",
+  "filter-island":     "select_island",
+  "filter-literature": "select_literature"
 };
 
 const updateSelectBoxes = (filters, selectOptions) => {
@@ -633,24 +654,26 @@ const updateSelectBoxes = (filters, selectOptions) => {
     islandOptions
   } = selectOptions;
 
-  populateSelect("filter-literature",
+  populateSelect(
+    "filter-literature",
     literatureOptions.map(opt => ({
       value: opt.value,
       label: opt.label.replace(/<\/?i>/g, '')
     })),
-    "文献を選択",
     filters.literature
   );
-  populateSelect("filter-species",
+
+  populateSelect(
+    "filter-species",
     combinedNames.map(name => ({ value: name, label: name })),
-    "種を選択",
     filters.species
   );
-  populateSelect("filter-genus", genusOptions, "属を選択", filters.genus);
-  populateSelect("filter-family", familyOptions, "科を選択", filters.family);
-  populateSelect("filter-order", orderOptions, "目を選択", filters.order);
-  populateSelect("filter-prefecture", prefectureOptions, "都道府県を選択", filters.prefecture);
-  populateSelect("filter-island", islandOptions, "島を選択", filters.island);
+
+  populateSelect("filter-genus", genusOptions, filters.genus);
+  populateSelect("filter-family", familyOptions, filters.family);
+  populateSelect("filter-order", orderOptions, filters.order);
+  populateSelect("filter-prefecture", prefectureOptions, filters.prefecture);
+  populateSelect("filter-island", islandOptions, filters.island);
 };
 
 const updateFilters = (filteredData) => {
@@ -838,16 +861,9 @@ const getLiteratureInfo = (literatureID) => {
 
 // ==================== Select2 初期化 ====================
 const initializeSelect2 = () => {
-  // 既存のSelect2をすべて破棄
-  [
-    "#filter-order", 
-    "#filter-family", 
-    "#filter-genus", 
-    "#filter-species", 
-    "#filter-prefecture", 
-    "#filter-island", 
-    "#filter-literature"
-  ].forEach(id => {
+  // 既存のSelect2をすべて破棄 & イベント解除
+  Object.keys(SELECT_PLACEHOLDERS).forEach(key => {
+    const id = "#" + key;
     try {
       if ($(id).data('select2')) {
         $(id).select2('destroy');
@@ -855,49 +871,48 @@ const initializeSelect2 = () => {
     } catch (e) {
       console.log(`Select2破棄エラー(${id}):`, e);
     }
-    $(id).off();  // イベント解除
+    $(id).off();
   });
 
-  const selectBoxes = [
-    { id: "#filter-order", placeholder: "目を選択" },
-    { id: "#filter-family", placeholder: "科を選択" },
-    { id: "#filter-genus", placeholder: "属を選択" },
-    { id: "#filter-species", placeholder: "種を選択" },
-    { id: "#filter-prefecture", placeholder: "都道府県を選択" },
-    { id: "#filter-island", placeholder: "島を選択" },
-    { id: "#filter-literature", placeholder: "文献を選択" }
-  ];
+  // セレクトボックス一覧 (辞書のキーを使って組み立て)
+  const selectBoxes = Object.keys(SELECT_PLACEHOLDERS).map(key => {
+    return { id: "#" + key, baseKey: key };
+  });
 
-  const safelyInitSelect2 = (id, options) => {
+  const safelyInitSelect2 = (id, placeholder, extraOptions = {}) => {
     try {
-      const currentVal = $(id).val(); // 現在の選択値を保存
-  
-      $(id).select2(options); // 初期化
-  
-      // 選択値を再設定（Select2が options にない値でも表示される）
+      const currentVal = $(id).val();
+
+      $(id).select2({
+        placeholder,
+        allowClear: false,
+        minimumResultsForSearch: 0,
+        dropdownAutoWidth: true,
+        ...extraOptions
+      });
+
       if (currentVal) {
         $(id).val(currentVal).trigger("change");
       }
-  
       return true;
     } catch (e) {
       console.error(`Select2初期化エラー(${id}):`, e);
       return false;
     }
   };
-  
+
+  // クリアボタン挿入 (省略せず完全実装)
   const setupCustomClearButton = (id) => {
     const selectElement = $(id);
     const selectContainer = selectElement.next('.select2-container');
 
     selectContainer.find('.custom-select2-clear').remove();
-
     const arrow = selectContainer.find('.select2-selection__arrow');
     const clearButton = $('<span class="custom-select2-clear">✕</span>');
     arrow.parent().append(clearButton);
 
     const updateButtonsVisibility = () => {
-      if (selectElement.val() && selectElement.val().length > 0) {
+      if (selectElement.val()) {
         arrow.hide();
         clearButton.show();
       } else {
@@ -911,88 +926,118 @@ const initializeSelect2 = () => {
     clearButton.on('click', function(e) {
       e.stopPropagation();
       e.preventDefault();
-    
       selectElement.val(null).trigger('change');
       updateButtonsVisibility();
+
       applyFilters(true);
       updateSelectedLabels();
-    
-      // 🔥 Select2 の内部状態を完全にリセット
-      selectElement.select2('open');
-      setTimeout(() => {
-        selectElement.select2('close');
-      }, 0);
-    
+
       return false;
     });
 
     selectContainer.css('position', 'relative');
-
     selectElement.on('change', updateButtonsVisibility);
     selectElement.on('select2:open select2:close', updateButtonsVisibility);
   };
 
-  selectBoxes.forEach(({ id, placeholder }) => {
-    const count = $(id).find("option:not(:first-child)").length;
-    const placeholderWithCount = `${placeholder}（${count}件）`;
-
-    const initSuccess = safelyInitSelect2(id, {
-      placeholder: placeholderWithCount,
-      allowClear: false,
-      minimumResultsForSearch: 0,
-      dropdownAutoWidth: true
+  // すでに値がある場合ドロップダウンを開かない処理
+  const blockOpenIfHasValue = (id) => {
+    $(id).on('select2:opening', function(e) {
+      if ($(this).val()) {
+        e.preventDefault();
+      }
     });
+    const $container = $(id).next('.select2-container');
+    $container.find('.select2-selection').on('mousedown', (e) => {
+      if ($(id).val()) {
+        e.preventDefault();
+      }
+    });
+  };
 
-    if (initSuccess) {
+  // ▼ 一括初期化
+  selectBoxes.forEach(({ id, baseKey }) => {
+    // プレースホルダー文字列 (辞書 + 件数)
+    const baseText = SELECT_PLACEHOLDERS[baseKey] || "選択";
+    const count = $(id).find("option:not(:first-child)").length;
+    const placeholderWithCount = getPlaceholderTextFor(baseKey, count);
+
+    // Select2 初期化
+    const ok = safelyInitSelect2(id, placeholderWithCount);
+
+    if (ok) {
       setupCustomClearButton(id);
 
-      $(id).on("select2:select", function () {
+      $(id).on("select2:select", () => {
         applyFilters(true);
         updateSelectedLabels();
       });
+
+      blockOpenIfHasValue(id);
     }
   });
 
+  // 遅延で再セット
   setTimeout(() => {
     selectBoxes.forEach(({ id }) => {
       setupCustomClearButton(id);
+      blockOpenIfHasValue(id);
     });
   }, 500);
 };
 
+
+/**
+ * localStorage の preferredLanguage を読み取り、翻訳済みのプレースホルダ文字列に
+ * 件数 (count) を付与して返す。
+ */
+function getPlaceholderTextFor(baseKey, count) {
+  const i18nKey = SELECT_PLACEHOLDERS[baseKey];
+  if (!i18nKey) {
+    // fallback (どのキーにも該当しない場合)
+    return `選択（${count}件）`;
+  }
+
+  // translation.js の translations[lang][i18nKey] を取り出す
+  const baseText =
+    translations[lang]?.[i18nKey]  // 例: "Select order"
+    || translations["ja"]?.[i18nKey] // もし英語が無ければ日本語
+    || "選択"; // 最終fallback
+
+  // 件数を後ろに付けて返す
+  if (lang === "ja") {
+    // → "目を選択（3件）"
+    return `${baseText}（${count}件）`;
+  } else {
+    // → "Select order (3)" のように
+    return `${baseText} (${count})`;
+  }
+}
+
 // ドロップダウンのプレースホルダー更新関数
 const updateDropdownPlaceholders = () => {
-  const items = [
-    { id: "#filter-order", baseText: "目を選択" },
-    { id: "#filter-family", baseText: "科を選択" },
-    { id: "#filter-genus", baseText: "属を選択" },
-    { id: "#filter-species", baseText: "種を選択" },
-    { id: "#filter-prefecture", baseText: "都道府県を選択" },
-    { id: "#filter-island", baseText: "島を選択" },
-    { id: "#filter-literature", baseText: "文献を選択" }
-  ];
-
-  items.forEach(({ id, baseText }) => {
+  Object.keys(SELECT_PLACEHOLDERS).forEach(key => {
+    const id = "#" + key;
     const selectEl = $(id);
     if (!selectEl.data("select2")) return;
-    
+
     const count = selectEl.find("option:not(:first-child)").length;
+
     try {
-      // プレースホルダーのみ更新（初期化し直さない）
       const select2Instance = selectEl.data('select2');
       if (select2Instance && select2Instance.$container) {
         const placeholderElement = select2Instance.$container.find('.select2-selection__placeholder');
         if (placeholderElement.length) {
-          placeholderElement.text(`${baseText}（${count}件）`);
+          const placeholderText = getPlaceholderTextFor(key, count);
++         placeholderElement.text(placeholderText);
         }
       }
-      
-      // 値が選択されている場合は、矢印を隠してクリアボタンを表示
+
+      // 矢印 or クリアボタンの表示更新
       const selectContainer = selectEl.next('.select2-container');
       const arrow = selectContainer.find('.select2-selection__arrow');
       const clearButton = selectContainer.find('.custom-select2-clear');
-      
-      if (selectEl.val() && selectEl.val().length > 0) {
+      if (selectEl.val()) {
         arrow.hide();
         clearButton.show();
       } else {
@@ -1014,7 +1059,9 @@ function setupSelectListeners() {
     "filter-order",
     "filter-prefecture",
     "filter-island",
-    "filter-literature"
+    "filter-literature",
+    "biennial-target-year",
+    "biennial-interval"
   ];
   
   // 既存のイベントリスナーを全て解除
@@ -1527,7 +1574,8 @@ const preparePopupContent = (filteredData) => {
 function generateMonthlyChart(allRows) {
   const monthTitleEl = document.getElementById("month-chart-title");
   if (monthTitleEl) {
-    monthTitleEl.textContent = "出現期（月別）";
+    const titleText = translations[lang]?.number_of_records_by_month || "出現期（月別）";
+    monthTitleEl.textContent = titleText;
   }
 
   if (monthChart) monthChart.destroy();
@@ -1554,14 +1602,14 @@ function generateMonthlyChart(allRows) {
       labels: ["1","2","3","4","5","6","7","8","9","10","11","12"],
       datasets: [
         {
-          label: "成体",
+          label:  translations[lang]?.adult || "成体",
           data: monthlySetAdult.map(s => s.size),
           backgroundColor: "rgba(255, 99, 132, 0.6)",
           borderColor: "rgba(255, 99, 132, 1)",
           borderWidth: 1
         },
         {
-          label: "幼体・不明",
+          label: translations[lang]?.juvenile_unknown || "幼体・不明",
           data: monthlySetJuvenile.map(s => s.size),
           backgroundColor: "rgba(54, 162, 235, 0.6)",
           borderColor: "rgba(54, 162, 235, 1)",
@@ -1576,12 +1624,12 @@ function generateMonthlyChart(allRows) {
       scales: {
         x: {
           stacked: true,
-          title: { display: true, text: '月' }
+          title: { display: true, text: translations[lang]?.month || "月" }
         },
         y: {
           stacked: true,
           beginAtZero: true,
-          title: { display: true, text: '記録数' },
+          title: { display: true, text: translations[lang]?.number_of_records || "記録数" },
           ticks: { precision: 0, maxTicksLimit: 20 }
         }
       },
@@ -1602,12 +1650,27 @@ function generateMonthlyChart(allRows) {
 
 function generatePrefectureChart(allRows) {
   const prefTitleEl = document.getElementById("prefecture-chart-title");
+
   if (prefTitleEl) {
-    const classTxt = (currentClassification === "order") ? "目別" : "科別";
-    const measureTxt = 
-      (currentChartMode === "ratio") ? "割合" :
-      (currentChartMode === "record") ? "記録数" : "種数";
-    prefTitleEl.textContent = `各都道府県の${classTxt}${measureTxt}`;
+    let chartTitle;
+    if (lang === "ja") {
+      const titleHead = translations[lang]?.prefecture_chart_title_head || "各都道府県の";
+      const classificationText = (currentClassification === "order")
+        ? translations[lang]?.chart_by_order || "目別"
+        : translations[lang]?.chart_by_family || "科別";
+      const unit = (currentChartMode === "count")
+        ? translations[lang]?.chart_species || "種数"
+        : (currentChartMode === "record")
+          ? translations[lang]?.chart_records || "記録数"
+          : translations[lang]?.chart_ratio || "割合";
+
+      chartTitle = `${titleHead}${classificationText}${unit}`;
+    } else {
+      const unitEn = (currentChartMode === "count") ? "Number of Species" : (currentChartMode === "record") ? "Number of Records" : "Ratio";
+      const byTaxon = (currentClassification === "order") ? "Order" : "Family";
+      chartTitle = `${unitEn} by ${byTaxon} in Each Prefecture`;
+    }
+    prefTitleEl.textContent = chartTitle;
   }
 
   if (prefectureChart) prefectureChart.destroy();
@@ -1620,9 +1683,7 @@ function generatePrefectureChart(allRows) {
   const targetRows = allRows.filter(row => {
     const rank = row.taxonRank?.toLowerCase();
     if (!validRanks.includes(rank)) return false;
-    if (excludeUndescribed && row.undescribedSpecies?.toLowerCase() === "yes") {
-      return false;
-    }
+    if (excludeUndescribed && row.undescribedSpecies?.toLowerCase() === "yes") return false;
     return true;
   });
 
@@ -1634,10 +1695,7 @@ function generatePrefectureChart(allRows) {
     const sciName = row.scientificName?.trim() || "";
     if (rank === "subspecies") {
       const parts = sciName.split(/\s+/);
-      if (parts.length >= 2) {
-        return parts[0] + " " + parts[1];
-      }
-      return sciName;
+      return parts.length >= 2 ? parts[0] + " " + parts[1] : sciName;
     }
     return sciName;
   }
@@ -1649,12 +1707,10 @@ function generatePrefectureChart(allRows) {
 
     const nm = getNormalizedSpeciesName(row);
 
-    // 種数カウント
     if (!prefectureTaxonMap[pref]) prefectureTaxonMap[pref] = {};
     if (!prefectureTaxonMap[pref][keyValue]) prefectureTaxonMap[pref][keyValue] = new Set();
     prefectureTaxonMap[pref][keyValue].add(nm);
 
-    // 記録数カウント
     if (!prefectureRecordMap[pref]) prefectureRecordMap[pref] = {};
     if (!prefectureRecordMap[pref][keyValue]) prefectureRecordMap[pref][keyValue] = 0;
     prefectureRecordMap[pref][keyValue]++;
@@ -1663,16 +1719,14 @@ function generatePrefectureChart(allRows) {
   let sortedPrefectures = [];
   if (chartMode === "count") {
     const arr = Object.keys(prefectureTaxonMap).map(pref => {
-      const obj = prefectureTaxonMap[pref];
-      const total = Object.values(obj).reduce((sum, setOfSpp) => sum + setOfSpp.size, 0);
+      const total = Object.values(prefectureTaxonMap[pref]).reduce((sum, set) => sum + set.size, 0);
       return { pref, total };
     });
     arr.sort((a, b) => b.total - a.total);
     sortedPrefectures = arr.map(i => i.pref);
   } else if (chartMode === "record") {
     const arr = Object.keys(prefectureRecordMap).map(pref => {
-      const obj = prefectureRecordMap[pref];
-      const total = Object.values(obj).reduce((sum, count) => sum + count, 0);
+      const total = Object.values(prefectureRecordMap[pref]).reduce((sum, val) => sum + val, 0);
       return { pref, total };
     });
     arr.sort((a, b) => b.total - a.total);
@@ -1682,10 +1736,9 @@ function generatePrefectureChart(allRows) {
   }
 
   const taxonSet = new Set();
-  for (const pref in (chartMode === "record" ? prefectureRecordMap : prefectureTaxonMap)) {
-    for (const tKey in (chartMode === "record" ? prefectureRecordMap[pref] : prefectureTaxonMap[pref])) {
-      taxonSet.add(tKey);
-    }
+  const taxonSource = (chartMode === "record") ? prefectureRecordMap : prefectureTaxonMap;
+  for (const pref in taxonSource) {
+    for (const key in taxonSource[pref]) taxonSet.add(key);
   }
   const taxons = Array.from(taxonSet).sort();
 
@@ -1694,21 +1747,14 @@ function generatePrefectureChart(allRows) {
     const absData = [];
 
     sortedPrefectures.forEach(pref => {
-      let count = 0;
-
-      if (chartMode === "record") {
-        count = prefectureRecordMap[pref]?.[taxon] || 0;
-      } else {
-        count = prefectureTaxonMap[pref]?.[taxon]?.size || 0;
-      }
-
+      const count = (chartMode === "record")
+        ? (prefectureRecordMap[pref]?.[taxon] || 0)
+        : (prefectureTaxonMap[pref]?.[taxon]?.size || 0);
       absData.push(count);
-
       if (chartMode === "ratio") {
-        const totalOfPref = Object.values(prefectureTaxonMap[pref])
-          .reduce((s, st) => s + st.size, 0);
-        const ratioNum = totalOfPref === 0 ? 0 : ((count / totalOfPref) * 100).toFixed(1);
-        data.push(parseFloat(ratioNum));
+        const total = Object.values(prefectureTaxonMap[pref] || {}).reduce((sum, set) => sum + set.size, 0);
+        const ratio = total === 0 ? 0 : ((count / total) * 100).toFixed(1);
+        data.push(parseFloat(ratio));
       } else {
         data.push(count);
       }
@@ -1723,39 +1769,22 @@ function generatePrefectureChart(allRows) {
       "rgba(255, 159, 64, 0.6)",
       "rgba(199, 199, 199, 0.6)"
     ];
-    const borderColorPalette = [
-      "rgba(255, 99, 132, 1)",
-      "rgba(54, 162, 235, 1)",
-      "rgba(255, 206, 86, 1)",
-      "rgba(75, 192, 192, 1)",
-      "rgba(153, 102, 255, 1)",
-      "rgba(255, 159, 64, 1)",
-      "rgba(199, 199, 199, 1)"
-    ];
-    const bgColor = colorPalette[index % colorPalette.length];
-    const bdColor = borderColorPalette[index % borderColorPalette.length];
-
+    const borderColorPalette = colorPalette.map(c => c.replace("0.6", "1"));
     return {
       label: taxon,
       data,
       _absData: absData,
-      backgroundColor: bgColor,
-      borderColor: bdColor,
+      backgroundColor: colorPalette[index % colorPalette.length],
+      borderColor: borderColorPalette[index % borderColorPalette.length],
       borderWidth: 1,
       order: taxons.length - 1 - index
     };
   });
 
-  const canvas = document.getElementById("prefecture-chart");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-
+  const ctx = document.getElementById("prefecture-chart").getContext("2d");
   prefectureChart = new Chart(ctx, {
     type: "bar",
-    data: {
-      labels: sortedPrefectures,
-      datasets
-    },
+    data: { labels: sortedPrefectures, datasets },
     options: {
       animation: false,
       responsive: true,
@@ -1764,7 +1793,7 @@ function generatePrefectureChart(allRows) {
       scales: {
         x: {
           stacked: true,
-          title: { display: true, text: "都道府県" },
+          title: { display: true, text: translations[lang]?.prefecture || "都道府県" },
           ticks: { autoSkip: false, maxRotation: 60 }
         },
         y: {
@@ -1774,10 +1803,10 @@ function generatePrefectureChart(allRows) {
           title: {
             display: true,
             text: (chartMode === "ratio")
-              ? "割合(%)"
+              ? (translations[lang]?.chart_ratio || "割合")
               : (chartMode === "record")
-                ? "記録数"
-                : "種数"
+                ? (translations[lang]?.chart_records || "記録数")
+                : (translations[lang]?.chart_species || "種数")
           }
         }
       },
@@ -1786,42 +1815,30 @@ function generatePrefectureChart(allRows) {
           display: true,
           position: "right",
           labels: {
-            generateLabels: function (chart) {
-              const ds = chart.data.datasets;
-              return ds.map((d, i) => {
-                const sciName = d.label;
-                const jName = taxonMap[sciName]?.japaneseName || "-";
-                return {
-                  text: `${sciName} / ${jName}`,
-                  fillStyle: d.backgroundColor,
-                  strokeStyle: d.borderColor,
-                  lineWidth: d.borderWidth,
-                  hidden: !chart.isDatasetVisible(i),
-                  datasetIndex: i
-                };
-              }).sort((a, b) => a.text.localeCompare(b.text));
-            }
+            generateLabels: chart => chart.data.datasets.map((d, i) => {
+              const sci = d.label;
+              const jap = taxonMap[sci]?.japaneseName || "-";
+              return {
+                text: `${sci} / ${jap}`,
+                fillStyle: d.backgroundColor,
+                strokeStyle: d.borderColor,
+                lineWidth: d.borderWidth,
+                hidden: !chart.isDatasetVisible(i),
+                datasetIndex: i
+              };
+            }).sort((a, b) => a.text.localeCompare(b.text))
           }
         },
         tooltip: {
           callbacks: {
-            label: function (ctx) {
-              const ds = ctx.dataset;
+            label: ctx => {
               const val = ctx.parsed.y;
-              const idx = ctx.dataIndex;
-              const taxonName = ds.label;
-              if (chartMode === "ratio") {
-                const absCount = ds._absData[idx] || 0;
-                return `${taxonName}: ${val}% (${absCount}種)`;
-              } else {
-                return `${taxonName}: ${val}`;
-              }
+              const abs = ctx.dataset._absData?.[ctx.dataIndex] || 0;
+              return (chartMode === "ratio") ? `${ctx.dataset.label}: ${val}% (${abs}種)` : `${ctx.dataset.label}: ${val}`;
             }
           }
         },
-        title: {
-          display: false
-        }
+        title: { display: false }
       },
       barThickness: 20
     }
@@ -1829,18 +1846,47 @@ function generatePrefectureChart(allRows) {
 }
 
 function generateYearChart(rows, mode) {
-  const yearData = {};
+  // 言語を取得
+  const lang = localStorage.getItem("preferredLanguage") || "ja";
 
+  // タイトル要素を取得して翻訳キーに従ってセット
+  const yearChartTitleEl = document.getElementById("year-chart-title");
+  if (yearChartTitleEl) {
+    if (mode === 'publication') {
+      // e.g. "記録数と累積記録数（出版年）" / "Number of Records & Cumulative (Publication Year)"
+      yearChartTitleEl.textContent =
+        translations[lang]?.year_chart_publication || "記録数と累積記録数（出版年）";
+    } else {
+      // "記録数と累積記録数（採集年）" / "Number of Records & Cumulative (Collection Year)"
+      yearChartTitleEl.textContent =
+        translations[lang]?.year_chart_collection || "記録数と累積記録数（採集年）";
+    }
+  }
+
+  // rows から (year -> recordType -> count) のマッピングを作る
+  const yearData = {};
   rows.forEach(row => {
     const year = parseInt(mode === 'publication' ? row.publicationYear : row.collectionYear);
     const type = row.recordType;
     if (!Number.isInteger(year)) return;
-    if (!yearData[year]) yearData[year] = {};
-    if (!yearData[year][type]) yearData[year][type] = 0;
+    if (!yearData[year]) {
+      yearData[year] = {};
+    }
+    if (!yearData[year][type]) {
+      yearData[year][type] = 0;
+    }
     yearData[year][type]++;
   });
 
+  // yearData に含まれる year の範囲を決定
   const yearsWithData = Object.keys(yearData).map(y => parseInt(y));
+  if (yearsWithData.length === 0) {
+    // データが無い場合、とりあえずグラフを破棄して終了
+    if (window.yearChart) {
+      window.yearChart.destroy();
+    }
+    return;
+  }
   const minYear = Math.min(...yearsWithData);
   const maxYear = Math.max(...yearsWithData);
   const sortedYears = [];
@@ -1848,29 +1894,62 @@ function generateYearChart(rows, mode) {
     sortedYears.push(y);
   }
 
+  // レコードタイプに対する翻訳を定義
+  // 例: "1_タイプ産地" -> "原記載" or "Original description"
+  //     "2_統合された種のタイプ産地" -> "統合された種の原記載" or "Original description of synonymized species"
+  // など
   const originalTypes = [
-    "1_タイプ産地", "2_統合された種のタイプ産地", "3_疑わしいタイプ産地",
-    "4_疑わしい統合された種のタイプ産地", "5_標本記録", "6_文献記録", "7_疑わしい文献記録"
+    "1_タイプ産地",
+    "2_統合された種のタイプ産地",
+    "3_疑わしいタイプ産地",
+    "4_疑わしい統合された種のタイプ産地",
+    "5_標本記録",
+    "6_文献記録",
+    "7_疑わしい文献記録"
   ];
 
+  // ★ユーザー指定の訳:
+  //   1: "Original description"
+  //   2: "Original description of synonymized species"
+  //   3: "Doubtful type"
+  //   4: "Doubtful & Synonymized type"
+  //   5: "Specimen record"
+  //   6: "Literature record"
+  //   7: "Doubtful literature record"
   const displayLabels = [
-    "原記載", "統合された種の原記載", "疑わしいタイプ",
-    "疑わしい統合された種のタイプ", "標本記録", "文献記録", "疑わしい文献記録"
+    translations[lang]?.year_type_1 || "Original description",
+    translations[lang]?.year_type_2 || "Original description of synonymized species",
+    translations[lang]?.year_type_3 || "Doubtful type",
+    translations[lang]?.year_type_4 || "Doubtful & Synonymized type",
+    translations[lang]?.year_type_5 || "Specimen record",
+    translations[lang]?.year_type_6 || "Literature record",
+    translations[lang]?.year_type_7 || "Doubtful literature record"
   ];
 
+  // カラー設定
   const colors = [
-    "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"
+    "#E69F00",
+    "#56B4E9",
+    "#009E73",
+    "#F0E442",
+    "#0072B2",
+    "#D55E00",
+    "#CC79A7"
   ];
 
+  // stacked bar 用の datasets
   const datasets = [];
   const activeTypes = [];
 
   originalTypes.forEach((type, index) => {
+    // sortedYears をループして各 year の count を取得
     const data = sortedYears.map(year => yearData[year]?.[type] || 0);
     const total = data.reduce((a, b) => a + b, 0);
+
+    // その type が 0件 ばかりの場合は非表示にしている
     if (total > 0) {
       datasets.push({
-        label: displayLabels[index],
+        label: displayLabels[index], // 上で翻訳済み
         backgroundColor: colors[index],
         data: data,
         stack: 'stack1'
@@ -1879,15 +1958,17 @@ function generateYearChart(rows, mode) {
     }
   });
 
+  // 累積記録数 (折れ線) を描画
   let cumulativeSum = 0;
   const cumulativeArray = sortedYears.map(year => {
+    // activeTypes の合計
     const total = activeTypes.reduce((sum, type) => sum + (yearData[year]?.[type] || 0), 0);
     cumulativeSum += total;
     return cumulativeSum;
   });
 
   datasets.push({
-    label: '累積記録数',
+    label: translations[lang]?.year_chart_cumulative_label || "累積記録数", // fallback
     data: cumulativeArray,
     type: 'line',
     borderColor: 'black',
@@ -1898,6 +1979,11 @@ function generateYearChart(rows, mode) {
     pointRadius: 0
   });
 
+  // y軸ラベルの翻訳
+  const leftAxisLabel = translations[lang]?.year_chart_left_axis || "記録数";
+  const rightAxisLabel = translations[lang]?.year_chart_right_axis || "累積記録数";
+
+  // 実際の描画
   const ctx = document.getElementById("year-chart").getContext("2d");
   if (window.yearChart) {
     window.yearChart.destroy();
@@ -1922,31 +2008,28 @@ function generateYearChart(rows, mode) {
         }
       },
       scales: {
-        x: { stacked: true },
+        x: {
+          stacked: true
+        },
         y: {
           stacked: true,
           title: {
             display: true,
-            text: '記録数'
+            text: leftAxisLabel
           }
         },
         'y-axis-2': {
           type: 'linear',
           position: 'right',
-          grid: {
-            drawOnChartArea: false
-          },
+          grid: { drawOnChartArea: false },
           title: {
             display: true,
-            text: '累積記録数'
+            text: rightAxisLabel
           }
         }
       }
     }
   });
-
-  document.getElementById("year-chart-title").textContent =
-    mode === 'publication' ? "記録数と累積記録数（出版年）" : "記録数と累積記録数（採集年）";
 }
 
 // ==================== UI補助 ====================
@@ -2157,7 +2240,7 @@ const formatSpeciesName = (name) => {
 function linkMasterAndDubiousCheckboxes() {
   const masterCheckbox = document.getElementById("legend-master-checkbox");
   const filterDoubtfulType = document.getElementById("filter-doubtful-type");
-  const filterDoubtfulIntegrated = document.getElementById("filter-doubtful-integrated-type");
+  const filterDoubtfulIntegrated = document.getElementById("filter-doubtful-synonymized-type");
   const filterDoubtfulLiterature = document.getElementById("filter-doubtful-literature");
   const excludeDubious = document.getElementById("exclude-dubious");
   if (!masterCheckbox || !filterDoubtfulType || !filterDoubtfulIntegrated || !filterDoubtfulLiterature || !excludeDubious) {
@@ -2455,17 +2538,20 @@ function updateSpeciesListInTab() {
 
 // ==================== メイン処理 ====================
 document.addEventListener("DOMContentLoaded", async () => {
+  // 1. 地図の初期化
   initMap();
 
-  // CSV類読み込み
+  // 2. CSV類の読み込み
   await loadTaxonNameCSV();
   await loadOrderCSV("Prefecture.csv", prefectureOrder, "prefecture");
   await loadOrderCSV("Island.csv", islandOrder, "island");
   await loadLiteratureCSV();
   await loadDistributionCSV(); // rowsにデータが入る
 
+  // レコード件数等を表示
   updateRecordInfo(rows.length, new Set(rows.map(r => `${r.latitude},${r.longitude}`)).size);
 
+  // 3. イベントリスナーや初期化処理
   setupSelectListeners();
   setupCheckboxListeners();
   setupNavButtonListeners();
@@ -2481,13 +2567,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   linkMasterAndDubiousCheckboxes();
   setupClassificationRadio();
 
-// 高次分類群表示/非表示チェックボックスの切り替え処理
-document.getElementById("toggle-higher-taxonomy").addEventListener("change", function () {
-  const show = this.checked;
-  document.querySelectorAll(".higher-taxonomy").forEach(el => {
-    el.style.display = show ? "" : "none";
+  document.getElementById("toggle-higher-taxonomy").addEventListener("change", function () {
+    const show = this.checked;
+    document.querySelectorAll(".higher-taxonomy").forEach(el => {
+      el.style.display = show ? "" : "none";
+    });
   });
-});
 
   const masterCb = document.getElementById("legend-master-checkbox");
   const allCbs = document.querySelectorAll(".marker-filter-checkbox");
@@ -2513,7 +2598,7 @@ document.getElementById("toggle-higher-taxonomy").addEventListener("change", fun
       const targetId = item.getAttribute("data-tab");
       document.getElementById(targetId).classList.add("active");
   
-      // ✅ 「データ」タブに切り替わったときにグラフを再描画
+      // 「データ」タブに切り替わったときにグラフを再描画
       if (targetId === "tab-data" && filteredRows && filteredRows.length > 0) {
         generateMonthlyChart(filteredRows);
         generatePrefectureChart(filteredRows);
@@ -2525,9 +2610,8 @@ document.getElementById("toggle-higher-taxonomy").addEventListener("change", fun
   
   generatePrefectureChart(filteredRows);
 
-  // ✅ 年グラフ（year-chart）の初期表示とラジオボタン切り替え処理
+  // 年グラフ（year-chart）の初期表示とラジオボタン切り替え処理
   generateYearChart(filteredRows, "publication");  // 初期は出版年
-
   document.querySelectorAll('input[name="year-mode"]').forEach(radio => {
     radio.addEventListener("change", () => {
       const selected = document.querySelector('input[name="year-mode"]:checked').value;
@@ -2546,23 +2630,79 @@ document.getElementById("toggle-higher-taxonomy").addEventListener("change", fun
 
   adjustSearchContainerAndLegend();
 
+  // フィルタを初回適用
   applyFilters(true);
-});
 
-// ==================== チェックボックスのフォーカス制御 ====================
-document.addEventListener("DOMContentLoaded", function () {
-  // スマホで入力欄がタップされた直後にフォーカスを奪われるのを防ぐ
-  const pubCheckbox = document.getElementById("filter-publication-year-active");
-  if (pubCheckbox) {
-    pubCheckbox.addEventListener("mousedown", function (e) {
-      e.preventDefault(); // チェックボックスがフォーカスを奪うのを防ぐ
-    });
+  // localStorage から言語コードを取り出す
+  const savedLang = localStorage.getItem("preferredLanguage");
+
+  if (savedLang) {
+    // 保存されている場合 → その言語で翻訳を適用
+    applyTranslations(savedLang);
+    // UIのラジオボタンやドロップダウンなどがあれば、その値も合わせて反映
+    const langSelector = document.getElementById("language-selector");
+    if (langSelector) {
+      langSelector.value = savedLang; 
+    }
+  } else {
+    // 保存が無い場合 → 既定の言語を使う (例：日本語)
+    applyTranslations("ja");
+    // UIにも "ja" をセット
+    const langSelector = document.getElementById("language-selector");
+    if (langSelector) {
+      langSelector.value = "ja";
+    }
   }
 
-  const colCheckbox = document.getElementById("filter-collection-year-active");
-  if (colCheckbox) {
-    colCheckbox.addEventListener("mousedown", function (e) {
-      e.preventDefault(); // こちらも同様に防ぐ
+  // ここで翻訳処理（languageSelectorの監視など）を設定
+
+  const languageSelector = document.getElementById("language-selector");
+  if (languageSelector) {
+    languageSelector.addEventListener("change", () => {
+      // 1) セレクトボックスから新しい言語を取得
+      const selectedLang = languageSelector.value;  // "ja" or "en"
+  
+      // 2) applyTranslationsで翻訳
+      applyTranslations(selectedLang);
+  
+      // 3) localStorageにも保存しておく
+      localStorage.setItem("preferredLanguage", selectedLang);
+  
+      // 4) ★ 重要 ★
+      //  グローバルの lang 変数を再代入 → これにより generateMonthlyChart() 内の translations[lang] が正しい値を使う
+      lang = selectedLang;
+  
+      // 5) ドロップダウンのプレースホルダなどを再描画
+      updateDropdownPlaceholders();
+  
+      // 6) グラフを再描画すると、generateMonthlyChart(...) 内で lang を参照 → 新言語対応
+      if (filteredRows && filteredRows.length > 0) {
+        generateMonthlyChart(filteredRows);
+        generatePrefectureChart(filteredRows);
+  
+        // 年グラフもあるなら
+        const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
+        generateYearChart(filteredRows, mode);
+      }
+
+      const newStyle = {
+        version: 8,
+        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+        sources: {
+          japan: {
+            type: "geojson",
+            data: "Japan.geojson",
+            attribution: translations[lang]?.map_attribution
+          }
+        },
+        layers: [
+          { id: "background", type: "background", paint: { "background-color": "rgba(173, 216, 230, 1)" } },
+          { id: "japan", type: "fill", source: "japan", paint: { "fill-color": "#fff", "fill-outline-color": "#000" } },
+          { id: "japan-outline", type: "line", source: "japan", paint: { "line-color": "#000", "line-width": 1 } }
+        ]
+      };
+      
+      map.setStyle(newStyle);      
     });
   }
 });

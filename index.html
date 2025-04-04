@@ -36,9 +36,16 @@
   </head>
 <body>
   <header>
-    <h1>日本産ヤスデ類の分布 (作成中)<br>Distribution of Japanese Millipedes (Uncompleted Version)</h1>
+    <div id="language-switcher">
+      <label for="language-selector">Language:</label>
+      <select id="language-selector">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+    <h1 data-i18n="heading">日本産ヤスデ類の分布 (作成中)</h1>
   </header>
-  </div>
+  
 
   <!-- 選択中のセレクトボックスのラベル -->
   <div id="selected-labels"></div>
@@ -49,7 +56,7 @@
     <div class="search-container">
       <div class="search-header">
         <div id="toggle-button" class="toggle-button">&#9650;</div> <!-- 上向き三角形 -->
-        <h2 class="select-box-title">フィルター</h2>
+        <h2 class="select-box-title" data-i18n="filter">フィルター</h2>
       </div>
       <div class="search-body">
       <!-- 各セレクトボックスにナビゲーションボタンを追加 -->
@@ -96,7 +103,7 @@
         <button class="nav-button" id="prev-literature">&lt;</button>
         <button class="nav-button" id="next-literature">&gt;</button>
       </div>
-      <button id="reset-button">リセット</button>
+      <button id="reset-button" data-i18n="reset">リセット</button>
 
       <!-- 既存の「リセット」ボタンやチェックボックス類の下に追加 -->
       <div class="select-box-divider-two"></div>
@@ -105,7 +112,7 @@
       <div id="publication-year-container" class="year-filter">
         <label>
           <input type="checkbox" id="filter-publication-year-active">
-          <strong>出版年</strong>
+          <strong data-i18n="publication_year">出版年</strong>
         </label>
         <div class="slider-container">
           <div id="publication-year-slider"></div>
@@ -121,7 +128,7 @@
       <div id="collection-year-container" class="year-filter">
         <label>
           <input type="checkbox" id="filter-collection-year-active">
-          <strong>採集年</strong>
+          <strong data-i18n="collection_year">採集年</strong>
         </label>
         <div class="slider-container">
           <div id="collection-year-slider"></div>
@@ -137,9 +144,10 @@
       <div id="biennial-container" class="biennial-filter">
         <label>
           <input type="checkbox" id="filter-biennial-active">
-          <strong>隔年発生</strong>
+          <strong data-i18n="periodicity">周期性</strong>
         </label>
         <div class="biennial-inputs">
+          <div data-i18n="include_year">含める年</div>
           <div class="select-container">
             <select id="biennial-target-year">
               <option value="">-- 年を選択 --</option>
@@ -148,7 +156,7 @@
             <button class="nav-button" id="prev-biennial-year">&lt;</button>
             <button class="nav-button" id="next-biennial-year">&gt;</button>
           </div>
-          <div>年を含む</div>
+          <div data-i18n="periodicity_years">周期 (年)</div>
           <div class="select-container">
             <select id="biennial-interval">
               <option value="">-- 周期を選択 --</option>
@@ -157,7 +165,6 @@
             <button class="nav-button" id="prev-biennial-interval">&lt;</button>
             <button class="nav-button" id="next-biennial-interval">&gt;</button>
           </div>
-          <div>年周期</div>
         </div>
       </div>
 
@@ -165,21 +172,60 @@
       <div id="month-container" class="month-filter">
         <label>
           <input type="checkbox" id="filter-collection-month-active">
-          <strong style="font-size: 14px;">採集月</strong>
+          <strong style="font-size: 14px;" data-i18n="collection_month">採集月</strong>
         </label>
+      
         <div id="collection-month-checkboxes">
-          <label><input type="checkbox" class="collection-month" value="1" checked>1月</label>
-          <label><input type="checkbox" class="collection-month" value="2" checked>2月</label>
-          <label><input type="checkbox" class="collection-month" value="3" checked>3月</label>
-          <label><input type="checkbox" class="collection-month" value="4" checked>4月</label>
-          <label><input type="checkbox" class="collection-month" value="5" checked>5月</label>
-          <label><input type="checkbox" class="collection-month" value="6" checked>6月</label><br>
-          <label><input type="checkbox" class="collection-month" value="7" checked>7月</label>
-          <label><input type="checkbox" class="collection-month" value="8" checked>8月</label>
-          <label><input type="checkbox" class="collection-month" value="9" checked>9月</label>
-          <label><input type="checkbox" class="collection-month" value="10" checked>10月</label>
-          <label><input type="checkbox" class="collection-month" value="11" checked>11月</label>
-          <label><input type="checkbox" class="collection-month" value="12" checked>12月</label>
+          <!-- それぞれの月のラベル全体に data-i18n を付与 -->
+          <label>
+            <input type="checkbox" class="collection-month" value="1" checked>
+            <span data-i18n="january">1月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="2" checked>
+            <span data-i18n="february">2月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="3" checked>
+            <span data-i18n="march">3月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="4" checked>
+            <span data-i18n="april">4月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="5" checked>
+            <span data-i18n="may">5月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="6" checked>
+            <span data-i18n="june">6月</span>
+          </label>
+          <br>
+          <label>
+            <input type="checkbox" class="collection-month" value="7" checked>
+            <span data-i18n="july">7月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="8" checked>
+            <span data-i18n="august">8月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="9" checked>
+            <span data-i18n="september">9月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="10" checked>
+            <span data-i18n="october">10月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="11" checked>
+            <span data-i18n="november">11月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="12" checked>
+            <span data-i18n="december">12月</span>
+          </label>
         </div>
       </div>
 
@@ -187,75 +233,128 @@
       <div id="life-stage-container" class="life-stage-filter">
         <label>
           <input type="checkbox" id="filter-life-stage-active">
-          <strong style="font-size: 14px;">ライフステージ</strong>
+          <strong style="font-size: 14px;" data-i18n="lifestage">ライフステージ</strong>
         </label>
         <div id="life-stage-checkboxes">
-          <label><input type="checkbox" class="life-stage" value="yes" checked>成体</label>
-          <label><input type="checkbox" class="life-stage" value="no" checked>幼体・不明</label>
+          <label><input type="checkbox" class="life-stage" value="yes" checked><span data-i18n="adult">成体</span></label>
+          <label><input type="checkbox" class="life-stage" value="no" checked><span data-i18n="juvenile_unknown">幼体・不明</span></label>
         </div>
       </div>
 
       <div class="select-box-divider-two"></div>
       <div id="checkbox-container">
         <label>
-          <input type="checkbox" id="exclude-unpublished"> 未公表データを除外
+          <input type="checkbox" id="exclude-unpublished"> <span data-i18n="exclude_unpublished_data">未公表データを除外</span>
         </label>
         <label>
-          <input type="checkbox" id="exclude-dubious" checked> 疑わしい記録を除外
+          <input type="checkbox" id="exclude-dubious" checked> <span data-i18n="exclude_questionable_records">疑わしい記録を除外</span>
         </label>
         <label>
-          <input type="checkbox" id="exclude-citation" checked> 引用記録を除外
+          <input type="checkbox" id="exclude-citation" checked> <span data-i18n="exclude_cited_records">引用記録を除外</span>
         </label>
         <label>
-          <input type="checkbox" id="exclude-undescribed"> 未記載種を除外
+          <input type="checkbox" id="exclude-undescribed"> <span data-i18n="exclude_undescribed_species">未記載種を除外</span>
         </label>
         <label>
-          <input type="checkbox" id="exclude-unspecies"> 種同定されていない記録を除外
+          <input type="checkbox" id="exclude-unspecies"> <span data-i18n="exclude_records_without_species_identification">種同定されていない記録を除外</span>
         </label>
       </div>
-      <p>レコード数: <span id="record-count">0</span><br>地点数: <span id="location-count">0</span></p>
+      <p><span data-i18n="records">レコード数</span>: <span id="record-count">0</span><br><span data-i18n="locations">地点数</span>: <span id="location-count">0</span></p>
       </div>
     </div>
+    <!-- index.html 内のレジェンド部分 -->
     <div class="legend">
       <div class="legend-header">
         <input type="checkbox" id="legend-master-checkbox" checked>
-        <span>マーカーの種類</span>
+        <!-- 見出し部分に data-i18n -->
+        <span data-i18n="legend_marker_types">マーカーの種類</span>
         <button class="legend-toggle-button"></button>
       </div>
+      
+      <!-- タイプ産地 -->
       <div class="legend-item">
         <input type="checkbox" id="filter-type" class="marker-filter-checkbox" checked>
         <span class="marker marker-star blue"></span>
-        <span class="legend-item-text" data-tooltip="タイプ産地：種の基準となる標本が採集された場所です。">タイプ産地</span>
+        <!-- ラベル文言: data-i18n="legend_type"
+            ツールチップ: data-i18n-tooltip="legend_type_tooltip" -->
+        <span class="legend-item-text"
+              data-i18n="legend_type"
+              data-i18n-tooltip="legend_type_tooltip"
+              data-tooltip="タイプ産地：種の基準となる標本が採集された場所です。">
+          タイプ産地
+        </span>
       </div>
+
+      <!-- 統合された種のタイプ産地 -->
       <div class="legend-item">
-        <input type="checkbox" id="filter-integrated-type" class="marker-filter-checkbox" checked>
+        <input type="checkbox" id="filter-synonymized-type" class="marker-filter-checkbox" checked>
         <span class="marker marker-square purple"></span>
-        <span class="legend-item-text" data-tooltip="統合された種のタイプ産地：現在、有効とは見なされていないものの、過去には別種として扱われていた種のタイプ産地です。">統合された種のタイプ産地</span>
+        <span class="legend-item-text"
+              data-i18n="legend_synonymized_type"
+              data-i18n-tooltip="legend_synonymized_type_tooltip"
+              data-tooltip="統合された種のタイプ産地：現在、有効とは見なされていないものの、過去には別種として扱われていた種のタイプ産地です。">
+          統合された種のタイプ産地
+        </span>
       </div>
+
+      <!-- 疑わしいタイプ産地 -->
       <div class="legend-item">
         <input type="checkbox" id="filter-doubtful-type" class="marker-filter-checkbox">
         <span class="marker marker-star pink"></span>
-        <span class="legend-item-text" data-tooltip="疑わしいタイプ産地：タイプ産地とされたものの、実際には誤りの可能性が高いと考えられる産地です。">疑わしいタイプ産地</span>
+        <span class="legend-item-text"
+              data-i18n="legend_doubtful_type"
+              data-i18n-tooltip="legend_doubtful_type_tooltip"
+              data-tooltip="疑わしいタイプ産地：タイプ産地とされたものの、実際には誤りの可能性が高いと考えられる産地です。">
+          疑わしいタイプ産地
+        </span>
       </div>
+
+      <!-- 統合された種の疑わしいタイプ産地 -->
       <div class="legend-item">
-        <input type="checkbox" id="filter-doubtful-integrated-type" class="marker-filter-checkbox">
+        <input type="checkbox" id="filter-doubtful-synonymized-type" class="marker-filter-checkbox">
         <span class="marker marker-square pink"></span>
-        <span class="legend-item-text" data-tooltip="統合された種の疑わしいタイプ産地：現在、有効とは見なされていないものの、過去には別の種として扱われていた種の、疑わしいタイプ産地です。">統合された種の疑わしいタイプ産地</span>
+        <span class="legend-item-text"
+              data-i18n="legend_doubtful_synonymized_type"
+              data-i18n-tooltip="legend_doubtful_synonymized_type_tooltip"
+              data-tooltip="統合された種の疑わしいタイプ産地：現在、有効とは見なされていないものの、過去には別の種として扱われていた種の、疑わしいタイプ産地です。">
+          統合された種の疑わしいタイプ産地
+        </span>
       </div>
+
+      <!-- 標本記録 -->
       <div class="legend-item">
         <input type="checkbox" id="filter-specimen" class="marker-filter-checkbox" checked>
         <span class="marker marker-circle red"></span>
-        <span class="legend-item-text" data-tooltip="標本記録：本データベースの作成者が責任をもつ記録です。具体的には、データベースの作成者が標本を観察した記録と、共著論文の著者が標本を観察した記録が含まれます。">標本記録</span>
+        <span class="legend-item-text"
+              data-i18n="legend_specimen"
+              data-i18n-tooltip="legend_specimen_tooltip"
+              data-tooltip="標本記録：本データベースの作成者が責任をもつ記録です。具体的には、データベースの作成者が標本を観察した記録と、共著論文の著者が標本を観察した記録が含まれます。">
+          標本記録
+        </span>
       </div>
+
+      <!-- 文献記録 -->
       <div class="legend-item">
         <input type="checkbox" id="filter-literature-record" class="marker-filter-checkbox" checked>
         <span class="marker marker-circle white"></span>
-        <span class="legend-item-text" data-tooltip="文献記録：標本記録を除く、文献に掲載された記録です。証拠が十分ではない記録も含まれており、一部の記録は将来、疑わしい記録に変わる可能性があります。">文献記録</span>
+        <span class="legend-item-text"
+              data-i18n="legend_literature_record"
+              data-i18n-tooltip="legend_literature_record_tooltip"
+              data-tooltip="文献記録：標本記録を除く、文献に掲載された記録です。証拠が十分ではない記録も含まれており、一部の記録は将来、疑わしい記録に変わる可能性があります。">
+          文献記録
+        </span>
       </div>
+
+      <!-- 疑わしい記録 -->
       <div class="legend-item">
         <input type="checkbox" id="filter-doubtful-literature" class="marker-filter-checkbox">
         <span class="marker marker-cross pink"></span>
-        <span class="legend-item-text" data-tooltip="疑わしい記録：標本の再確認により、誤同定が明らかになった記録や、疑わしい記録が含まれます。分布する可能性がある記録でも、同定の精度が高くない著者による、十分な証拠が示されていない記録は、疑わしい記録として扱っていることがあります。">疑わしい記録</span>
+        <span class="legend-item-text"
+              data-i18n="legend_doubtful_literature"
+              data-i18n-tooltip="legend_doubtful_literature_tooltip"
+              data-tooltip="疑わしい記録：標本の再確認により、誤同定が明らかになった記録や、疑わしい記録が含まれます。分布する可能性がある記録でも、同定の精度が高くない著者による、十分な証拠が示されていない記録は、疑わしい記録として扱っていることがあります。">
+          疑わしい記録
+        </span>
       </div>
     </div>
   </div>
@@ -263,11 +362,11 @@
   <div class="tab-container">
     <!-- タブの見出し -->
     <ul class="tab-header">
-      <li class="active" data-tab="tab-data">データ Data</li>
-      <li data-tab="tab-species">種 Species</li>
-      <li data-tab="tab-prefecture">都道府県 Prefecture</li>
-      <li data-tab="tab-island">島 Island</li>
-      <li data-tab="tab-reference">引用文献 Reference</li>
+      <li class="active" data-tab="tab-data" data-i18n="data">データ</li>
+      <li data-tab="tab-species-list" data-i18n="species">種</li>
+      <li data-tab="tab-prefecture-list" data-i18n="prefecture">都道府県</li>
+      <li data-tab="tab-island-list" data-i18n="island">島</li>
+      <li data-tab="tab-reference" data-i18n="reference">引用文献</li>
     </ul>
 
     <!-- タブの内容 -->
@@ -328,22 +427,22 @@
 
     </div>
   
-    <div id="tab-species" class="tab-content">
+    <div id="tab-species-list" class="tab-content">
       <!-- チェックボックス：右上配置 -->
       <label style="float: right; font-weight: normal; margin: 0.5em;">
         <input type="checkbox" id="toggle-higher-taxonomy" checked>
-        高次分類群を表示
+        <span data-i18n="show_higher_taxa">高次分類群を表示</span>
       </label>
     
       <!-- 種リスト -->
       <ul id="species-list"></ul>
     </div>
   
-    <div id="tab-prefecture" class="tab-content">
+    <div id="tab-prefecture-list" class="tab-content">
       <ol id="prefecture-list"></ol>
     </div>
   
-    <div id="tab-island" class="tab-content">
+    <div id="tab-island-list" class="tab-content">
       <ol id="island-list"></ol>
     </div>
   
@@ -353,6 +452,7 @@
       </div>
     </div>
   </div>
+  <script src="translation.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
