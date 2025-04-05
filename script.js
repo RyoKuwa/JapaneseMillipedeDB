@@ -1583,41 +1583,53 @@ const showPopup = (index, preserveAnchor = false) => {
 
 const preparePopupContent = (filteredData) => {
   const recordTypeMapping = {
-    "1_タイプ産地": "タイプ産地",
-    "2_統合された種のタイプ産地": "統合された種のタイプ産地",
-    "3_疑わしいタイプ産地": "疑わしいタイプ産地",
-    "4_疑わしい統合された種のタイプ産地": "疑わしい統合された種のタイプ産地",
-    "5_標本記録": "標本記録",
-    "6_文献記録": "文献記録",
-    "7_疑わしい文献記録": "疑わしい記録"
+    "1_タイプ産地": translations[lang]?.legend_type || "タイプ産地",
+    "2_統合された種のタイプ産地": translations[lang]?.legend_synonymized_type || "統合された種のタイプ産地",
+    "3_疑わしいタイプ産地": translations[lang]?.legend_doubtful_type || "疑わしいタイプ産地",
+    "4_疑わしい統合された種のタイプ産地": translations[lang]?.legend_doubtful_synonymized_type || "疑わしい統合された種のタイプ産地",
+    "5_標本記録": translations[lang]?.legend_specimen || "標本記録",
+    "6_文献記録": translations[lang]?.legend_literature_record || "文献記録",
+    "7_疑わしい文献記録": translations[lang]?.legend_doubtful_literature || "疑わしい記録"
   };
 
   const popupContents = filteredData.map(row => {
     if (!row.latitude || !row.longitude) return null;
     const { literatureName, literatureLink } = getLiteratureInfo(row.literatureID);
-    const recordType = recordTypeMapping[row.recordType] || "不明";
+    const recordType = recordTypeMapping[row.recordType] || (translations[lang]?.unknown || "不明");
+
+    let titleLine = (lang === "en")
+      ? `<strong>${row.scientificName}</strong><br>`
+      : `<strong>${row.japaneseName} ${row.scientificName}</strong><br>`;
 
     let content = `
-      <strong>${row.japaneseName} ${row.scientificName}</strong><br>
-      記録の種類: ${recordType}<br>
+      ${titleLine}
+      ${translations[lang]?.record_type || "記録の種類"}: ${recordType}<br>
     `;
+
     if (!row.literatureID || row.literatureID === "-") {
-      content += "未公表データ Unpublished Data";
+      content += translations[lang]?.unpublished_data || "未公表データ Unpublished Data";
     } else {
       content += `
-        文献中の和名: ${row.originalJapaneseName || "不明"}<br>
-        文献中の学名: ${row.originalScientificName || "不明"}<br>
-        ページ: ${row.page || "不明"}<br>
-        場所: ${row.location || "不明"}<br>
-        採集日: ${row.date || "不明"}<br>
-        採集者: ${row.collectorJp || "不明"}<br>
-        collector: ${row.collectorEn || "不明"}<br><br>
-        文献: ${literatureName} ${
+        ${translations[lang]?.original_japanese_name || "文献中の和名"}: ${row.originalJapaneseName || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.original_scientific_name || "文献中の学名"}: ${row.originalScientificName || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.page || "ページ"}: ${row.page || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.location || "場所"}: ${row.location || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.collection_date || "採集日"}: ${row.date || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.collector_jp || "採集者"}: ${row.collectorJp || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.collector_en || "collector"}: ${row.collectorEn || (translations[lang]?.unknown || "不明")}<br><br>
+        ${translations[lang]?.literature || "文献"}: ${literatureName} ${
           literatureLink ? `<a href="${literatureLink}" target="_blank">${literatureLink}</a>` : ""
         }<br><br>
-        備考: ${row.note}<br>
-        記入: ${row.registrant}, ${row.registrationDate}
       `;
+
+      if (row.registrant && row.registrationDate) {
+        const entryText = translations[lang]?.entered_by_on
+          ?.replace("{name}", row.registrant)
+          ?.replace("{date}", row.registrationDate);
+        content += `${entryText}`;
+      } else {
+        content += `${translations[lang]?.entry || "記入"}: ${row.registrant || "-"}, ${row.registrationDate || "-"}`;
+      }
     }
     return { row, popupContent: content };
   }).filter(i => i !== null);
@@ -2522,7 +2534,7 @@ function updateIslandListInTab() {
   });
 }
 
-function updateSpeciesListInTab() {
+const updateSpeciesListInTab = () => {
   const listContainer = document.getElementById('species-list');
   listContainer.innerHTML = '';
 
@@ -2577,13 +2589,12 @@ function updateSpeciesListInTab() {
     const li = document.createElement('li');
     const showHigher = document.getElementById("toggle-higher-taxonomy")?.checked;
     let adjustedIndent = indent;
-  
-    // 高次分類群を非表示にしている場合、種・亜種のインデントを減らす
+
     if (!showHigher) {
-      if (indent === 3) adjustedIndent = 0;      // 種
-      if (indent === 4) adjustedIndent = 1;      // 亜種
+      if (indent === 3) adjustedIndent = 0;
+      if (indent === 4) adjustedIndent = 1;
     }
-  
+
     li.style.marginLeft = `${adjustedIndent * 1.2}em`;
     li.innerHTML = html;
     if (className) li.classList.add(className);
@@ -2603,15 +2614,18 @@ function updateSpeciesListInTab() {
   };
 
   sortByNo(Object.keys(tree), "order").forEach(order => {
-    const orderFormatted = formatOrderFamilyName(`${getDisplayName(order).jpn} / ${order}`);
+    let orderFormatted = formatOrderFamilyName(`${getDisplayName(order).jpn} / ${order}`);
+    if (lang === "en") orderFormatted = orderFormatted.replace(/^.*?\/\s*/, "");
     createLi(orderFormatted, 0, 'higher-taxonomy');
 
     sortByNo(Object.keys(tree[order]), "family").forEach(family => {
-      const familyFormatted = formatOrderFamilyName(`${getDisplayName(family).jpn} / ${family}`);
+      let familyFormatted = formatOrderFamilyName(`${getDisplayName(family).jpn} / ${family}`);
+      if (lang === "en") familyFormatted = familyFormatted.replace(/^.*?\/\s*/, "");
       createLi(familyFormatted, 1, 'higher-taxonomy');
 
       sortByNo(Object.keys(tree[order][family]), "genus").forEach(genus => {
-        const genusFormatted = formatGenusName(`${getDisplayName(genus).jpn} / ${genus}`);
+        let genusFormatted = formatGenusName(`${getDisplayName(genus).jpn} / ${genus}`);
+        if (lang === "en") genusFormatted = genusFormatted.replace(/^.*?\/\s*/, "");
         createLi(genusFormatted, 2, 'higher-taxonomy');
 
         const speciesList = Object.entries(tree[order][family][genus]);
@@ -2626,7 +2640,9 @@ function updateSpeciesListInTab() {
           .forEach(([sci, data]) => {
             if (data.rank === "subspecies") return;
 
-            const label = `${speciesCounter}. ${formatSpeciesName(`${data.japaneseName} / ${sci}`)}`;
+            let label = formatSpeciesName(`${data.japaneseName} / ${sci}`);
+            if (lang === "en") label = label.replace(/^.*?\/\s*/, "");
+            label = `${speciesCounter}. ${label}`;
             createLi(label, 3);
 
             const subspeciesArray = Array.from(data.subspecies);
@@ -2653,7 +2669,9 @@ function updateSpeciesListInTab() {
                 .replace(/\bcf\./g, '<span class="non-italic">cf.</span>')
                 .replace(/\baff\./g, '<span class="non-italic">aff.</span>');
 
-              const subLabel = `${speciesCounter}.${idx + 1} ${subJpn} / ${formattedSubSci}${subAuthor}`;
+              let subLabel = `${subJpn} / ${formattedSubSci}${subAuthor}`;
+              if (lang === "en") subLabel = `${formattedSubSci}${subAuthor}`;
+              subLabel = `${speciesCounter}.${idx + 1} ${subLabel}`;
               createLi(subLabel, 4);
             });
 
@@ -2663,12 +2681,11 @@ function updateSpeciesListInTab() {
     });
   });
 
-  // チェック状態に応じて高次分類群を表示／非表示
   const showHigher = document.getElementById("toggle-higher-taxonomy")?.checked;
   document.querySelectorAll(".higher-taxonomy").forEach(el => {
     el.style.display = showHigher ? "" : "none";
   });
-}
+};
 
 // ==================== メイン処理 ====================
 document.addEventListener("DOMContentLoaded", async () => {
@@ -2815,6 +2832,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         generatePrefectureChart(filteredRows);
         generateLiteratureList(filteredRows);
         updateSelectedLabels();
+        updateSpeciesListInTab();
   
         // 年グラフもあるなら
         const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';

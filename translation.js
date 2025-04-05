@@ -205,7 +205,22 @@ const translations = {
     number_of_species: "Number of species",
     number_of_records: "Number of records",
     ratio: "Ratio",
-    year_chart_cumulative_label: "Cumulative number of records"
+    year_chart_cumulative_label: "Cumulative number of records",
+    record_type: "Record Type",
+    original_japanese_name: "Japanese Name in Literature",
+    original_scientific_name: "Scientific Name in Literature",
+    page: "Page",
+    location: "Location",
+    collection_date: "Collection Date",
+    collector_jp: "Collector (jp)",
+    collector_en: "Collector (en)",
+    literature: "Literature",
+    note: "Notes",
+    entry: "Entry",
+    entered_by_on: "Entered by {name} on {date}",
+    unpublished_data: "Unpublished Data",
+    unknown: "Unknown"
+    
   }
 };
 
