@@ -3,7 +3,7 @@
 const translations = {
   ja: {
     // ===================== 既存キー =====================
-    heading: "日本産ヤスデ類の分布 (作成中)",
+    heading: "日本産ヤスデ類の分布 (作成中)<br>Distribution of Japanese Millipede (under construction)",
     filter: "フィルター",
     reset: "リセット",
     publication_year: "出版年",
