@@ -2724,6 +2724,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupCheckboxListeners();
   setupNavButtonListeners();
   setupResetButton();
+  map.on("zoomstart", () => {
+    clearMarkers(); // ← ここで一旦マーカー全消去！
+  });
   map.on("zoomend", () => displayMarkers(filteredRows));
 
   setTimeout(() => initializeSelect2(), 50);
