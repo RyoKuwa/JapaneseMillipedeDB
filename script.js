@@ -2852,6 +2852,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateSpeciesListInTab();
         updatePrefectureListInTab();
         updateIslandListInTab();
+        initializeSelect2();
   
         // 年グラフもあるなら
         const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
