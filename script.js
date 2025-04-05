@@ -1404,7 +1404,7 @@ const displayMarkers = (filteredData) => {
   if (!tooltip) {
     tooltip = document.createElement("div");
     tooltip.className = "marker-tooltip";
-    tooltip.textContent = "クリックで詳細表示";
+    tooltip.textContent = translations[lang]?.click_for_details || "クリックで詳細表示";
     document.body.appendChild(tooltip);
   }
 

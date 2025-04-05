@@ -102,7 +102,8 @@ const translations = {
     number_of_records: "記録数",
     ratio: "割合",
     year_chart_cumulative_label: "累積記録数",
-    touch_hint: "2本指で地図を操作<br><br>マーカークリックで詳細表示"
+    touch_hint: "2本指で地図を操作<br><br>マーカークリックで詳細表示",
+    click_for_details: "クリックで詳細表示"
 
   },
 
@@ -221,7 +222,8 @@ const translations = {
     entered_by_on: "Entered by {name} on {date}",
     unpublished_data: "Unpublished Data",
     unknown: "Unknown",
-    touch_hint: "Use two fingers to move the map<br><br>Tap a marker for details"
+    touch_hint: "Use two fingers to move the map<br><br>Tap a marker for details",
+    click_for_details: "Click for details"
     
   }
 };
