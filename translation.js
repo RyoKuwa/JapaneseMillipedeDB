@@ -233,21 +233,30 @@ const translations = {
  * さらに data-i18n-tooltip がある場合は data-tooltip も置き換える。
  */
 function applyTranslations(lang) {
+  // 1. 言語を先に切り替える
   document.documentElement.setAttribute("lang", lang);
   localStorage.setItem("preferredLanguage", lang);
+  window.lang = lang; // グローバル変数 lang を即時更新（重要！）
 
+  // 2. data-i18n 対象を更新
   const elements = document.querySelectorAll("[data-i18n]");
   elements.forEach(el => {
     const key = el.getAttribute("data-i18n");
     const html = translations[lang]?.[key] ?? translations["ja"]?.[key] ?? "";
-    el.innerHTML = html;  // ← ここが重要！
+    el.innerHTML = html;
   });
 
-  // data-i18n-tooltip にも対応する場合（すでにあればそのままでOK）
+  // 3. data-i18n-tooltip 対象も更新
   const tooltipElements = document.querySelectorAll("[data-i18n-tooltip]");
   tooltipElements.forEach(el => {
     const tooltipKey = el.getAttribute("data-i18n-tooltip");
     const tooltipText = translations[lang]?.[tooltipKey] ?? translations["ja"]?.[tooltipKey] ?? "";
     el.setAttribute("data-tooltip", tooltipText);
   });
+
+  // 4. ▼フィルター状態を保ったまま、選択肢を更新（次の tick に遅延実行）
+  setTimeout(() => {
+    applyFilters(true); // updateSelectBoxes → populateSelect が新しい言語で走る
+  }, 0);
 }
+
