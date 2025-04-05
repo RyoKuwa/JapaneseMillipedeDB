@@ -37,7 +37,7 @@ const translations = {
     data: "データ",
     species: "種",
     prefecture: "都道府県",
-    island: "島",
+    island: "島嶼",
     reference: "引用文献",
     show_higher_taxa: "高次分類群を表示",
 
@@ -101,7 +101,8 @@ const translations = {
     number_of_species: "種数",
     number_of_records: "記録数",
     ratio: "割合",
-    year_chart_cumulative_label: "累積記録数"
+    year_chart_cumulative_label: "累積記録数",
+    touch_hint: "2本指で地図を操作<br><br>マーカークリックで詳細表示"
 
   },
 
@@ -219,7 +220,8 @@ const translations = {
     entry: "Entry",
     entered_by_on: "Entered by {name} on {date}",
     unpublished_data: "Unpublished Data",
-    unknown: "Unknown"
+    unknown: "Unknown",
+    touch_hint: "Use two fingers to move the map<br><br>Tap a marker for details"
     
   }
 };
@@ -232,23 +234,18 @@ function applyTranslations(lang) {
   document.documentElement.setAttribute("lang", lang);
   localStorage.setItem("preferredLanguage", lang);
 
-  // data-i18n を持つ要素を全て取得してテキストを差し替え
   const elements = document.querySelectorAll("[data-i18n]");
   elements.forEach(el => {
     const key = el.getAttribute("data-i18n");
-    const text = translations[lang] && translations[lang][key]
-      ? translations[lang][key]
-      : (translations["ja"][key] || "");
-    el.textContent = text;
+    const html = translations[lang]?.[key] ?? translations["ja"]?.[key] ?? "";
+    el.innerHTML = html;  // ← ここが重要！
+  });
 
-    // 追加: data-i18n-tooltip をチェック
+  // data-i18n-tooltip にも対応する場合（すでにあればそのままでOK）
+  const tooltipElements = document.querySelectorAll("[data-i18n-tooltip]");
+  tooltipElements.forEach(el => {
     const tooltipKey = el.getAttribute("data-i18n-tooltip");
-    if (tooltipKey) {
-      const tooltipText = translations[lang] && translations[lang][tooltipKey]
-        ? translations[lang][tooltipKey]
-        : (translations["ja"][tooltipKey] || "");
-      // 実際の data-tooltip 属性を置き換える
-      el.setAttribute("data-tooltip", tooltipText);
-    }
+    const tooltipText = translations[lang]?.[tooltipKey] ?? translations["ja"]?.[tooltipKey] ?? "";
+    el.setAttribute("data-tooltip", tooltipText);
   });
 }

@@ -857,10 +857,13 @@ const updateLiteratureList = (titles) => {
     listContainer.style.display = "none";
     return;
   }
-  listContainer.style.display = "block";
-  listContainer.innerHTML = "<h3>引用文献 Reference</h3>";
 
-  // 新: getLiteratureLabel(item) を使って titles.includes(...) を判定する
+  listContainer.style.display = "block";
+
+  // 言語に応じてタイトルを変更
+  const headingText = translations[lang]?.reference || "引用文献 Reference";
+  listContainer.innerHTML = `<h3>${headingText}</h3>`;
+
   const ordered = literatureArray.filter(item => {
     const labelText = getLiteratureLabel(item);
     return titles.includes(labelText);
@@ -868,9 +871,7 @@ const updateLiteratureList = (titles) => {
 
   const ol = document.createElement('ol');
   ordered.forEach(item => {
-    // 表示するときも getLiteratureLabel(item) を使う
     let listItem = getLiteratureLabel(item);
-
     if (item.link) {
       listItem += ` <a href="${item.link}" target="_blank">${item.link}</a>`;
     }
@@ -2507,12 +2508,18 @@ function updatePrefectureListInTab() {
   const listContainer = document.getElementById('prefecture-list');
   listContainer.innerHTML = '';
 
+  // 見出し（多言語対応）
+  const heading = translations[lang]?.prefecture || "都道府県";
+  listContainer.innerHTML = `<h3>${heading}</h3>`;
+
   Array.from(select.options).forEach(option => {
     if (option.value !== '') {
       const li = document.createElement('li');
       const jpName = option.value;
       const enName = prefectureMeta.find(m => m.jp === jpName)?.en || "-";
-      li.textContent = `${jpName} / ${enName}`;
+
+      // 言語に応じて表示形式を切り替え
+      li.textContent = (lang === "en") ? enName : `${jpName} / ${enName}`;
       listContainer.appendChild(li);
     }
   });
@@ -2523,12 +2530,18 @@ function updateIslandListInTab() {
   const listContainer = document.getElementById('island-list');
   listContainer.innerHTML = '';
 
+  // 見出し（多言語対応）
+  const heading = translations[lang]?.island || "島嶼";
+  listContainer.innerHTML = `<h3>${heading}</h3>`;
+
   Array.from(select.options).forEach(option => {
     if (option.value !== '') {
       const li = document.createElement('li');
       const jpName = option.value;
       const enName = islandMeta.find(m => m.jp === jpName)?.en || "-";
-      li.textContent = `${jpName} / ${enName}`;
+
+      // 表示言語に応じて内容を変更
+      li.textContent = (lang === "en") ? enName : `${jpName} / ${enName}`;
       listContainer.appendChild(li);
     }
   });
@@ -2537,6 +2550,10 @@ function updateIslandListInTab() {
 const updateSpeciesListInTab = () => {
   const listContainer = document.getElementById('species-list');
   listContainer.innerHTML = '';
+
+  // 見出し（多言語対応）
+  const heading = translations[lang]?.species || "種";
+  listContainer.innerHTML = `<h3>${heading}</h3>`;
 
   const validRows = filteredRows.filter(r => r.scientificName && r.scientificName !== "-");
 
@@ -2833,6 +2850,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         generateLiteratureList(filteredRows);
         updateSelectedLabels();
         updateSpeciesListInTab();
+        updatePrefectureListInTab();
+        updateIslandListInTab();
   
         // 年グラフもあるなら
         const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
