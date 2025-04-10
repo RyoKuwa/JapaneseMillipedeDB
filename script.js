@@ -15,6 +15,7 @@ let collectionYearMinValue = Number.POSITIVE_INFINITY;
 let collectionYearMaxValue = Number.NEGATIVE_INFINITY;
 let publicationTimerId = null;
 let collectionTimerId = null;
+let isTouchDevice = false
 const DEBOUNCE_DELAY = 500; // ms、操作停止から0.5秒後にフィルタ実行
 
 // ポップアップ関連
@@ -37,15 +38,7 @@ let lang = localStorage.getItem("preferredLanguage") || "ja";
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  if (isTouchDevice) {
-    document.addEventListener("DOMContentLoaded", () => {
-      // スライダーを非表示にする（display: none）
-      const pubSlider = document.getElementById("publication-year-slider");
-      const colSlider = document.getElementById("collection-year-slider");
-      if (pubSlider) pubSlider.style.display = "none";
-      if (colSlider) colSlider.style.display = "none";
-    });
-  }
+  
   const defaultZoom = window.innerWidth <= 711 ? 3 : 4;
 
   map = new maplibregl.Map({
@@ -430,6 +423,19 @@ function initYearRanges() {
 }
 
 function initYearSliders() {
+  // テキストボックスにスライダー初期値を反映（全デバイス共通）
+  $("#publication-year-min").val(publicationYearMinValue);
+  $("#publication-year-max").val(publicationYearMaxValue);
+  $("#collection-year-min").val(collectionYearMinValue);
+  $("#collection-year-max").val(collectionYearMaxValue);
+
+  // ▼ タッチデバイスではスライダー非表示にして初期化しない
+  if (isTouchDevice) {
+    $("#publication-year-slider").hide();
+    $("#collection-year-slider").hide();
+    return;
+  }
+
   // ▼ 出版年スライダー初期化
   $("#publication-year-slider").slider({
     range: true,
@@ -437,35 +443,16 @@ function initYearSliders() {
     max: publicationYearMaxValue,
     values: [publicationYearMinValue, publicationYearMaxValue],
     slide: function(event, ui) {
-      // 1) スライダー操作中の値を即テキストボックスに反映
       $("#publication-year-min").val(ui.values[0]);
       $("#publication-year-max").val(ui.values[1]);
 
-      // 2) 既存タイマーが走っていればクリア
-      if (publicationTimerId) {
-        clearTimeout(publicationTimerId);
-      }
-      // 3) 新しいタイマーを設定。DEBOUNCE_DELAY だけ操作が無ければフィルタ実行
+      if (publicationTimerId) clearTimeout(publicationTimerId);
       publicationTimerId = setTimeout(() => {
-        applyFilters(true); // 実際のフィルタリング
+        applyFilters(true);
         publicationTimerId = null;
       }, DEBOUNCE_DELAY);
-    },
-    stop: function(event, ui) {
-      // スライダー操作が止まった瞬間に即フィルタしたい場合は、こちらで行うパターンも
-      // ただしデバウンスと重複するので、ここでは呼ばないのが無難
-      /*
-      if (publicationTimerId) {
-        clearTimeout(publicationTimerId);
-      }
-      applyFilters(true);
-      */
     }
   });
-
-  // テキストボックスにもスライダー初期値を反映
-  $("#publication-year-min").val(publicationYearMinValue);
-  $("#publication-year-max").val(publicationYearMaxValue);
 
   // ▼ 採集年スライダー初期化
   $("#collection-year-slider").slider({
@@ -477,11 +464,7 @@ function initYearSliders() {
       $("#collection-year-min").val(ui.values[0]);
       $("#collection-year-max").val(ui.values[1]);
 
-      // 既存タイマーが走っていればキャンセル
-      if (collectionTimerId) {
-        clearTimeout(collectionTimerId);
-      }
-      // 新しいタイマーセット
+      if (collectionTimerId) clearTimeout(collectionTimerId);
       collectionTimerId = setTimeout(() => {
         applyFilters(true);
         collectionTimerId = null;
@@ -489,18 +472,12 @@ function initYearSliders() {
     }
   });
 
-  $("#collection-year-min").val(collectionYearMinValue);
-  $("#collection-year-max").val(collectionYearMaxValue);
-
-  // ▼ テキストボックス編集時もデバウンス
+  // ▼ テキストボックス編集時にもスライダーに反映＆フィルター適用
   $("#publication-year-min, #publication-year-max").on("change", function() {
-    if (publicationTimerId) {
-      clearTimeout(publicationTimerId);
-    }
+    if (publicationTimerId) clearTimeout(publicationTimerId);
     publicationTimerId = setTimeout(() => {
       const minVal = parseInt($("#publication-year-min").val(), 10);
       const maxVal = parseInt($("#publication-year-max").val(), 10);
-      // スライダーに反映
       $("#publication-year-slider").slider("values", 0, minVal);
       $("#publication-year-slider").slider("values", 1, maxVal);
 
@@ -510,9 +487,7 @@ function initYearSliders() {
   });
 
   $("#collection-year-min, #collection-year-max").on("change", function() {
-    if (collectionTimerId) {
-      clearTimeout(collectionTimerId);
-    }
+    if (collectionTimerId) clearTimeout(collectionTimerId);
     collectionTimerId = setTimeout(() => {
       const minVal = parseInt($("#collection-year-min").val(), 10);
       const maxVal = parseInt($("#collection-year-max").val(), 10);
@@ -1416,8 +1391,6 @@ const displayMarkers = (filteredData) => {
     tooltip.textContent = translations[lang]?.click_for_details || "クリックで詳細表示";
     document.body.appendChild(tooltip);
   }
-
-  let isTouchDevice = false;
 
   sortedMarkers.forEach(row => {
     const { className, color, borderColor } = getMarkerStyle(row.recordType);
