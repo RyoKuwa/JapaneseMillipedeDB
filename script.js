@@ -37,6 +37,15 @@ let lang = localStorage.getItem("preferredLanguage") || "ja";
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (isTouchDevice) {
+    document.addEventListener("DOMContentLoaded", () => {
+      // スライダーを非表示にする（display: none）
+      const pubSlider = document.getElementById("publication-year-slider");
+      const colSlider = document.getElementById("collection-year-slider");
+      if (pubSlider) pubSlider.style.display = "none";
+      if (colSlider) colSlider.style.display = "none";
+    });
+  }
   const defaultZoom = window.innerWidth <= 711 ? 3 : 4;
 
   map = new maplibregl.Map({
