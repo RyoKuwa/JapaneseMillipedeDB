@@ -155,7 +155,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   padding: 10px;
   font-size: 14px;
   border: 1px solid #ccc;
-  z-index: 30;
+  z-index: 29;
   max-width: calc(100% - 20px);
   box-sizing: border-box;
   overflow: visible;

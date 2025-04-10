@@ -421,55 +421,44 @@ function initYearRanges() {
 }
 
 function initYearSliders() {
-  // テキストボックス初期値設定（すべてのデバイスで共通）
-  $("#publication-year-min").val(publicationYearMinValue);
-  $("#publication-year-max").val(publicationYearMaxValue);
-  $("#collection-year-min").val(collectionYearMinValue);
-  $("#collection-year-max").val(collectionYearMaxValue);
-
-  // タッチデバイスではスライダーを非表示にして以降の処理をスキップ
-  if (isTouchDevice) {
-    $("#publication-year-slider").hide();
-    $("#collection-year-slider").hide();
-
-    // テキストボックス変更時に直接 applyFilters を呼び出す（スライダーなし）
-    $("#publication-year-min, #publication-year-max").on("change", function() {
-      if (publicationTimerId) clearTimeout(publicationTimerId);
-      publicationTimerId = setTimeout(() => {
-        applyFilters(true);
-        publicationTimerId = null;
-      }, DEBOUNCE_DELAY);
-    });
-
-    $("#collection-year-min, #collection-year-max").on("change", function() {
-      if (collectionTimerId) clearTimeout(collectionTimerId);
-      collectionTimerId = setTimeout(() => {
-        applyFilters(true);
-        collectionTimerId = null;
-      }, DEBOUNCE_DELAY);
-    });
-
-    return; // スライダー関連の初期化をここで打ち切る
-  }
-
-  // ▼ スライダーを使うデバイス（PCなど）の処理
+  // ▼ 出版年スライダー初期化
   $("#publication-year-slider").slider({
     range: true,
     min: publicationYearMinValue,
     max: publicationYearMaxValue,
     values: [publicationYearMinValue, publicationYearMaxValue],
     slide: function(event, ui) {
+      // 1) スライダー操作中の値を即テキストボックスに反映
       $("#publication-year-min").val(ui.values[0]);
       $("#publication-year-max").val(ui.values[1]);
 
-      if (publicationTimerId) clearTimeout(publicationTimerId);
+      // 2) 既存タイマーが走っていればクリア
+      if (publicationTimerId) {
+        clearTimeout(publicationTimerId);
+      }
+      // 3) 新しいタイマーを設定。DEBOUNCE_DELAY だけ操作が無ければフィルタ実行
       publicationTimerId = setTimeout(() => {
-        applyFilters(true);
+        applyFilters(true); // 実際のフィルタリング
         publicationTimerId = null;
       }, DEBOUNCE_DELAY);
+    },
+    stop: function(event, ui) {
+      // スライダー操作が止まった瞬間に即フィルタしたい場合は、こちらで行うパターンも
+      // ただしデバウンスと重複するので、ここでは呼ばないのが無難
+      /*
+      if (publicationTimerId) {
+        clearTimeout(publicationTimerId);
+      }
+      applyFilters(true);
+      */
     }
   });
 
+  // テキストボックスにもスライダー初期値を反映
+  $("#publication-year-min").val(publicationYearMinValue);
+  $("#publication-year-max").val(publicationYearMaxValue);
+
+  // ▼ 採集年スライダー初期化
   $("#collection-year-slider").slider({
     range: true,
     min: collectionYearMinValue,
@@ -479,7 +468,11 @@ function initYearSliders() {
       $("#collection-year-min").val(ui.values[0]);
       $("#collection-year-max").val(ui.values[1]);
 
-      if (collectionTimerId) clearTimeout(collectionTimerId);
+      // 既存タイマーが走っていればキャンセル
+      if (collectionTimerId) {
+        clearTimeout(collectionTimerId);
+      }
+      // 新しいタイマーセット
       collectionTimerId = setTimeout(() => {
         applyFilters(true);
         collectionTimerId = null;
@@ -487,11 +480,18 @@ function initYearSliders() {
     }
   });
 
+  $("#collection-year-min").val(collectionYearMinValue);
+  $("#collection-year-max").val(collectionYearMaxValue);
+
+  // ▼ テキストボックス編集時もデバウンス
   $("#publication-year-min, #publication-year-max").on("change", function() {
-    if (publicationTimerId) clearTimeout(publicationTimerId);
+    if (publicationTimerId) {
+      clearTimeout(publicationTimerId);
+    }
     publicationTimerId = setTimeout(() => {
       const minVal = parseInt($("#publication-year-min").val(), 10);
       const maxVal = parseInt($("#publication-year-max").val(), 10);
+      // スライダーに反映
       $("#publication-year-slider").slider("values", 0, minVal);
       $("#publication-year-slider").slider("values", 1, maxVal);
 
@@ -501,7 +501,9 @@ function initYearSliders() {
   });
 
   $("#collection-year-min, #collection-year-max").on("change", function() {
-    if (collectionTimerId) clearTimeout(collectionTimerId);
+    if (collectionTimerId) {
+      clearTimeout(collectionTimerId);
+    }
     collectionTimerId = setTimeout(() => {
       const minVal = parseInt($("#collection-year-min").val(), 10);
       const maxVal = parseInt($("#collection-year-max").val(), 10);
