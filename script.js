@@ -37,6 +37,20 @@ let lang = localStorage.getItem("preferredLanguage") || "ja";
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (isTouchDevice) {
+    // スライダー部分だけ非表示に
+    const pubSlider = document.getElementById("publication-year-slider");
+    const colSlider = document.getElementById("collection-year-slider");
+    if (pubSlider) pubSlider.style.display = "none";
+    if (colSlider) colSlider.style.display = "none";
+  
+    // 代わりに year-inputs を常に表示（念のため）
+    const pubInputs = document.querySelector("#publication-year-container .year-inputs");
+    const colInputs = document.querySelector("#collection-year-container .year-inputs");
+    if (pubInputs) pubInputs.style.display = "flex";
+    if (colInputs) colInputs.style.display = "flex";
+  }
+  
   const defaultZoom = window.innerWidth <= 711 ? 3 : 4;
 
   map = new maplibregl.Map({
