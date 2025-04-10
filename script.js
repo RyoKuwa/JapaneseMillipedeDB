@@ -15,7 +15,6 @@ let collectionYearMinValue = Number.POSITIVE_INFINITY;
 let collectionYearMaxValue = Number.NEGATIVE_INFINITY;
 let publicationTimerId = null;
 let collectionTimerId = null;
-let isTouchDevice = false
 const DEBOUNCE_DELAY = 500; // ms、操作停止から0.5秒後にフィルタ実行
 
 // ポップアップ関連
@@ -38,7 +37,6 @@ let lang = localStorage.getItem("preferredLanguage") || "ja";
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  
   const defaultZoom = window.innerWidth <= 711 ? 3 : 4;
 
   map = new maplibregl.Map({
@@ -423,20 +421,38 @@ function initYearRanges() {
 }
 
 function initYearSliders() {
-  // テキストボックスにスライダー初期値を反映（全デバイス共通）
+  // テキストボックス初期値設定（すべてのデバイスで共通）
   $("#publication-year-min").val(publicationYearMinValue);
   $("#publication-year-max").val(publicationYearMaxValue);
   $("#collection-year-min").val(collectionYearMinValue);
   $("#collection-year-max").val(collectionYearMaxValue);
 
-  // ▼ タッチデバイスではスライダー非表示にして初期化しない
+  // タッチデバイスではスライダーを非表示にして以降の処理をスキップ
   if (isTouchDevice) {
     $("#publication-year-slider").hide();
     $("#collection-year-slider").hide();
-    return;
+
+    // テキストボックス変更時に直接 applyFilters を呼び出す（スライダーなし）
+    $("#publication-year-min, #publication-year-max").on("change", function() {
+      if (publicationTimerId) clearTimeout(publicationTimerId);
+      publicationTimerId = setTimeout(() => {
+        applyFilters(true);
+        publicationTimerId = null;
+      }, DEBOUNCE_DELAY);
+    });
+
+    $("#collection-year-min, #collection-year-max").on("change", function() {
+      if (collectionTimerId) clearTimeout(collectionTimerId);
+      collectionTimerId = setTimeout(() => {
+        applyFilters(true);
+        collectionTimerId = null;
+      }, DEBOUNCE_DELAY);
+    });
+
+    return; // スライダー関連の初期化をここで打ち切る
   }
 
-  // ▼ 出版年スライダー初期化
+  // ▼ スライダーを使うデバイス（PCなど）の処理
   $("#publication-year-slider").slider({
     range: true,
     min: publicationYearMinValue,
@@ -454,7 +470,6 @@ function initYearSliders() {
     }
   });
 
-  // ▼ 採集年スライダー初期化
   $("#collection-year-slider").slider({
     range: true,
     min: collectionYearMinValue,
@@ -472,7 +487,6 @@ function initYearSliders() {
     }
   });
 
-  // ▼ テキストボックス編集時にもスライダーに反映＆フィルター適用
   $("#publication-year-min, #publication-year-max").on("change", function() {
     if (publicationTimerId) clearTimeout(publicationTimerId);
     publicationTimerId = setTimeout(() => {
@@ -1391,6 +1405,8 @@ const displayMarkers = (filteredData) => {
     tooltip.textContent = translations[lang]?.click_for_details || "クリックで詳細表示";
     document.body.appendChild(tooltip);
   }
+
+  let isTouchDevice = false;
 
   sortedMarkers.forEach(row => {
     const { className, color, borderColor } = getMarkerStyle(row.recordType);
