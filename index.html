@@ -178,52 +178,52 @@
         <div id="collection-month-checkboxes">
           <!-- それぞれの月のラベル全体に data-i18n を付与 -->
           <label>
-            <input type="checkbox" class="collection-month" value="1" checked>
+            <input type="checkbox" class="collection-month" value="1">
             <span data-i18n="january">1月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="2" checked>
+            <input type="checkbox" class="collection-month" value="2">
             <span data-i18n="february">2月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="3" checked>
+            <input type="checkbox" class="collection-month" value="3">
             <span data-i18n="march">3月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="4" checked>
+            <input type="checkbox" class="collection-month" value="4">
             <span data-i18n="april">4月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="5" checked>
+            <input type="checkbox" class="collection-month" value="5">
             <span data-i18n="may">5月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="6" checked>
+            <input type="checkbox" class="collection-month" value="6">
             <span data-i18n="june">6月</span>
           </label>
           <br>
           <label>
-            <input type="checkbox" class="collection-month" value="7" checked>
+            <input type="checkbox" class="collection-month" value="7">
             <span data-i18n="july">7月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="8" checked>
+            <input type="checkbox" class="collection-month" value="8">
             <span data-i18n="august">8月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="9" checked>
+            <input type="checkbox" class="collection-month" value="9">
             <span data-i18n="september">9月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="10" checked>
+            <input type="checkbox" class="collection-month" value="10">
             <span data-i18n="october">10月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="11" checked>
+            <input type="checkbox" class="collection-month" value="11">
             <span data-i18n="november">11月</span>
           </label>
           <label>
-            <input type="checkbox" class="collection-month" value="12" checked>
+            <input type="checkbox" class="collection-month" value="12">
             <span data-i18n="december">12月</span>
           </label>
         </div>
@@ -236,8 +236,8 @@
           <strong style="font-size: 14px;" data-i18n="lifestage">ライフステージ</strong>
         </label>
         <div id="life-stage-checkboxes">
-          <label><input type="checkbox" class="life-stage" value="yes" checked><span data-i18n="adult">成体</span></label>
-          <label><input type="checkbox" class="life-stage" value="no" checked><span data-i18n="juvenile_unknown">幼体・不明</span></label>
+          <label><input type="checkbox" class="life-stage" value="yes"><span data-i18n="adult">成体</span></label>
+          <label><input type="checkbox" class="life-stage" value="no"><span data-i18n="juvenile_unknown">幼体・不明</span></label>
         </div>
       </div>
 
@@ -247,10 +247,10 @@
           <input type="checkbox" id="exclude-unpublished"> <span data-i18n="exclude_unpublished_data">未公表データを除外</span>
         </label>
         <label>
-          <input type="checkbox" id="exclude-dubious" checked> <span data-i18n="exclude_questionable_records">疑わしい記録を除外</span>
+          <input type="checkbox" id="exclude-dubious"> <span data-i18n="exclude_questionable_records">疑わしい記録を除外</span>
         </label>
         <label>
-          <input type="checkbox" id="exclude-citation" checked> <span data-i18n="exclude_cited_records">引用記録を除外</span>
+          <input type="checkbox" id="exclude-citation"> <span data-i18n="exclude_cited_records">引用記録を除外</span>
         </label>
         <label>
           <input type="checkbox" id="exclude-undescribed"> <span data-i18n="exclude_undescribed_species">未記載種を除外</span>
@@ -265,7 +265,7 @@
     <!-- index.html 内のレジェンド部分 -->
     <div class="legend">
       <div class="legend-header">
-        <input type="checkbox" id="legend-master-checkbox" checked>
+        <input type="checkbox" id="legend-master-checkbox">
         <!-- 見出し部分に data-i18n -->
         <span data-i18n="legend_marker_types">マーカーの種類</span>
         <button class="legend-toggle-button"></button>
@@ -273,7 +273,7 @@
       
       <!-- タイプ産地 -->
       <div class="legend-item">
-        <input type="checkbox" id="filter-type" class="marker-filter-checkbox" checked>
+        <input type="checkbox" id="filter-type" class="marker-filter-checkbox">
         <span class="marker marker-star blue"></span>
         <!-- ラベル文言: data-i18n="legend_type"
             ツールチップ: data-i18n-tooltip="legend_type_tooltip" -->
@@ -287,7 +287,7 @@
 
       <!-- 統合された種のタイプ産地 -->
       <div class="legend-item">
-        <input type="checkbox" id="filter-synonymized-type" class="marker-filter-checkbox" checked>
+        <input type="checkbox" id="filter-synonymized-type" class="marker-filter-checkbox">
         <span class="marker marker-square purple"></span>
         <span class="legend-item-text"
               data-i18n="legend_synonymized_type"
@@ -323,7 +323,7 @@
 
       <!-- 標本記録 -->
       <div class="legend-item">
-        <input type="checkbox" id="filter-specimen" class="marker-filter-checkbox" checked>
+        <input type="checkbox" id="filter-specimen" class="marker-filter-checkbox">
         <span class="marker marker-circle red"></span>
         <span class="legend-item-text"
               data-i18n="legend_specimen"
@@ -335,7 +335,7 @@
 
       <!-- 文献記録 -->
       <div class="legend-item">
-        <input type="checkbox" id="filter-literature-record" class="marker-filter-checkbox" checked>
+        <input type="checkbox" id="filter-literature-record" class="marker-filter-checkbox">
         <span class="marker marker-circle white"></span>
         <span class="legend-item-text"
               data-i18n="legend_literature_record"
@@ -388,11 +388,11 @@
       <h2 id="prefecture-chart-title" class="external-chart-title"></h2>
       <div id="classification-radio">
         <div class="radio-group">
-          <label><input type="radio" name="classification" value="order" checked> <span data-i18n="order">目</span></label>
+          <label><input type="radio" name="classification" value="order"> <span data-i18n="order">目</span></label>
           <label><input type="radio" name="classification" value="family"> <span data-i18n="family">科</span></label>
         </div>
         <div class="radio-group">
-          <label><input type="radio" name="chart-mode" value="count" checked> <span data-i18n="number_of_species">種数</span></label>
+          <label><input type="radio" name="chart-mode" value="count"> <span data-i18n="number_of_species">種数</span></label>
           <label><input type="radio" name="chart-mode" value="record"> <span data-i18n="number_of_records">記録数</span></label>
           <label><input type="radio" name="chart-mode" value="ratio"> <span data-i18n="ratio">割合</span></label>
         </div>
@@ -412,7 +412,7 @@
       <!-- 年グラフの切り替え用ラジオボタン -->
       <div id="year-radio">
         <div id="year-radio-group" class="classification-radio">
-          <label><input type="radio" name="year-mode" value="publication" checked> <span data-i18n="publication_year">出版年</span></label>
+          <label><input type="radio" name="year-mode" value="publication"> <span data-i18n="publication_year">出版年</span></label>
           <label><input type="radio" name="year-mode" value="collection"> <span data-i18n="collection_year">採集年</span></label>
         </div>
       </div>
@@ -427,7 +427,7 @@
     <div id="tab-species-list" class="tab-content">
       <!-- チェックボックス：右上配置 -->
       <label style="float: right; font-weight: normal; margin: 0.5em;">
-        <input type="checkbox" id="toggle-higher-taxonomy" checked>
+        <input type="checkbox" id="toggle-higher-taxonomy">
         <span data-i18n="show_higher_taxa">高次分類群を表示</span>
       </label>
     

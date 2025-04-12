@@ -439,18 +439,11 @@ function initYearSliders() {
       // 3) 新しいタイマーを設定。DEBOUNCE_DELAY だけ操作が無ければフィルタ実行
       publicationTimerId = setTimeout(() => {
         applyFilters(true); // 実際のフィルタリング
+        updateURL();
         publicationTimerId = null;
       }, DEBOUNCE_DELAY);
     },
     stop: function(event, ui) {
-      // スライダー操作が止まった瞬間に即フィルタしたい場合は、こちらで行うパターンも
-      // ただしデバウンスと重複するので、ここでは呼ばないのが無難
-      /*
-      if (publicationTimerId) {
-        clearTimeout(publicationTimerId);
-      }
-      applyFilters(true);
-      */
     }
   });
 
@@ -475,6 +468,7 @@ function initYearSliders() {
       // 新しいタイマーセット
       collectionTimerId = setTimeout(() => {
         applyFilters(true);
+        updateURL();
         collectionTimerId = null;
       }, DEBOUNCE_DELAY);
     }
@@ -496,6 +490,7 @@ function initYearSliders() {
       $("#publication-year-slider").slider("values", 1, maxVal);
 
       applyFilters(true);
+      updateURL();
       publicationTimerId = null;
     }, DEBOUNCE_DELAY);
   });
@@ -511,6 +506,7 @@ function initYearSliders() {
       $("#collection-year-slider").slider("values", 1, maxVal);
 
       applyFilters(true);
+      updateURL();
       collectionTimerId = null;
     }, DEBOUNCE_DELAY);
   });
@@ -628,32 +624,40 @@ const populateSelect = (selectId, options, selectedValue) => {
   const selectEl = document.getElementById(selectId);
   if (!selectEl) return;
 
-  // 「辞書からプレースホルダ文字列を取得」→ 無かったら fallback
+  // 1) もともとのセレクトボックスの値を変数化
+  //    selectedValueがあれば、それを優先
+  const currentVal = (selectedValue != null) ? selectedValue : selectEl.value;
+
+  // 2) プレースホルダ文字列を取得（無ければ"選択"）
   const defaultText = SELECT_PLACEHOLDERS[selectId] || "選択";
 
-  const currentVal = selectEl.value;
-  const currentOpt = selectEl.querySelector(`option[value="${CSS.escape(currentVal)}"]`);
-  const currentLabel = currentOpt ? currentOpt.textContent : currentVal;
-
-  // 一旦クリア
+  // 3) セレクトを一旦クリア
   $(selectEl).empty();
 
-  // 先頭に「defaultText」を表示する option を追加
+  // 4) 先頭にプレースホルダ用 option を追加（値は空文字）
   $(selectEl).append(new Option(defaultText, "", false, false));
 
-  // その後に動的オプションを追加
+  // 5) 渡された options[] を使って動的に option を追加
   options.forEach(opt => {
     $(selectEl).append(new Option(opt.label, opt.value, false, false));
   });
 
-  // 現在選択中の値がoptionsに無い場合は、再度optionを作り選択状態にしておく
+  // 6) 「currentVal」が options内に無い場合、手動で追加する
   const exists = options.some(opt => opt.value === currentVal);
   if (currentVal && !exists) {
-    $(selectEl).append(new Option(currentLabel, currentVal, true, true));
+    // UI上で消えてほしくない「孤立した値」なら再追加する
+    $(selectEl).append(new Option(currentVal, currentVal, true, true));
   } else {
-    // 辞書テキストを選択したい場合、ここでフォールバック
-    $(selectEl).val(currentVal).trigger("change");
+    // そうでなければ、既存の option の中から currentVal をセット
+    $(selectEl).val(currentVal);
   }
+
+  $(selectEl).val(currentVal).trigger("change");
+
+  console.log(`[populateSelect] ${selectId} options:`, options.map(o => o.value));
+  console.log(`[populateSelect] ${selectId} setting value:`, selectedValue);
+  console.log(`[populateSelect] ${selectId} current DOM .val():`, $(selectEl).val());
+  
 };
 
 // プレースホルダー辞書
@@ -711,29 +715,21 @@ const updateSelectBoxes = (filters, selectOptions) => {
   populateSelect("filter-island", islandOptions, filters.island);
 };
 
-const updateFilters = (filteredData) => {
-  // 最新のセレクトボックスの選択状態を取得（保持するため）
-  const filters = {
-    species: document.getElementById("filter-species")?.value || "",
-    genus: document.getElementById("filter-genus")?.value || "",
-    family: document.getElementById("filter-family")?.value || "",
-    order: document.getElementById("filter-order")?.value || "",
-    prefecture: document.getElementById("filter-prefecture")?.value || "",
-    island: document.getElementById("filter-island")?.value || "",
-    literature: document.getElementById("filter-literature")?.value || ""
-  };
-
+const updateFilters = (filteredData, filtersOverride = null) => {
+  const filters = filtersOverride ?? getFilterStates().filters;
   const selectOptions = gatherSelectOptions(filteredData);
   updateSelectBoxes(filters, selectOptions);
-
   updateSpeciesListInTab();
   updatePrefectureListInTab();
   updateIslandListInTab();
 };
 
-const applyFilters = async (updateMap = true) => {
+const applyFilters = async (updateMap = true, filtersOverride = null) => {
   try {
-    const { filters, checkboxes } = getFilterStates();
+    const { filters, checkboxes } = filtersOverride
+      ? { filters: filtersOverride, checkboxes: getFilterStates().checkboxes }
+      : getFilterStates();
+
     if (activePopup) {
       activePopup.remove();
       activePopup = null;
@@ -754,31 +750,29 @@ const applyFilters = async (updateMap = true) => {
 
     filteredRowsLocal = filterByCheckbox(filteredRowsLocal, checkboxes);
 
-    // 年フィルタ: 出版年
+    // 出版年フィルタ
     const usePublicationYear = $("#filter-publication-year-active").is(":checked");
     if (usePublicationYear) {
       const minPub = parseInt($("#publication-year-min").val(), 10);
       const maxPub = parseInt($("#publication-year-max").val(), 10);
       filteredRowsLocal = filteredRowsLocal.filter(r => {
         const py = parseInt(r.publicationYear, 10);
-        if (isNaN(py)) return false;
-        return (py >= minPub && py <= maxPub);
+        return !isNaN(py) && py >= minPub && py <= maxPub;
       });
     }
 
-    // 年フィルタ: 採集年
+    // 採集年フィルタ
     const useCollectionYear = $("#filter-collection-year-active").is(":checked");
     if (useCollectionYear) {
       const minCol = parseInt($("#collection-year-min").val(), 10);
       const maxCol = parseInt($("#collection-year-max").val(), 10);
       filteredRowsLocal = filteredRowsLocal.filter(r => {
         const cy = parseInt(r.collectionYear, 10);
-        if (isNaN(cy)) return false;
-        return (cy >= minCol && cy <= maxCol);
+        return !isNaN(cy) && cy >= minCol && cy <= maxCol;
       });
     }
 
-    // 隔年発生
+    // 隔年発生フィルタ
     const useBiennial = $("#filter-biennial-active").is(":checked");
     if (useBiennial) {
       const targetYear = parseInt($("#biennial-target-year").val(), 10);
@@ -786,8 +780,7 @@ const applyFilters = async (updateMap = true) => {
       if (!isNaN(targetYear) && !isNaN(interval) && interval > 0) {
         filteredRowsLocal = filteredRowsLocal.filter(r => {
           const cy = parseInt(r.collectionYear, 10);
-          if (isNaN(cy)) return false;
-          return (cy - targetYear) % interval === 0;
+          return !isNaN(cy) && (cy - targetYear) % interval === 0;
         });
       }
     }
@@ -815,14 +808,17 @@ const applyFilters = async (updateMap = true) => {
       if (selectedStages.length > 0) {
         filteredRowsLocal = filteredRowsLocal.filter(r => {
           const raw = (r.adultPresence || "").trim().toLowerCase();
-          const normalized = (raw === "yes") ? "yes" : "no";  // yes以外は全てno扱い
+          const normalized = (raw === "yes") ? "yes" : "no";
           return selectedStages.includes(normalized);
         });
       }
     }
 
     filteredRows = filteredRowsLocal;
-    updateFilters(filteredRowsLocal);
+
+    // 🔧 filtersOverride を渡す！
+    updateFilters(filteredRowsLocal, filters);
+
     initializeSelect2();
     updateSelectedLabels();
 
@@ -986,6 +982,7 @@ const initializeSelect2 = () => {
       updateButtonsVisibility();
 
       applyFilters(true);
+      updateURL();
       updateSelectedLabels();
 
       return false;
@@ -1026,6 +1023,7 @@ const initializeSelect2 = () => {
 
       $(id).on("select2:select", () => {
         applyFilters(true);
+        updateURL();
         updateSelectedLabels();
       });
 
@@ -1135,6 +1133,7 @@ function setupSelectListeners() {
     if (sel) {
       sel.addEventListener("change", function() {
         applyFilters(true);
+        updateURL();
         updateSelectedLabels();
         
         // 矢印とクリアボタンの表示を更新
@@ -1201,27 +1200,31 @@ function setupCheckboxListeners() {
           updateFilterActivationUI(); // ← フィルターUI更新
         }
         applyFilters(true);
+        updateURL();
       });
     }
   });
 
   document.querySelectorAll(".marker-filter-checkbox").forEach(checkbox => {
-    checkbox.addEventListener("change", () => applyFilters(true));
+    checkbox.addEventListener("change", () => {
+      applyFilters(true);
+      updateURL();
+    });
   });
-
+  
   document.querySelectorAll(".collection-month").forEach(cb => {
-    cb.addEventListener("change", () => applyFilters(true));
+    cb.addEventListener("change", () => {
+      applyFilters(true);
+      updateURL();
+    });
   });
-
+  
   document.querySelectorAll(".life-stage").forEach(cb => {
-    cb.addEventListener("change", () => applyFilters(true));
-  });
-
-  // 高次分類群の表示切替で種リストを更新
-  const toggle = document.getElementById("toggle-higher-taxonomy");
-  if (toggle) {
-    toggle.addEventListener("change", () => updateSpeciesListInTab());
-  }
+    cb.addEventListener("change", () => {
+      applyFilters(true);
+      updateURL();
+    });
+  });  
 
   // 初期状態のフィルターUI適用（ページロード時）
   updateFilterActivationUI();
@@ -1262,6 +1265,7 @@ const navigateOption = async (selectId, direction) => {
 
   select.value = "";
   await applyFilters(false);
+  updateURL();
 
   const updatedVals = Array.from(select.options)
     .map(opt => opt.value)
@@ -1278,6 +1282,7 @@ const navigateOption = async (selectId, direction) => {
 
   select.value = newVal;
   await applyFilters(true);
+  updateURL();
 };
 
 // ==================== リセットボタン ====================
@@ -1301,6 +1306,7 @@ const setupResetButton = () => {
       clearMarkers();
       updateSelectedLabels();
       applyFilters(true);
+      updateURL();
     });
   }
 };
@@ -2421,6 +2427,7 @@ function linkMasterAndDubiousCheckboxes() {
       filterDoubtfulLiterature.checked = true;
     }
     applyFilters();
+    updateURL();
   });
 
   const onDubiousChange = () => {
@@ -2430,6 +2437,7 @@ function linkMasterAndDubiousCheckboxes() {
       excludeDubious.checked = true;
     }
     applyFilters();
+    updateURL();
   };
   filterDoubtfulType.addEventListener("change", onDubiousChange);
   filterDoubtfulIntegrated.addEventListener("change", onDubiousChange);
@@ -2446,6 +2454,7 @@ function linkMasterAndDubiousCheckboxes() {
       excludeDubious.checked = false;
     }
     applyFilters();
+    updateURL();
   });
 
   if (areAllDubiousOff()) {
@@ -2609,149 +2618,58 @@ function applyDefaultState() {
 // ==================== URL関連 ====================
 function readStateFromQuery() {
   const params = new URLSearchParams(window.location.search);
-
-  // DEFAULT_STATE をコピー
   const restoredState = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-  // 例: true/false で管理しているチェックボックスは "0" or "1" で受け取り
-  // （URL上では ?filterPublicationYearActive=1 のようにする）
-  if (params.has("filterPublicationYearActive")) {
-    restoredState.filterPublicationYearActive = (params.get("filterPublicationYearActive") === "1");
-  }
-  if (params.has("filterCollectionYearActive")) {
-    restoredState.filterCollectionYearActive = (params.get("filterCollectionYearActive") === "1");
-  }
-  if (params.has("filterBiennialActive")) {
-    restoredState.filterBiennialActive = (params.get("filterBiennialActive") === "1");
-  }
-  if (params.has("filterCollectionMonthActive")) {
-    restoredState.filterCollectionMonthActive = (params.get("filterCollectionMonthActive") === "1");
-  }
-  if (params.has("filterLifeStageActive")) {
-    restoredState.filterLifeStageActive = (params.get("filterLifeStageActive") === "1");
-  }
+  // 各パラメータを state に反映
+  ["publicationYearFrom", "publicationYearTo", "collectionYearFrom", "collectionYearTo", "biennialTargetYear", "biennialInterval"].forEach(key => {
+    if (params.has(key)) restoredState[key] = params.get(key);
+  });
 
-  // 除外系チェック
-  if (params.has("excludeUnpublished")) {
-    restoredState.excludeUnpublished = (params.get("excludeUnpublished") === "1");
-  }
-  if (params.has("excludeDubious")) {
-    restoredState.excludeDubious = (params.get("excludeDubious") === "1");
-  }
-  if (params.has("excludeCitation")) {
-    restoredState.excludeCitation = (params.get("excludeCitation") === "1");
-  }
-  if (params.has("excludeUndescribed")) {
-    restoredState.excludeUndescribed = (params.get("excludeUndescribed") === "1");
-  }
-  if (params.has("excludeUnspecies")) {
-    restoredState.excludeUnspecies = (params.get("excludeUnspecies") === "1");
-  }
+  [
+    "filterCollectionMonthActive", "filterLifeStageActive", "excludeUnpublished", "excludeDubious", "excludeCitation",
+    "excludeUndescribed", "excludeUnspecies", "legendMasterCheckbox", "filterType", "filterSynonymizedType",
+    "filterDoubtfulType", "filterDoubtfulSynonymizedType", "filterSpecimen", "filterLiteratureRecord",
+    "filterDoubtfulLiterature", "toggleHigherTaxonomy"
+  ].forEach(key => {
+    if (params.has(key)) restoredState[key] = params.get(key) === "1";
+  });
 
-  // レジェンド関連
-  if (params.has("legendMasterCheckbox")) {
-    restoredState.legendMasterCheckbox = (params.get("legendMasterCheckbox") === "1");
-  }
-  if (params.has("filterType")) {
-    restoredState.filterType = (params.get("filterType") === "1");
-  }
-  if (params.has("filterSynonymizedType")) {
-    restoredState.filterSynonymizedType = (params.get("filterSynonymizedType") === "1");
-  }
-  if (params.has("filterDoubtfulType")) {
-    restoredState.filterDoubtfulType = (params.get("filterDoubtfulType") === "1");
-  }
-  if (params.has("filterDoubtfulSynonymizedType")) {
-    restoredState.filterDoubtfulSynonymizedType = (params.get("filterDoubtfulSynonymizedType") === "1");
-  }
-  if (params.has("filterSpecimen")) {
-    restoredState.filterSpecimen = (params.get("filterSpecimen") === "1");
-  }
-  if (params.has("filterLiteratureRecord")) {
-    restoredState.filterLiteratureRecord = (params.get("filterLiteratureRecord") === "1");
-  }
-  if (params.has("filterDoubtfulLiterature")) {
-    restoredState.filterDoubtfulLiterature = (params.get("filterDoubtfulLiterature") === "1");
-  }
+  ["classification", "chartMode", "yearMode"].forEach(key => {
+    if (params.has(key)) restoredState[key] = params.get(key);
+  });
 
-  // トグルチェック
-  if (params.has("toggleHigherTaxonomy")) {
-    restoredState.toggleHigherTaxonomy = (params.get("toggleHigherTaxonomy") === "1");
-  }
+  ["filterOrder", "filterFamily", "filterGenus", "filterSpecies", "filterPrefecture", "filterIsland", "filterLiterature"].forEach(key => {
+    if (params.has(key)) restoredState[key] = params.get(key);
+  });
 
-  // ラジオボタン（文字列）
-  if (params.has("classification")) {
-    restoredState.classification = params.get("classification");
-  }
-  if (params.has("chartMode")) {
-    restoredState.chartMode = params.get("chartMode");
-  }
-  if (params.has("yearMode")) {
-    restoredState.yearMode = params.get("yearMode");
-  }
-
-  // セレクトボックス（文字列）
-  if (params.has("filterOrder")) {
-    restoredState.filterOrder = params.get("filterOrder");
-  }
-  if (params.has("filterFamily")) {
-    restoredState.filterFamily = params.get("filterFamily");
-  }
-  if (params.has("filterGenus")) {
-    restoredState.filterGenus = params.get("filterGenus");
-  }
-  if (params.has("filterSpecies")) {
-    restoredState.filterSpecies = params.get("filterSpecies");
-  }
-  if (params.has("filterPrefecture")) {
-    restoredState.filterPrefecture = params.get("filterPrefecture");
-  }
-  if (params.has("filterIsland")) {
-    restoredState.filterIsland = params.get("filterIsland");
-  }
-  if (params.has("filterLiterature")) {
-    restoredState.filterLiterature = params.get("filterLiterature");
-  }
-
-  // 隔年発生
-  if (params.has("biennialTargetYear")) {
-    restoredState.biennialTargetYear = params.get("biennialTargetYear");
-  }
-  if (params.has("biennialInterval")) {
-    restoredState.biennialInterval = params.get("biennialInterval");
-  }
-
-  // 例: 月チェックボックス (配列) の扱い
-  // URLで "collectionMonths=101010101010" のような文字列を送る想定にする例
   if (params.has("collectionMonths")) {
-    const monthString = params.get("collectionMonths");
-    // 12 桁なら each char で boolean 変換
-    if (monthString.length === 12) {
+    const m = params.get("collectionMonths");
+    if (m.length === 12) {
       for (let i = 0; i < 12; i++) {
-        restoredState.collectionMonths[i] = (monthString[i] === "1");
+        restoredState.collectionMonths[i] = m[i] === "1";
       }
     }
   }
 
-  // 最後に DOM へ適用
-  applyStateToDOM(restoredState);
+  return restoredState;
 }
 
 function applyStateToDOM(state) {
-  // チェックボックス類
+  // --- 1) チェックボックス類（フィルター有効/無効スイッチ） ---
   document.getElementById("filter-publication-year-active").checked = state.filterPublicationYearActive;
   document.getElementById("filter-collection-year-active").checked = state.filterCollectionYearActive;
   document.getElementById("filter-biennial-active").checked = state.filterBiennialActive;
   document.getElementById("filter-collection-month-active").checked = state.filterCollectionMonthActive;
   document.getElementById("filter-life-stage-active").checked = state.filterLifeStageActive;
 
+  // --- 2) チェックボックス類（除外系） ---
   document.getElementById("exclude-unpublished").checked = state.excludeUnpublished;
   document.getElementById("exclude-dubious").checked = state.excludeDubious;
   document.getElementById("exclude-citation").checked = state.excludeCitation;
   document.getElementById("exclude-undescribed").checked = state.excludeUndescribed;
   document.getElementById("exclude-unspecies").checked = state.excludeUnspecies;
 
-  // レジェンド関連
+  // --- 3) レジェンド関連のチェックボックス ---
   document.getElementById("legend-master-checkbox").checked = state.legendMasterCheckbox;
   document.getElementById("filter-type").checked = state.filterType;
   document.getElementById("filter-synonymized-type").checked = state.filterSynonymizedType;
@@ -2761,9 +2679,10 @@ function applyStateToDOM(state) {
   document.getElementById("filter-literature-record").checked = state.filterLiteratureRecord;
   document.getElementById("filter-doubtful-literature").checked = state.filterDoubtfulLiterature;
 
+  // --- 4) 高次分類群の表示切替スイッチ ---
   document.getElementById("toggle-higher-taxonomy").checked = state.toggleHigherTaxonomy;
 
-  // ラジオボタン (classification, chart-mode, year-mode)
+  // --- 5) ラジオボタン (classification, chart-mode, year-mode) ---
   const classificationRadio = document.querySelector(`input[name="classification"][value="${state.classification}"]`);
   if (classificationRadio) classificationRadio.checked = true;
 
@@ -2773,7 +2692,43 @@ function applyStateToDOM(state) {
   const yearModeRadio = document.querySelector(`input[name="year-mode"][value="${state.yearMode}"]`);
   if (yearModeRadio) yearModeRadio.checked = true;
 
-  // セレクトボックス
+  // --- 6) 出版年 / 採集年のテキストボックス (スライダー用) ---
+  //   文字列が入っている場合はテキストボックスに反映し、スライダーにも値を渡す
+  if (typeof state.publicationYearFrom === "string") {
+    document.getElementById("publication-year-min").value = state.publicationYearFrom;
+  }
+  if (typeof state.publicationYearTo === "string") {
+    document.getElementById("publication-year-max").value = state.publicationYearTo;
+  }
+  if (typeof state.collectionYearFrom === "string") {
+    document.getElementById("collection-year-min").value = state.collectionYearFrom;
+  }
+  if (typeof state.collectionYearTo === "string") {
+    document.getElementById("collection-year-max").value = state.collectionYearTo;
+  }
+
+  // ▼ jQuery UI スライダーを使っているかチェック
+  //   既に初期化されている場合のみ "values" を呼び出す
+  if ($("#publication-year-slider").hasClass("ui-slider")) {
+    const pubMin = parseInt(state.publicationYearFrom, 10);
+    const pubMax = parseInt(state.publicationYearTo, 10);
+
+    // 値が数値として有効ならスライダー更新
+    if (!isNaN(pubMin) && !isNaN(pubMax)) {
+      $("#publication-year-slider").slider("values", [ pubMin, pubMax ]);
+    }
+  }
+
+  if ($("#collection-year-slider").hasClass("ui-slider")) {
+    const colMin = parseInt(state.collectionYearFrom, 10);
+    const colMax = parseInt(state.collectionYearTo, 10);
+
+    if (!isNaN(colMin) && !isNaN(colMax)) {
+      $("#collection-year-slider").slider("values", [ colMin, colMax ]);
+    }
+  }
+
+  // --- 7) セレクトボックス (order, family, genus, species, prefecture, island, literature) ---
   document.getElementById("filter-order").value = state.filterOrder;
   document.getElementById("filter-family").value = state.filterFamily;
   document.getElementById("filter-genus").value = state.filterGenus;
@@ -2782,14 +2737,14 @@ function applyStateToDOM(state) {
   document.getElementById("filter-island").value = state.filterIsland;
   document.getElementById("filter-literature").value = state.filterLiterature;
 
-  // 隔年発生
-  document.getElementById("biennial-target-year").value = state.biennialTargetYear;
-  document.getElementById("biennial-interval").value = state.biennialInterval;
+  // --- 8) 隔年発生 (ターゲット年/周期) ---
+  document.getElementById("biennial-target-year").value = state.biennialTargetYear || "";
+  document.getElementById("biennial-interval").value = state.biennialInterval || "";
 
-  // 月チェックボックス (class="collection-month")
+  // --- 9) 月チェックボックス (.collection-month)
   const monthCheckboxes = document.querySelectorAll(".collection-month");
   monthCheckboxes.forEach((cb, i) => {
-    cb.checked = state.collectionMonths[i];
+    cb.checked = !!state.collectionMonths[i];
   });
 }
 
@@ -2838,6 +2793,14 @@ function getCurrentStateFromDOM() {
     chartMode: chartModeRadio ? chartModeRadio.value : "count",
     yearMode: yearModeRadio ? yearModeRadio.value : "publication",
 
+    // 出版年
+    publicationYearFrom: document.getElementById("publication-year-min").value,
+    publicationYearTo: document.getElementById("publication-year-max").value,
+
+    // 採集年
+    collectionYearFrom: document.getElementById("collection-year-min").value,
+    collectionYearTo: document.getElementById("collection-year-max").value,
+
     // セレクト
     filterOrder: document.getElementById("filter-order").value,
     filterFamily: document.getElementById("filter-family").value,
@@ -2860,134 +2823,89 @@ function updateURL() {
   const currentState = getCurrentStateFromDOM();
   const params = new URLSearchParams();
 
-  // true/false のチェックボックスは "1"/"0" で表現
-  if (currentState.filterPublicationYearActive !== DEFAULT_STATE.filterPublicationYearActive) {
-    params.set("filterPublicationYearActive", currentState.filterPublicationYearActive ? "1" : "0");
-  }
-  if (currentState.filterCollectionYearActive !== DEFAULT_STATE.filterCollectionYearActive) {
-    params.set("filterCollectionYearActive", currentState.filterCollectionYearActive ? "1" : "0");
-  }
-  if (currentState.filterBiennialActive !== DEFAULT_STATE.filterBiennialActive) {
-    params.set("filterBiennialActive", currentState.filterBiennialActive ? "1" : "0");
-  }
-  if (currentState.filterCollectionMonthActive !== DEFAULT_STATE.filterCollectionMonthActive) {
-    params.set("filterCollectionMonthActive", currentState.filterCollectionMonthActive ? "1" : "0");
-  }
-  if (currentState.filterLifeStageActive !== DEFAULT_STATE.filterLifeStageActive) {
-    params.set("filterLifeStageActive", currentState.filterLifeStageActive ? "1" : "0");
+  // 出版年：チェックONかつ値ありのときのみ
+  if (currentState.filterPublicationYearActive) {
+    if (currentState.publicationYearFrom) {
+      params.set("publicationYearFrom", currentState.publicationYearFrom);
+    }
+    if (currentState.publicationYearTo) {
+      params.set("publicationYearTo", currentState.publicationYearTo);
+    }
   }
 
-  // 除外系
-  if (currentState.excludeUnpublished !== DEFAULT_STATE.excludeUnpublished) {
-    params.set("excludeUnpublished", currentState.excludeUnpublished ? "1" : "0");
-  }
-  if (currentState.excludeDubious !== DEFAULT_STATE.excludeDubious) {
-    params.set("excludeDubious", currentState.excludeDubious ? "1" : "0");
-  }
-  if (currentState.excludeCitation !== DEFAULT_STATE.excludeCitation) {
-    params.set("excludeCitation", currentState.excludeCitation ? "1" : "0");
-  }
-  if (currentState.excludeUndescribed !== DEFAULT_STATE.excludeUndescribed) {
-    params.set("excludeUndescribed", currentState.excludeUndescribed ? "1" : "0");
-  }
-  if (currentState.excludeUnspecies !== DEFAULT_STATE.excludeUnspecies) {
-    params.set("excludeUnspecies", currentState.excludeUnspecies ? "1" : "0");
+  // 採集年：チェックONかつ値ありのときのみ
+  if (currentState.filterCollectionYearActive) {
+    if (currentState.collectionYearFrom) {
+      params.set("collectionYearFrom", currentState.collectionYearFrom);
+    }
+    if (currentState.collectionYearTo) {
+      params.set("collectionYearTo", currentState.collectionYearTo);
+    }
   }
 
-  // レジェンド
-  if (currentState.legendMasterCheckbox !== DEFAULT_STATE.legendMasterCheckbox) {
-    params.set("legendMasterCheckbox", currentState.legendMasterCheckbox ? "1" : "0");
-  }
-  if (currentState.filterType !== DEFAULT_STATE.filterType) {
-    params.set("filterType", currentState.filterType ? "1" : "0");
-  }
-  if (currentState.filterSynonymizedType !== DEFAULT_STATE.filterSynonymizedType) {
-    params.set("filterSynonymizedType", currentState.filterSynonymizedType ? "1" : "0");
-  }
-  if (currentState.filterDoubtfulType !== DEFAULT_STATE.filterDoubtfulType) {
-    params.set("filterDoubtfulType", currentState.filterDoubtfulType ? "1" : "0");
-  }
-  if (currentState.filterDoubtfulSynonymizedType !== DEFAULT_STATE.filterDoubtfulSynonymizedType) {
-    params.set("filterDoubtfulSynonymizedType", currentState.filterDoubtfulSynonymizedType ? "1" : "0");
-  }
-  if (currentState.filterSpecimen !== DEFAULT_STATE.filterSpecimen) {
-    params.set("filterSpecimen", currentState.filterSpecimen ? "1" : "0");
-  }
-  if (currentState.filterLiteratureRecord !== DEFAULT_STATE.filterLiteratureRecord) {
-    params.set("filterLiteratureRecord", currentState.filterLiteratureRecord ? "1" : "0");
-  }
-  if (currentState.filterDoubtfulLiterature !== DEFAULT_STATE.filterDoubtfulLiterature) {
-    params.set("filterDoubtfulLiterature", currentState.filterDoubtfulLiterature ? "1" : "0");
+  // 隔年発生：チェックONかつ値ありのときのみ
+  if (currentState.filterBiennialActive) {
+    if (currentState.biennialTargetYear) {
+      params.set("biennialTargetYear", currentState.biennialTargetYear);
+    }
+    if (currentState.biennialInterval) {
+      params.set("biennialInterval", currentState.biennialInterval);
+    }
   }
 
-  // トグル
-  if (currentState.toggleHigherTaxonomy !== DEFAULT_STATE.toggleHigherTaxonomy) {
-    params.set("toggleHigherTaxonomy", currentState.toggleHigherTaxonomy ? "1" : "0");
-  }
+  // その他の true/false チェックボックス
+  const boolParams = [
+    "filterCollectionMonthActive",
+    "filterLifeStageActive",
+    "excludeUnpublished",
+    "excludeDubious",
+    "excludeCitation",
+    "excludeUndescribed",
+    "excludeUnspecies",
+    "legendMasterCheckbox",
+    "filterType",
+    "filterSynonymizedType",
+    "filterDoubtfulType",
+    "filterDoubtfulSynonymizedType",
+    "filterSpecimen",
+    "filterLiteratureRecord",
+    "filterDoubtfulLiterature",
+    "toggleHigherTaxonomy"
+  ];
+  boolParams.forEach(key => {
+    if (currentState[key] !== DEFAULT_STATE[key]) {
+      params.set(key, currentState[key] ? "1" : "0");
+    }
+  });
 
   // ラジオボタン
-  if (currentState.classification !== DEFAULT_STATE.classification) {
-    params.set("classification", currentState.classification);
-  }
-  if (currentState.chartMode !== DEFAULT_STATE.chartMode) {
-    params.set("chartMode", currentState.chartMode);
-  }
-  if (currentState.yearMode !== DEFAULT_STATE.yearMode) {
-    params.set("yearMode", currentState.yearMode);
-  }
+  const radioParams = ["classification", "chartMode", "yearMode"];
+  radioParams.forEach(key => {
+    if (currentState[key] !== DEFAULT_STATE[key]) {
+      params.set(key, currentState[key]);
+    }
+  });
 
-  // セレクト
-  if (currentState.filterOrder !== DEFAULT_STATE.filterOrder) {
-    params.set("filterOrder", currentState.filterOrder);
-  }
-  if (currentState.filterFamily !== DEFAULT_STATE.filterFamily) {
-    params.set("filterFamily", currentState.filterFamily);
-  }
-  if (currentState.filterGenus !== DEFAULT_STATE.filterGenus) {
-    params.set("filterGenus", currentState.filterGenus);
-  }
-  if (currentState.filterSpecies !== DEFAULT_STATE.filterSpecies) {
-    params.set("filterSpecies", currentState.filterSpecies);
-  }
-  if (currentState.filterPrefecture !== DEFAULT_STATE.filterPrefecture) {
-    params.set("filterPrefecture", currentState.filterPrefecture);
-  }
-  if (currentState.filterIsland !== DEFAULT_STATE.filterIsland) {
-    params.set("filterIsland", currentState.filterIsland);
-  }
-  if (currentState.filterLiterature !== DEFAULT_STATE.filterLiterature) {
-    params.set("filterLiterature", currentState.filterLiterature);
-  }
+  // セレクトボックス
+  const selectParams = [
+    "filterOrder", "filterFamily", "filterGenus", "filterSpecies",
+    "filterPrefecture", "filterIsland", "filterLiterature"
+  ];
+  selectParams.forEach(key => {
+    if (currentState[key] !== DEFAULT_STATE[key]) {
+      params.set(key, currentState[key]);
+    }
+  });
 
-  // 隔年発生
-  if (currentState.biennialTargetYear !== DEFAULT_STATE.biennialTargetYear) {
-    params.set("biennialTargetYear", currentState.biennialTargetYear);
-  }
-  if (currentState.biennialInterval !== DEFAULT_STATE.biennialInterval) {
-    params.set("biennialInterval", currentState.biennialInterval);
-  }
-
-  // 月チェックボックス
-  // 12個の true/false を "collectionMonths" で 0/1文字列に
-  let monthString = "";
-  for (let i = 0; i < 12; i++) {
-    monthString += currentState.collectionMonths[i] ? "1" : "0";
-  }
-  // 初期状態（すべてtrue or すべてfalse など）と比較したい場合は、
-  // 配列同士の比較が必要ですが、ここでは「文字列が初期と同じか」で判定
-  let defaultMonthString = "";
-  for (let i = 0; i < 12; i++) {
-    defaultMonthString += DEFAULT_STATE.collectionMonths[i] ? "1" : "0";
-  }
+  // 月チェックボックス（12桁）
+  const monthString = currentState.collectionMonths.map(v => (v ? "1" : "0")).join("");
+  const defaultMonthString = DEFAULT_STATE.collectionMonths.map(v => (v ? "1" : "0")).join("");
   if (monthString !== defaultMonthString) {
     params.set("collectionMonths", monthString);
   }
 
-  // クエリ生成
   const queryString = params.toString();
   const newUrl = queryString ? `?${queryString}` : window.location.pathname;
-
-  // ブラウザのURLを書き換える（画面遷移なし）
   window.history.replaceState({}, "", newUrl);
 }
 
@@ -3326,23 +3244,60 @@ document.addEventListener("DOMContentLoaded", async () => {
   // レコード件数等を表示
   updateRecordInfo(rows.length, new Set(rows.map(r => `${r.latitude},${r.longitude}`)).size);
 
-  // クエリパラメータの有無を判断して初期化 ★
+  // 3. URLクエリから状態オブジェクトを取得（セレクト・チェックボックス等を含む）
+  let restoredState = JSON.parse(JSON.stringify(DEFAULT_STATE));
   if (window.location.search) {
-    readStateFromQuery();   // ← ここでURLの状態をDOMに適用
-  } else {
-    applyDefaultState();    // ← クエリがなければデフォルト状態
+    const params = new URLSearchParams(window.location.search);
+
+    ["filterOrder", "filterFamily", "filterGenus", "filterSpecies", "filterPrefecture", "filterIsland", "filterLiterature"].forEach(key => {
+      if (params.has(key)) restoredState[key] = params.get(key);
+    });
+
+    ["publicationYearFrom", "publicationYearTo", "collectionYearFrom", "collectionYearTo", "biennialTargetYear", "biennialInterval"].forEach(key => {
+      if (params.has(key)) restoredState[key] = params.get(key);
+    });
+
+    [
+      "filterCollectionMonthActive", "filterLifeStageActive", "excludeUnpublished", "excludeDubious", "excludeCitation",
+      "excludeUndescribed", "excludeUnspecies", "legendMasterCheckbox", "filterType", "filterSynonymizedType",
+      "filterDoubtfulType", "filterDoubtfulSynonymizedType", "filterSpecimen", "filterLiteratureRecord",
+      "filterDoubtfulLiterature", "toggleHigherTaxonomy"
+    ].forEach(key => {
+      if (params.has(key)) restoredState[key] = params.get(key) === "1";
+    });
+
+    ["classification", "chartMode", "yearMode"].forEach(key => {
+      if (params.has(key)) restoredState[key] = params.get(key);
+    });
+
+    if (params.has("collectionMonths")) {
+      const m = params.get("collectionMonths");
+      if (m.length === 12) {
+        for (let i = 0; i < 12; i++) {
+          restoredState.collectionMonths[i] = m[i] === "1";
+        }
+      }
+    }
   }
 
-  // イベントリスナーや初期化処理
-  applyDefaultState();
+  // 4. セレクトボックス候補の取得・初期化（ここで値もセットされる）
+  const selectOptions = gatherSelectOptions(rows);
+  updateSelectBoxes(restoredState, selectOptions);
+
+  // 5. セレクト以外のDOMへの反映（チェックボックスや年スライダーなど）
+  applyStateToDOM(restoredState);
+
+  // 6. 初期フィルタを適用（クエリが反映された状態で）
+  await applyFilters(true, restoredState);
+
+  // 7. 各種イベントリスナー
   setupSelectListeners();
   setupCheckboxListeners();
   setupNavButtonListeners();
   setupResetButton();
   setupEventListenersForUrlUpdate();
-  map.on("zoomstart", () => {
-    clearMarkers(); // ← ここで一旦マーカー全消去！
-  });
+
+  map.on("zoomstart", () => clearMarkers());
   map.on("zoomend", () => displayMarkers(filteredRows));
 
   setTimeout(() => initializeSelect2(), 50);
@@ -3368,6 +3323,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       cb.checked = masterCb.checked;
     });
     applyFilters();
+    updateURL();
   });
   allCbs.forEach(cb => {
     cb.addEventListener("change", () => {
@@ -3384,8 +3340,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       item.classList.add("active");
       const targetId = item.getAttribute("data-tab");
       document.getElementById(targetId).classList.add("active");
-  
-      // 「データ」タブに切り替わったときにグラフを再描画
+
       if (targetId === "tab-data" && filteredRows && filteredRows.length > 0) {
         generateMonthlyChart(filteredRows);
         generatePrefectureChart(filteredRows);
@@ -3394,11 +3349,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   });
-  
-  generatePrefectureChart(filteredRows);
 
-  // 年グラフ（year-chart）の初期表示とラジオボタン切り替え処理
-  generateYearChart(filteredRows, "publication");  // 初期は出版年
+  generatePrefectureChart(filteredRows);
+  generateYearChart(filteredRows, "publication");
+
   document.querySelectorAll('input[name="year-mode"]').forEach(radio => {
     radio.addEventListener("change", () => {
       const selected = document.querySelector('input[name="year-mode"]:checked').value;
@@ -3417,52 +3371,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   adjustSearchContainerAndLegend();
 
-  // フィルタを初回適用
-  applyFilters(true);
-
-  // localStorage から言語コードを取り出す
   const savedLang = localStorage.getItem("preferredLanguage");
+  const langSelector = document.getElementById("language-selector");
+  const selectedLang = savedLang || "ja";
+  if (langSelector) langSelector.value = selectedLang;
+  applyTranslations(selectedLang);
+  lang = selectedLang;
 
-  if (savedLang) {
-    // 保存されている場合 → その言語で翻訳を適用
-    applyTranslations(savedLang);
-    // UIのラジオボタンやドロップダウンなどがあれば、その値も合わせて反映
-    const langSelector = document.getElementById("language-selector");
-    if (langSelector) {
-      langSelector.value = savedLang; 
-    }
-  } else {
-    // 保存が無い場合 → 既定の言語を使う (例：日本語)
-    applyTranslations("ja");
-    // UIにも "ja" をセット
-    const langSelector = document.getElementById("language-selector");
-    if (langSelector) {
-      langSelector.value = "ja";
-    }
-  }
-
-  // ここで翻訳処理（languageSelectorの監視など）を設定
-
-  const languageSelector = document.getElementById("language-selector");
-  if (languageSelector) {
-    languageSelector.addEventListener("change", () => {
-      // 1) セレクトボックスから新しい言語を取得
-      const selectedLang = languageSelector.value;  // "ja" or "en"
-  
-      // 2) applyTranslationsで翻訳
+  if (langSelector) {
+    langSelector.addEventListener("change", () => {
+      const selectedLang = langSelector.value;
       applyTranslations(selectedLang);
-  
-      // 3) localStorageにも保存しておく
       localStorage.setItem("preferredLanguage", selectedLang);
-  
-      // 4) ★ 重要 ★
-      //  グローバルの lang 変数を再代入 → これにより generateMonthlyChart() 内の translations[lang] が正しい値を使う
       lang = selectedLang;
-  
-      // 5) ドロップダウンのプレースホルダなどを再描画
+
       updateDropdownPlaceholders();
-  
-      // 6) グラフを再描画すると、generateMonthlyChart(...) 内で lang を参照 → 新言語対応
+
       if (filteredRows && filteredRows.length > 0) {
         generateMonthlyChart(filteredRows);
         generatePrefectureChart(filteredRows);
@@ -3472,8 +3396,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         updatePrefectureListInTab();
         updateIslandListInTab();
         initializeSelect2();
-  
-        // 年グラフもあるなら
+
         const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
         generateYearChart(filteredRows, mode);
       }
@@ -3494,8 +3417,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           { id: "japan-outline", type: "line", source: "japan", paint: { "line-color": "#000", "line-width": 1 } }
         ]
       };
-      
-      map.setStyle(newStyle);      
+
+      map.setStyle(newStyle);
     });
   }
 });
