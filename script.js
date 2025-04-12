@@ -653,10 +653,6 @@ const populateSelect = (selectId, options, selectedValue) => {
   }
 
   $(selectEl).val(currentVal).trigger("change");
-
-  console.log(`[populateSelect] ${selectId} options:`, options.map(o => o.value));
-  console.log(`[populateSelect] ${selectId} setting value:`, selectedValue);
-  console.log(`[populateSelect] ${selectId} current DOM .val():`, $(selectEl).val());
   
 };
 
@@ -916,13 +912,6 @@ const initializeSelect2 = () => {
   // 既存のSelect2をすべて破棄 & イベント解除
   Object.keys(SELECT_PLACEHOLDERS).forEach(key => {
     const id = "#" + key;
-    try {
-      if ($(id).data('select2')) {
-        $(id).select2('destroy');
-      }
-    } catch (e) {
-      console.log(`Select2破棄エラー(${id}):`, e);
-    }
     $(id).off();
   });
 
@@ -2662,6 +2651,14 @@ function applyStateToDOM(state) {
   document.getElementById("filter-collection-month-active").checked = state.filterCollectionMonthActive;
   document.getElementById("filter-life-stage-active").checked = state.filterLifeStageActive;
 
+  // --- ライフステージ選択のチェック ---
+  if (state.selectedLifeStages?.includes("adult")) {
+    document.getElementById("life-stage-adult").checked = true;
+  }
+  if (state.selectedLifeStages?.includes("juvenile_unknown")) {
+    document.getElementById("life-stage-juvenile_unknown").checked = true;
+  }
+
   // --- 2) チェックボックス類（除外系） ---
   document.getElementById("exclude-unpublished").checked = state.excludeUnpublished;
   document.getElementById("exclude-dubious").checked = state.excludeDubious;
@@ -2902,6 +2899,16 @@ function updateURL() {
   const defaultMonthString = DEFAULT_STATE.collectionMonths.map(v => (v ? "1" : "0")).join("");
   if (monthString !== defaultMonthString) {
     params.set("collectionMonths", monthString);
+  }
+
+  // ライフステージ（成体 / 幼体・不明）：チェックONのときのみ出力
+  if (currentState.filterLifeStageActive) {
+    if (document.getElementById("life-stage-adult").checked) {
+      params.set("adult", "1");
+    }
+    if (document.getElementById("life-stage-juvenile_unknown").checked) {
+      params.set("juvenile_unknown", "1");
+    }
   }
 
   const queryString = params.toString();
@@ -3248,15 +3255,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   let restoredState = JSON.parse(JSON.stringify(DEFAULT_STATE));
   if (window.location.search) {
     const params = new URLSearchParams(window.location.search);
-
+  
+    // 年フィルタのON判定（既に追加済み）
+    if (params.has("publicationYearFrom") || params.has("publicationYearTo")) {
+      restoredState.filterPublicationYearActive = true;
+    }
+    if (params.has("collectionYearFrom") || params.has("collectionYearTo")) {
+      restoredState.filterCollectionYearActive = true;
+    }
+    if (params.has("biennialTargetYear") || params.has("biennialInterval")) {
+      restoredState.filterBiennialActive = true;
+    }
+  
+    // 🔽 ここを追加：ライフステージ（成体/幼体）クエリ処理
+    const lifeStageKeys = ["adult", "juvenile_unknown"];
+    let lifeStageChecked = false;
+    restoredState.selectedLifeStages = [];
+  
+    lifeStageKeys.forEach(key => {
+      if (params.has(key)) {
+        restoredState.selectedLifeStages.push(key);
+        lifeStageChecked = true;
+      }
+    });
+    if (lifeStageChecked) {
+      restoredState.filterLifeStageActive = true;
+    }
+  
+    // 通常のパラメータ
     ["filterOrder", "filterFamily", "filterGenus", "filterSpecies", "filterPrefecture", "filterIsland", "filterLiterature"].forEach(key => {
       if (params.has(key)) restoredState[key] = params.get(key);
     });
-
+  
     ["publicationYearFrom", "publicationYearTo", "collectionYearFrom", "collectionYearTo", "biennialTargetYear", "biennialInterval"].forEach(key => {
       if (params.has(key)) restoredState[key] = params.get(key);
     });
-
+  
     [
       "filterCollectionMonthActive", "filterLifeStageActive", "excludeUnpublished", "excludeDubious", "excludeCitation",
       "excludeUndescribed", "excludeUnspecies", "legendMasterCheckbox", "filterType", "filterSynonymizedType",
@@ -3265,11 +3299,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     ].forEach(key => {
       if (params.has(key)) restoredState[key] = params.get(key) === "1";
     });
-
+  
     ["classification", "chartMode", "yearMode"].forEach(key => {
       if (params.has(key)) restoredState[key] = params.get(key);
     });
-
+  
     if (params.has("collectionMonths")) {
       const m = params.get("collectionMonths");
       if (m.length === 12) {
@@ -3278,7 +3312,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     }
-  }
+  }  
 
   // 4. セレクトボックス候補の取得・初期化（ここで値もセットされる）
   const selectOptions = gatherSelectOptions(rows);
