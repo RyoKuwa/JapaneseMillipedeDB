@@ -84,10 +84,14 @@ const translations = {
     chart_species_axis: "種数",
     chart_tooltip_ratio: "{val}% ({absCount}種)",  // 後述のコールバック用
     // --- Year Chart ---
-    year_chart_publication: "記録数と累積記録数（出版年）",
-    year_chart_collection: "記録数と累積記録数（採集年）",
-    year_chart_left_axis: "記録数",
-    year_chart_right_axis: "累積記録数",
+    year_chart_record_publication: "記録数と累積記録数（出版年）",
+    year_chart_record_collection: "記録数と累積記録数（採集年）",
+    year_chart_species_publication: "種数と累積種数（出版年）",
+    year_chart_species_collection: "種数と累積種数（採集年）",
+    year_chart_y_label_record: "記録数",
+    year_chart_y_label_species: "種数",
+    year_chart_y2_label_record: "累積記録数",
+    year_chart_y2_label_species: "累積種数",
     // 凡例7種
     year_type_1: "原記載",
     year_type_2: "統合された種の原記載",
@@ -101,7 +105,6 @@ const translations = {
     number_of_species: "種数",
     number_of_records: "記録数",
     ratio: "割合",
-    year_chart_cumulative_label: "累積記録数",
     record_type: "記録の種類",
     original_japanese_name: "文献中の和名",
     original_scientific_name: "文献中の学名",
@@ -117,8 +120,9 @@ const translations = {
     unpublished_data: "未公表データ",
     unknown: "Unknown",
     touch_hint: "2本指で地図を操作<br><br>マーカークリックで詳細表示",
-    click_for_details: "クリックで詳細表示"
-
+    click_for_details: "クリックで詳細表示",
+    record_count: "記録数",
+    species_count: "種数"
   },
 
   en: {
@@ -204,10 +208,14 @@ const translations = {
     chart_species_axis: "Species",
     chart_tooltip_ratio: "{val}% ({absCount} sp.)",
     // --- Year Chart ---
-    year_chart_publication: "Number of Records & Cumulative (Publication Year)",
-    year_chart_collection: "Number of Records & Cumulative (Collection Year)",
-    year_chart_left_axis: "Records",
-    year_chart_right_axis: "Cumulative",
+    year_chart_record_publication: "Number of Records & Cumulative (Publication Year)",
+    year_chart_record_collection: "Number of Records & Cumulative (Collection Year)",
+    year_chart_species_publication: "Number of Species & Cumulative (Publication Year)",
+    year_chart_species_collection: "Number of Species & Cumulative (Collection Year)",
+    year_chart_y_label_record: "Number of records",
+    year_chart_y_label_species: "Number of species",
+    year_chart_y2_label_record: "Cumulative number of records",
+    year_chart_y2_label_species: "Cumulative number of species",
     // 7 types
     year_type_1: "Original description",
     year_type_2: "Original description of synonymized species",
@@ -221,7 +229,6 @@ const translations = {
     number_of_species: "Number of species",
     number_of_records: "Number of records",
     ratio: "Ratio",
-    year_chart_cumulative_label: "Cumulative number of records",
     record_type: "Record Type",
     original_japanese_name: "Japanese Name in Literature",
     original_scientific_name: "Scientific Name in Literature",
@@ -237,8 +244,9 @@ const translations = {
     unpublished_data: "Unpublished Data",
     unknown: "Unknown",
     touch_hint: "Use two fingers to move the map<br><br>Tap a marker for details",
-    click_for_details: "Click for details"
-    
+    click_for_details: "Click for details",
+    record_count: "Number of records",
+    species_count: "Number of species"
   }
 };
 

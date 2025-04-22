@@ -777,21 +777,21 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   font-size: 14px;
 }
 
-#year-radio {
+.chart-options-box {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin: 10px auto;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #aaa;
-  border-radius: 4px;
-  font-size: 14px;
   flex-wrap: wrap;
+  gap: 1.5em;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5em;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 1em;
 }
 
-#year-radio label {
-  margin-right: 10px;
+.classification-radio label {
+  margin-right: 1em;
+  white-space: nowrap;
 }
 
 /* 高次分類群の表示/非表示トグルチェックボックス */

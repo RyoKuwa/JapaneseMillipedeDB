@@ -832,7 +832,7 @@ const applyFilters = async (updateMap = true, filtersOverride = null) => {
       generateMonthlyChart(filteredRowsLocal);
       generatePrefectureChart(filteredRowsLocal);
       const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
-      generateYearChart(filteredRows, mode);
+      updateYearChart();
     }
 
     updateDropdownPlaceholders();
@@ -1934,39 +1934,33 @@ function generatePrefectureChart(allRows) {
 }
 
 function generateYearChart(rows, mode) {
-
   const yearChartTitleEl = document.getElementById("year-chart-title");
   if (yearChartTitleEl) {
-    if (mode === 'publication') {
+    if (mode.startsWith("record")) {
       yearChartTitleEl.textContent =
-        translations[lang]?.year_chart_publication || "記録数と累積記録数（出版年）";
+        translations[lang]?.[
+          mode.includes("collection")
+            ? "year_chart_record_collection"
+            : "year_chart_record_publication"
+        ] || (mode.includes("collection")
+          ? "記録数と累積記録数（採集年）"
+          : "記録数と累積記録数（出版年）");
     } else {
       yearChartTitleEl.textContent =
-        translations[lang]?.year_chart_collection || "記録数と累積記録数（採集年）";
+        translations[lang]?.[
+          mode.includes("collection")
+            ? "year_chart_species_collection"
+            : "year_chart_species_publication"
+        ] || (mode.includes("collection")
+          ? "種数と累積種数（採集年）"
+          : "種数と累積種数（出版年）");
     }
   }
 
+  const yearKey = mode.includes("collection") ? "collectionYear" : "publicationYear";
   const yearData = {};
-  rows.forEach(row => {
-    const year = parseInt(mode === 'publication' ? row.publicationYear : row.collectionYear);
-    const type = row.recordType;
-    if (!Number.isInteger(year)) return;
-    if (!yearData[year]) yearData[year] = {};
-    if (!yearData[year][type]) yearData[year][type] = 0;
-    yearData[year][type]++;
-  });
-
-  const yearsWithData = Object.keys(yearData).map(y => parseInt(y));
-  if (yearsWithData.length === 0) {
-    if (window.yearChart) window.yearChart.destroy();
-    return;
-  }
-  const minYear = Math.min(...yearsWithData);
-  const maxYear = Math.max(...yearsWithData);
-  const sortedYears = [];
-  for (let y = minYear; y <= maxYear; y++) {
-    sortedYears.push(y);
-  }
+  const speciesByYearByType = {};
+  const cumulativeSpeciesSet = new Set();
 
   const originalTypes = [
     "1_タイプ産地",
@@ -1998,46 +1992,126 @@ function generateYearChart(rows, mode) {
     "#CC79A7"
   ];
 
-  const datasets = [];
-  const activeTypes = [];
+  rows.forEach(row => {
+    const year = parseInt(row[yearKey]);
+    const type = row.recordType;
+    const species = row.scientificName;
+    if (!Number.isInteger(year) || !species || species === "-") return;
 
-  originalTypes.forEach((type, index) => {
-    const data = sortedYears.map(year => yearData[year]?.[type] || 0);
-    const total = data.reduce((a, b) => a + b, 0);
-    if (total > 0) {
-      datasets.push({
-        label: displayLabels[index],
-        backgroundColor: colors[index],
-        data: data,
-        stack: 'stack1'
-      });
-      activeTypes.push(type);
+    if (mode.startsWith("record")) {
+      if (!yearData[year]) yearData[year] = {};
+      if (!yearData[year][type]) yearData[year][type] = 0;
+      yearData[year][type]++;
+    } else if (mode.startsWith("species")) {
+      if (!speciesByYearByType[year]) speciesByYearByType[year] = {};
+      if (!speciesByYearByType[year][type]) speciesByYearByType[year][type] = new Set();
+      speciesByYearByType[year][type].add(species);
     }
   });
 
-  let cumulativeSum = 0;
-  const cumulativeArray = sortedYears.map(year => {
-    const total = activeTypes.reduce((sum, type) => sum + (yearData[year]?.[type] || 0), 0);
-    cumulativeSum += total;
-    return cumulativeSum;
-  });
+  const allYears = Object.keys(mode.startsWith("record") ? yearData : speciesByYearByType).map(y => parseInt(y));
+  if (allYears.length === 0) {
+    if (window.yearChart) window.yearChart.destroy();
+    return;
+  }
 
-  const cumulativeLabel = translations[lang]?.year_chart_cumulative_label || "累積記録数";
+  const minYear = Math.min(...allYears);
+  const maxYear = Math.max(...allYears);
+  const sortedYears = [];
+  for (let y = minYear; y <= maxYear; y++) {
+    sortedYears.push(y);
+  }
 
-  datasets.push({
-    label: cumulativeLabel,
-    data: cumulativeArray,
-    type: 'line',
-    borderColor: 'black',
-    backgroundColor: 'black',
-    fill: false,
-    yAxisID: 'y-axis-2',
-    tension: 0.1,
-    pointRadius: 0
-  });
+  const datasets = [];
+  const cumulativeArray = [];
 
-  const leftAxisLabel = translations[lang]?.year_chart_left_axis || "記録数";
-  const rightAxisLabel = translations[lang]?.year_chart_right_axis || "累積記録数";
+  const cumulativeLabel =
+  translations[lang]?.[
+    mode.startsWith("species")
+      ? "year_chart_y2_label_species"
+      : "year_chart_y2_label_record"
+  ] || (mode.startsWith("species") ? "累積種数" : "累積記録数");(mode.startsWith("species") ? "累積種数" : "累積記録数");
+
+  const leftAxisLabel =
+    translations[lang]?.[
+      mode.startsWith("species") ? "year_chart_y_label_species" : "year_chart_y_label_record"
+    ] || (mode.startsWith("species") ? "種数" : "記録数");
+
+  const rightAxisLabel =
+    translations[lang]?.[
+      mode.startsWith("species") ? "year_chart_y2_label_species" : "year_chart_y2_label_record"
+    ] || (mode.startsWith("species") ? "累積種数" : "累積記録数");
+
+  if (mode.startsWith("record")) {
+    const activeTypes = [];
+    originalTypes.forEach((type, index) => {
+      const data = sortedYears.map(year => yearData[year]?.[type] || 0);
+      const total = data.reduce((a, b) => a + b, 0);
+      if (total > 0) {
+        datasets.push({
+          label: displayLabels[index],
+          backgroundColor: colors[index],
+          data: data,
+          stack: 'stack1'
+        });
+        activeTypes.push(type);
+      }
+    });
+
+    let cumulativeSum = 0;
+    for (const year of sortedYears) {
+      const total = activeTypes.reduce((sum, type) => sum + (yearData[year]?.[type] || 0), 0);
+      cumulativeSum += total;
+      cumulativeArray.push(cumulativeSum);
+    }
+
+    datasets.push({
+      label: cumulativeLabel,
+      data: cumulativeArray,
+      type: 'line',
+      borderColor: 'black',
+      backgroundColor: 'black',
+      fill: false,
+      yAxisID: 'y-axis-2',
+      tension: 0.1,
+      pointRadius: 0
+    });
+  } else if (mode.startsWith("species")) {
+    originalTypes.forEach((type, index) => {
+      const data = sortedYears.map(year => speciesByYearByType[year]?.[type]?.size || 0);
+      const total = data.reduce((a, b) => a + b, 0);
+      if (total > 0) {
+        datasets.push({
+          label: displayLabels[index],
+          backgroundColor: colors[index],
+          data: data,
+          stack: 'stack1'
+        });
+      }
+    });
+
+    for (const year of sortedYears) {
+      const types = speciesByYearByType[year];
+      if (types) {
+        for (const type in types) {
+          for (const s of types[type]) cumulativeSpeciesSet.add(s);
+        }
+      }
+      cumulativeArray.push(cumulativeSpeciesSet.size);
+    }
+
+    datasets.push({
+      label: cumulativeLabel,
+      data: cumulativeArray,
+      type: 'line',
+      borderColor: 'black',
+      backgroundColor: 'black',
+      fill: false,
+      yAxisID: 'y-axis-2',
+      tension: 0.1,
+      pointRadius: 0
+    });
+  }
 
   const ctx = document.getElementById("year-chart").getContext("2d");
   if (window.yearChart) window.yearChart.destroy();
@@ -2514,6 +2588,7 @@ const DEFAULT_STATE = {
   classification: "order",       // name="classification"
   chartMode: "count",            // name="chart-mode"
   yearMode: "publication",       // name="year-mode"
+  countMode: "record",
 
   // --- トグルチェックボックス ---
   toggleHigherTaxonomy: true,    // id="toggle-higher-taxonomy"
@@ -2588,6 +2663,9 @@ function applyDefaultState() {
   const yearModeRadio = document.querySelector(`input[name="year-mode"][value="${DEFAULT_STATE.yearMode}"]`);
   if (yearModeRadio) yearModeRadio.checked = true;
 
+  const countModeRadio = document.querySelector(`input[name="count-mode"][value="${state.countMode}"]`);
+  if (countModeRadio) countModeRadio.checked = true;
+
   // 7. トグルチェック
   document.getElementById("toggle-higher-taxonomy").checked = DEFAULT_STATE.toggleHigherTaxonomy;
 
@@ -2626,7 +2704,7 @@ function readStateFromQuery() {
     if (params.has(key)) restoredState[key] = params.get(key) === "1";
   });
 
-  ["classification", "chartMode", "yearMode"].forEach(key => {
+  ["classification", "chartMode", "yearMode", "countMode"].forEach(key => {
     if (params.has(key)) restoredState[key] = params.get(key);
   });
 
@@ -2691,6 +2769,9 @@ function applyStateToDOM(state) {
 
   const yearModeRadio = document.querySelector(`input[name="year-mode"][value="${state.yearMode}"]`);
   if (yearModeRadio) yearModeRadio.checked = true;
+
+  const countModeRadio = document.querySelector(`input[name="count-mode"][value="${state.countMode}"]`);
+  if (countModeRadio) countModeRadio.checked = true;
 
   // --- 6) 出版年 / 採集年のテキストボックス (スライダー用) ---
   //   文字列が入っている場合はテキストボックスに反映し、スライダーにも値を渡す
@@ -3009,6 +3090,18 @@ function setupEventListenersForUrlUpdate() {
 }
 
 // ==================== レスポンシブ調整 ====================
+function updateYearChart() {
+  const yearMode = document.querySelector('input[name="year-mode"]:checked')?.value || "publication";
+  const countMode = document.querySelector('input[name="count-mode"]:checked')?.value || "record";
+
+  const mode =
+    countMode === "record"
+      ? (yearMode === "collection" ? "record-collection" : "record")
+      : (yearMode === "collection" ? "species-collection" : "species");
+
+  generateYearChart(filteredRows, mode);
+}
+
 let preventResize = false;
 
 const adjustSearchContainerAndLegend = () => {
@@ -3394,19 +3487,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (targetId === "tab-data" && filteredRows && filteredRows.length > 0) {
         generateMonthlyChart(filteredRows);
         generatePrefectureChart(filteredRows);
-        const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
-        generateYearChart(filteredRows, mode);
+        updateYearChart();
       }
     });
   });
 
   generatePrefectureChart(filteredRows);
-  generateYearChart(filteredRows, "publication");
+  updateYearChart();
 
   document.querySelectorAll('input[name="year-mode"]').forEach(radio => {
     radio.addEventListener("change", () => {
-      const selected = document.querySelector('input[name="year-mode"]:checked').value;
-      generateYearChart(filteredRows, selected);
+      updateYearChart();
+      updateURL();
+    });
+  });
+
+  document.querySelectorAll('input[name="count-mode"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      updateYearChart();
+      updateURL();
     });
   });
 
@@ -3415,7 +3514,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (filteredRows && filteredRows.length > 0) {
       generateMonthlyChart(filteredRows);
       generatePrefectureChart(filteredRows);
-      generateYearChart(filteredRows, document.querySelector('input[name="year-mode"]:checked').value);
+      updateYearChart();
     }
   });
 
@@ -3448,7 +3547,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         initializeSelect2();
 
         const mode = document.querySelector('input[name="year-mode"]:checked')?.value || 'publication';
-        generateYearChart(filteredRows, mode);
+        updateYearChart();
       }
 
       const newStyle = {
