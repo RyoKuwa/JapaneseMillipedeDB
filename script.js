@@ -24,6 +24,7 @@ let activePopup = null;
 let filteredRows = []; // フィルタリングされたデータ
 let currentAnchor = null;
 let currentShowAbove = null;
+let isZooming = false;
 
 // グラフ関連
 let monthChart = null;
@@ -550,7 +551,8 @@ const filterByCheckbox = (data, checkboxes) => {
     if (checkboxes.excludeUndescribed && row.undescribedSpecies.toLowerCase() === "yes") {
       return false;
     }
-    if (checkboxes.excludeUnspecies && row.taxonRank.toLowerCase() !== "species") {
+    const allowedRanks = ["species", "subspecies"];
+    if (checkboxes.excludeUnspecies && !allowedRanks.includes(row.taxonRank.toLowerCase())) {
       return false;
     }
     if (checkboxes.excludeUnpublished && isUnpublished) return false;
@@ -1399,9 +1401,10 @@ const displayMarkers = (filteredData) => {
   if (!tooltip) {
     tooltip = document.createElement("div");
     tooltip.className = "marker-tooltip";
-    tooltip.textContent = translations[lang]?.click_for_details || "クリックで詳細表示";
     document.body.appendChild(tooltip);
   }
+
+  tooltip.textContent = translations[lang]?.click_for_details || "クリックで詳細表示";
 
   let isTouchDevice = false;
 
@@ -1417,7 +1420,7 @@ const displayMarkers = (filteredData) => {
       .addTo(map);
 
     el.addEventListener("mouseenter", (e) => {
-      if (!isTouchDevice) {
+      if (!isTouchDevice && !isZooming) {
         tooltip.style.display = "block";
         tooltip.style.left = `${e.pageX + 10}px`;
         tooltip.style.top = `${e.pageY + 10}px`;
@@ -3010,7 +3013,10 @@ let preventResize = false;
 
 const adjustSearchContainerAndLegend = () => {
   if (preventResize) return;
-  
+
+  // 入力中なら再配置をスキップ
+  if (document.activeElement?.matches("input[type='text']")) return;
+
   const searchContainer = document.querySelector(".search-container");
   const mapContainer = document.getElementById("mapid");
   const legend = document.querySelector(".legend");
@@ -3331,8 +3337,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupResetButton();
   setupEventListenersForUrlUpdate();
 
-  map.on("zoomstart", () => clearMarkers());
-  map.on("zoomend", () => displayMarkers(filteredRows));
+  map.on("zoomstart", () => {
+    clearMarkers()
+    isZooming = true;
+  
+    const tooltip = document.querySelector(".marker-tooltip");
+    if (tooltip) tooltip.style.display = "none";
+  });
+
+  map.on("zoomend", () => {
+    displayMarkers(filteredRows)
+    isZooming = false;
+  });
 
   setTimeout(() => initializeSelect2(), 50);
   setTimeout(() => updateDropdownPlaceholders(), 100);
