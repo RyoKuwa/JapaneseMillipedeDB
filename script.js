@@ -2873,6 +2873,7 @@ function getCurrentStateFromDOM() {
     classification: classificationRadio ? classificationRadio.value : "order",
     chartMode: chartModeRadio ? chartModeRadio.value : "count",
     yearMode: yearModeRadio ? yearModeRadio.value : "publication",
+    countMode: document.querySelector('input[name="count-mode"]:checked')?.value || "record",
 
     // 出版年
     publicationYearFrom: document.getElementById("publication-year-min").value,
@@ -2960,7 +2961,7 @@ function updateURL() {
   });
 
   // ラジオボタン
-  const radioParams = ["classification", "chartMode", "yearMode"];
+  const radioParams = ["classification", "chartMode", "yearMode", "countMode"];
   radioParams.forEach(key => {
     if (currentState[key] !== DEFAULT_STATE[key]) {
       params.set(key, currentState[key]);
@@ -3399,7 +3400,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (params.has(key)) restoredState[key] = params.get(key) === "1";
     });
   
-    ["classification", "chartMode", "yearMode"].forEach(key => {
+    ["classification", "chartMode", "yearMode", "countMode"].forEach(key => {
       if (params.has(key)) restoredState[key] = params.get(key);
     });
   
