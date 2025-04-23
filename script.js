@@ -1016,6 +1016,10 @@ const initializeSelect2 = () => {
         applyFilters(true);
         updateURL();
         updateSelectedLabels();
+        updateRecordInfo(
+          filteredRows.length,
+          new Set(filteredRows.map(r => `${r.latitude},${r.longitude}`)).size
+        );
       });
 
       blockOpenIfHasValue(id);
@@ -2193,8 +2197,33 @@ function updateFilterActivationUI() {
 }
 
 function updateRecordInfo(recordCount, locationCount) {
-  document.getElementById("record-count").textContent = recordCount;
-  document.getElementById("location-count").textContent = locationCount;
+  const container = document.getElementById("selected-labels");
+  if (!container) return;
+
+  // 件数情報を多言語対応で構築
+  const recordLabel = translations[lang]?.records || "レコード数";
+  const locationLabel = translations[lang]?.locations || "地点数";
+
+  // 既存のカウント情報があれば削除（再描画のため）
+  const old = document.getElementById("record-info-wrapper");
+  if (old) old.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.id = "record-info-wrapper";
+  wrapper.style.display = "flex";
+  wrapper.style.justifyContent = "flex-end";
+  wrapper.style.gap = "1em";
+  wrapper.style.fontWeight = "normal";
+  wrapper.style.fontSize = "90%";
+  wrapper.style.marginTop = "0.3em";
+
+  wrapper.innerHTML = `
+    <div>${recordLabel}: <span id="record-count">${recordCount}</span></div>
+    <div>${locationLabel}: <span id="location-count">${locationCount}</span></div>
+  `;
+
+  container.appendChild(wrapper);
+  container.style.display = "block";
 }
 
 function updateSelectedLabels() {
@@ -2389,6 +2418,11 @@ function updateSelectedLabels() {
     labelContainer.innerHTML = "";
     labelContainer.style.display = "none";
   }
+
+  updateRecordInfo(
+    filteredRows.length,
+    new Set(filteredRows.map(r => `${r.latitude},${r.longitude}`)).size
+  );
 
   // 高さ変動のスクロール補正（サブピクセル対応）
   const newRect = labelContainer.getBoundingClientRect();
