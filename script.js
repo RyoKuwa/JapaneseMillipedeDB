@@ -35,6 +35,7 @@ let chartTitle;
 
 // 翻訳
 let lang = localStorage.getItem("preferredLanguage") || "ja";
+
 // ==================== 地図の初期設定 ====================
 const initMap = () => {
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -385,8 +386,6 @@ const loadDistributionCSV = async () => {
 
     initBiennialSelects();
 
-    // 読み込み後、初回フィルタを実行
-    applyFilters(true);
   } catch (error) {
     console.error("CSV の読み込みエラー:", error);
   }
@@ -654,7 +653,7 @@ const populateSelect = (selectId, options, selectedValue) => {
     $(selectEl).val(currentVal);
   }
 
-  $(selectEl).val(currentVal).trigger("change");
+  $(selectEl).val(currentVal);
   
 };
 
@@ -935,7 +934,7 @@ const initializeSelect2 = () => {
       });
 
       if (currentVal) {
-        $(id).val(currentVal).trigger("change");
+        $(id).val(currentVal);
       }
       return true;
     } catch (e) {
@@ -1098,56 +1097,6 @@ const updateDropdownPlaceholders = () => {
     }
   });
 };
-
-// セレクトボックスのイベント設定
-function setupSelectListeners() {
-  const dropDownIds = [
-    "filter-species",
-    "filter-genus",
-    "filter-family",
-    "filter-order",
-    "filter-prefecture",
-    "filter-island",
-    "filter-literature",
-    "biennial-target-year",
-    "biennial-interval"
-  ];
-  
-  // 既存のイベントリスナーを全て解除
-  dropDownIds.forEach((id) => {
-    const sel = document.getElementById(id);
-    if (sel) {
-      const clone = sel.cloneNode(true);
-      sel.parentNode.replaceChild(clone, sel);
-    }
-  });
-  
-  // 新しいイベントリスナーを設定
-  dropDownIds.forEach((id) => {
-    const sel = document.getElementById(id);
-    if (sel) {
-      sel.addEventListener("change", function() {
-        applyFilters(true);
-        updateURL();
-        updateSelectedLabels();
-        
-        // 矢印とクリアボタンの表示を更新
-        const selectEl = $(`#${id}`);
-        const selectContainer = selectEl.next('.select2-container');
-        const arrow = selectContainer.find('.select2-selection__arrow');
-        const clearButton = selectContainer.find('.custom-select2-clear');
-        
-        if (this.value) {
-          arrow.hide();
-          clearButton.show();
-        } else {
-          arrow.show();
-          clearButton.hide();
-        }
-      });
-    }
-  });
-}
 
 // チェックボックスイベントのセットアップ関数
 function setupCheckboxListeners() {
@@ -3035,95 +2984,6 @@ function updateURL() {
   window.history.replaceState({}, "", newUrl);
 }
 
-function setupEventListenersForUrlUpdate() {
-  // 例: チェックボックスのIDをまとめる
-  const checkboxIds = [
-    "filter-publication-year-active",
-    "filter-collection-year-active",
-    "filter-biennial-active",
-    "filter-collection-month-active",
-    "filter-life-stage-active",
-    "exclude-unpublished",
-    "exclude-dubious",
-    "exclude-citation",
-    "exclude-undescribed",
-    "exclude-unspecies",
-    "legend-master-checkbox",
-    "filter-type",
-    "filter-synonymized-type",
-    "filter-doubtful-type",
-    "filter-doubtful-synonymized-type",
-    "filter-specimen",
-    "filter-literature-record",
-    "filter-doubtful-literature",
-    "toggle-higher-taxonomy"
-  ];
-
-  checkboxIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener("change", () => {
-        applyFilters();  // フィルタ再適用
-        updateURL();     // URL更新
-      });
-    }
-  });
-
-  // 月別チェックボックス (class="collection-month")
-  const monthCheckboxes = document.querySelectorAll(".collection-month");
-  monthCheckboxes.forEach(cb => {
-    cb.addEventListener("change", () => {
-      applyFilters();
-      updateURL();
-    });
-  });
-
-  // ラジオボタン (classification, chart-mode, year-mode)
-  const classificationRadios = document.querySelectorAll('input[name="classification"]');
-  classificationRadios.forEach(r => {
-    r.addEventListener("change", () => {
-      applyFilters();
-      updateURL();
-    });
-  });
-  const chartModeRadios = document.querySelectorAll('input[name="chart-mode"]');
-  chartModeRadios.forEach(r => {
-    r.addEventListener("change", () => {
-      applyFilters();
-      updateURL();
-    });
-  });
-  const yearModeRadios = document.querySelectorAll('input[name="year-mode"]');
-  yearModeRadios.forEach(r => {
-    r.addEventListener("change", () => {
-      applyFilters();
-      updateURL();
-    });
-  });
-
-  // セレクトボックス
-  const selectIds = [
-    "filter-order",
-    "filter-family",
-    "filter-genus",
-    "filter-species",
-    "filter-prefecture",
-    "filter-island",
-    "filter-literature",
-    "biennial-target-year",
-    "biennial-interval"
-  ];
-  selectIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener("change", () => {
-        applyFilters();
-        updateURL();
-      });
-    }
-  });
-}
-
 // ==================== レスポンシブ調整 ====================
 function updateYearChart() {
   const yearMode = document.querySelector('input[name="year-mode"]:checked')?.value || "publication";
@@ -3455,15 +3315,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 5. セレクト以外のDOMへの反映（チェックボックスや年スライダーなど）
   applyStateToDOM(restoredState);
 
-  // 6. 初期フィルタを適用（クエリが反映された状態で）
-  await applyFilters(true, restoredState);
-
-  // 7. 各種イベントリスナー
-  setupSelectListeners();
+  // 6. 各種イベントリスナー
   setupCheckboxListeners();
   setupNavButtonListeners();
   setupResetButton();
-  setupEventListenersForUrlUpdate();
 
   map.on("zoomstart", () => {
     clearMarkers()
@@ -3478,7 +3333,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     isZooming = false;
   });
 
-  setTimeout(() => initializeSelect2(), 50);
   setTimeout(() => updateDropdownPlaceholders(), 100);
 
   setupLegendToggle();
