@@ -124,9 +124,6 @@ const initMap = () => {
     });
   }
 
-  // 隔年セレクトボックスの初期化
-  initBiennialSelects();
-
   // 既存の呼び出し（選択ラベル更新など）
   updateSelectedLabels();
 
@@ -1168,7 +1165,17 @@ function setupCheckboxListeners() {
       applyFilters(true);
       updateURL();
     });
-  });  
+  });
+
+  document.getElementById("biennial-target-year").addEventListener("change", () => {
+    applyFilters(true);
+    updateURL();
+  });
+  
+  document.getElementById("biennial-interval").addEventListener("change", () => {
+    applyFilters(true);
+    updateURL();
+  });
 
   // 初期状態のフィルターUI適用（ページロード時）
   updateFilterActivationUI();
@@ -2802,8 +2809,20 @@ function applyStateToDOM(state) {
   document.getElementById("filter-literature").value = state.filterLiterature;
 
   // --- 8) 隔年発生 (ターゲット年/周期) ---
-  document.getElementById("biennial-target-year").value = state.biennialTargetYear || "";
-  document.getElementById("biennial-interval").value = state.biennialInterval || "";
+  const targetYearEl = document.getElementById("biennial-target-year");
+  const intervalEl = document.getElementById("biennial-interval");
+
+  if (state.biennialTargetYear) {
+    targetYearEl.value = state.biennialTargetYear;
+  } else if (targetYearEl.options.length > 0) {
+    targetYearEl.value = targetYearEl.options[0].value; // 最小値を自動選択
+  }
+
+  if (state.biennialInterval) {
+    intervalEl.value = state.biennialInterval;
+  } else {
+    intervalEl.value = "2"; // デフォルトの周期
+  }
 
   // --- 9) 月チェックボックス (.collection-month)
   const monthCheckboxes = document.querySelectorAll(".collection-month");
@@ -3457,6 +3476,37 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
 
       map.setStyle(newStyle);
+    });
+  }
+  // ページ初期化ボタンの処理
+  const resetPageBtn = document.getElementById("reset-page-button");
+  if (resetPageBtn) {
+    resetPageBtn.addEventListener("click", () => {
+      // 1. 初期状態をDOMに反映
+      applyStateToDOM(DEFAULT_STATE);
+  
+      // 2. セレクトボックスを初期化
+      const selectOptions = gatherSelectOptions(rows);
+      updateSelectBoxes(DEFAULT_STATE, selectOptions);
+  
+      // 3. 隔年フィルタや年スライダーの有効/無効も更新（←これが抜けていた）
+      updateFilterActivationUI();
+  
+      // 4. セレクトボックスフィルタのみ初期化してフィルタ適用
+      const filters = {
+        species: "",
+        genus: "",
+        family: "",
+        order: "",
+        prefecture: "",
+        island: "",
+        literature: ""
+      };
+      applyFilters(true, filters);
+  
+      // 5. URL更新・ラベル更新
+      updateURL();
+      updateSelectedLabels();
     });
   }
 });

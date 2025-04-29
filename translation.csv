@@ -1,0 +1,119 @@
+key,ar,de,en,es,fr,hi,hu,id,ja,ko,pt,ru,zh
+heading,,,Distribution of Japanese Millipede (under construction),,,,,,“ú–{Yƒ„ƒXƒf—Ş‚Ì•ª•z (ì¬’†)<br>Distribution of Japanese Millipede (under construction),??? ??? ?? (?? ?)<br>Distribution of Japanese Millipede (under construction),,„Q„p„ƒ„„‚„€„ƒ„„„‚„p„~„u„~„y„u „}„~„€„s„€„~„€„w„u„{ „`„„€„~„y„y („r „‚„p„x„‚„p„q„€„„„{„u)<br>Distribution of Japanese Millipede (under construction),“ú–{??•ª•zi??’†j
+filter,,,Filter,,,,,,ƒtƒBƒ‹ƒ^[,??,,„U„y„|„„„„‚,??
+reset,,,Reset,,,,,,ƒŠƒZƒbƒg,???,,„R„q„‚„€„ƒ,d’u
+publication_year,,,Publication Year,,,,,,o”Å”N,?? ??,,„C„€„t „„…„q„|„y„{„p„ˆ„y„y,o”Å”N?
+collection_year,,,Collection Year,,,,,,ÌW”N,?? ??,,„C„€„t „ƒ„q„€„‚„p,ÑW”N?
+periodicity,,,Periodicity,,,,,,üŠú«,???,,„P„u„‚„y„€„t„y„‰„~„€„ƒ„„„,üŠú«
+collection_month,,,Collection Month,,,,,,ÌWŒ,?? ?,,„M„u„ƒ„‘„ˆ „ƒ„q„€„‚„p,ÑWŒ?
+include_year,,,Include Year,,,,,,ŠÜ‚ß‚é”N,?? ??,,„B„{„|„„‰„y„„„ „s„€„t,•ïŠ‡”N?
+periodicity_years,,,Periodicity (Years),,,,,,üŠú (”N),?? (?),,„P„u„‚„y„€„t„y„‰„~„€„ƒ„„„ („|„u„„),üŠúi”Nj
+january,,,Jan.,,,,,,1Œ,1?,,„`„~„r„p„‚„,1Œ
+february,,,Feb.,,,,,,2Œ,2?,,„U„u„r„‚„p„|„,2Œ
+march,,,Mar.,,,,,,3Œ,3?,,„M„p„‚„„,3Œ
+april,,,Apr.,,,,,,4Œ,4?,,„@„„‚„u„|„,4Œ
+may,,,May,,,,,,5Œ,5?,,„M„p„z,5Œ
+june,,,Jun.,,,,,,6Œ,6?,,„I„„~„,6Œ
+july,,,Jul.,,,,,,7Œ,7?,,„I„„|„,7Œ
+august,,,Aug.,,,,,,8Œ,8?,,„@„r„s„…„ƒ„„,8Œ
+september,,,Sep.,,,,,,9Œ,9?,,„R„u„~„„„‘„q„‚„,9Œ
+october,,,Oct.,,,,,,10Œ,10?,,„O„{„„„‘„q„‚„,10Œ
+november,,,Nov.,,,,,,11Œ,11?,,„N„€„‘„q„‚„,11Œ
+december,,,Dec.,,,,,,12Œ,12?,,„D„u„{„p„q„‚„,12Œ
+lifestage,,,Life Stage,,,,,,ƒ‰ƒCƒtƒXƒe[ƒW,?? ??,,„R„„„p„t„y„‘ „‚„p„x„r„y„„„y„‘,¶–½üŠú?’i
+adult,,,Adult,,,,,,¬‘Ì,??,,„I„}„p„s„€,¬‘Ì
+juvenile_unknown,,,Juvenile / Unknown,,,,,,—c‘Ì / •s–¾,?? / ??,,„L„y„‰„y„~„{„p / „N„u„y„x„r„u„ƒ„„„~„€,—c‘Ì / –¢’m
+exclude_unpublished_data,,,Exclude unpublished data,,,,,,–¢Œö•\ƒf[ƒ^‚ğœŠO,??? ???? ??,,„I„ƒ„{„|„„‰„y„„„ „~„u„€„„…„q„|„y„{„€„r„p„~„~„„u „t„p„~„~„„u,”rœ–¢?•\”˜
+exclude_questionable_records,,,Exclude questionable records,,,,,,‹^‚í‚µ‚¢‹L˜^‚ğœŠO,????? ?? ??,,„I„ƒ„{„|„„‰„y„„„ „ƒ„€„}„~„y„„„u„|„„~„„u „x„p„„y„ƒ„y,”rœ‰Â‹^??
+exclude_cited_records,,,Exclude cited records,,,,,,ˆø—p‹L˜^‚ğœŠO,?? ?? ??,,„I„ƒ„{„|„„‰„y„„„ „ˆ„y„„„y„‚„€„r„p„~„~„„u „x„p„„y„ƒ„y,”rœˆø—p??
+exclude_undescribed_species,,,Exclude undescribed species,,,,,,–¢‹LÚí‚ğœŠO,??? ? ??,,„I„ƒ„{„|„„‰„y„„„ „~„u„€„„y„ƒ„p„~„~„„u „r„y„t„,”rœ–¢•`q•¨?
+exclude_records_without_species_identification,,,Exclude records without species identification,,,,,,í“¯’è‚³‚ê‚Ä‚¢‚È‚¢‹L˜^‚ğœŠO,? ???? ?? ?? ??,,„I„ƒ„{„|„„‰„y„„„ „x„p„„y„ƒ„y „q„u„x „€„„‚„u„t„u„|„u„~„y„‘ „r„y„t„p,”rœ–¢?’è•¨?“I??
+records,,,Records,,,,,,ƒŒƒR[ƒh”,?? ?,,„H„p„„y„ƒ„u„z,??”
+locations,,,Locations,,,,,,’n“_”,?? ?,,„M„u„ƒ„„„€„„€„|„€„w„u„~„y„‘,’n“_”
+data,,,Data,,,,,,ƒf[ƒ^,???,,„D„p„~„~„„u,”˜
+species,,,Species,,,,,,í,?,,„B„y„t„,•¨?
+prefecture,,,Prefecture,,,,,,“s“¹•{Œ§,?,,„P„‚„u„†„u„{„„„…„‚„p,“s“¹•{?
+island,,,Island,,,,,,“‡›×,?,,„O„ƒ„„„‚„€„r,??
+reference,,,Reference,,,,,,ˆø—p•¶Œ£,??,,„I„ƒ„„„€„‰„~„y„{,•¶Œ£
+show_higher_taxa,,,Show Higher Taxa,,,,,,‚Ÿ•ª—ŞŒQ‚ğ•\¦,?? ??? ??,,„P„€„{„p„x„p„„„ „r„„Š„u„ƒ„„„€„‘„‹„y„u „„„p„{„ƒ„€„~„,?¦‚?•ª?ŒQ
+legend_marker_types,,,Marker Types,,,,,,ƒ}[ƒJ[‚Ìí—Ş          // ã•”Œ©o‚µ,?? ??,,„S„y„„ „}„p„‚„{„u„‚„€„r,???Œ^
+legend_type,,,Type locality,,,,,,ƒ^ƒCƒvY’n,???,,„S„y„„€„r„p„‘ „}„u„ƒ„„„~„€„ƒ„„„,–Í®?’n
+legend_synonymized_type,,,Type locality of synonymized species,,,,,,“‡‚³‚ê‚½í‚Ìƒ^ƒCƒvY’n,?? ??? ?? ???,,„S„y„„€„r„p„‘ „}„u„ƒ„„„~„€„ƒ„„„ „ƒ„y„~„€„~„y„}„y„x„y„‚„€„r„p„~„~„„‡ „r„y„t„€„r,›ß‡›ó•¨?“I–Í®?’n
+legend_doubtful_type,,,Doubtful type locality,,,,,,‹^‚í‚µ‚¢ƒ^ƒCƒvY’n,????? ???,,„R„€„}„~„y„„„u„|„„~„p„‘ „„„y„„€„r„p„‘ „}„u„ƒ„„„~„€„ƒ„„„,‰Â‹^“I–Í®?’n
+legend_doubtful_synonymized_type,,,Doubtful type locality of synonymized species,,,,,,“‡‚³‚ê‚½í‚Ì‹^‚í‚µ‚¢ƒ^ƒCƒvY’n,?? ??? ?? ?? ???,,„R„€„}„~„y„„„u„|„„~„p„‘ „„„y„„€„r„p„‘ „}„u„ƒ„„„~„€„ƒ„„„ „ƒ„y„~„€„~„y„}„y„x„y„‚„€„r„p„~„~„„‡ „r„y„t„€„r,›ß‡›ó•¨?“I‰Â‹^–Í®?’n
+legend_specimen,,,Specimen record,,,,,,•W–{‹L˜^,?? ??,,„H„p„„y„ƒ„ „„€ „„{„x„u„}„„|„‘„‚„…,?–{??
+legend_literature_record,,,Literature record,,,,,,•¶Œ£‹L˜^,?? ??,,„L„y„„„u„‚„p„„„…„‚„~„p„‘ „x„p„„y„ƒ„,•¶Œ£??
+legend_doubtful_literature,,,Doubtful record,,,,,,‹^‚í‚µ‚¢‹L˜^,????? ??,,„R„€„}„~„y„„„u„|„„~„p„‘ „x„p„„y„ƒ„,‰Â‹^??
+legend_type_tooltip,,,Type locality: The place where the specimen serving as the standard for a species (type specimen) was collected.,,,,,,ƒ^ƒCƒvY’nFí‚ÌŠî€‚Æ‚È‚é•W–{‚ªÌW‚³‚ê‚½êŠ‚Å‚·B,???: ?? ??? ?? ??? ??? ?????.,,„S„y„„€„r„p„‘ „}„u„ƒ„„„~„€„ƒ„„„: „}„u„ƒ„„„€ „ƒ„q„€„‚„p „„„y„„€„r„€„s„€ „„{„x„u„}„„|„‘„‚„p.,–Í®?’nFì?•¨??y“I?–{ÑW’n“_B
+legend_synonymized_type_tooltip,,,"Type locality of synonymized species: A type locality of a species that is no longer considered valid, but was previously treated as a separate species.",,,,,,“‡‚³‚ê‚½í‚Ìƒ^ƒCƒvY’nFŒ»İA—LŒø‚Æ‚ÍŒ©‚È‚³‚ê‚Ä‚¢‚È‚¢‚à‚Ì‚ÌA‰ß‹‚É‚Í•Êí‚Æ‚µ‚Äˆµ‚í‚ê‚Ä‚¢‚½í‚Ìƒ^ƒCƒvY’n‚Å‚·B,?? ??? ?? ???: ??? ???? ??? ??? ??? ??? ????? ??????.,,"„S„y„„€„r„p„‘ „}„u„ƒ„„„~„€„ƒ„„„ „ƒ„y„~„€„~„y„}„y„x„y„‚„€„r„p„~„~„€„s„€ „r„y„t„p: „‚„p„~„u„u „ƒ„‰„y„„„p„r„Š„p„‘„ƒ„‘ „€„„„t„u„|„„~„„} „r„y„t„€„}, „„„u„„u„‚„ „€„q„Œ„u„t„y„~„v„~„~„p„‘.",›ß‡›ó•¨?“I–Í®?’nF‘\”í??“Æ—§•¨?’A?İ”í‡›ó“I?Œ^?’nB
+legend_doubtful_type_tooltip,,,"Doubtful type locality: A locality described as a type locality, but which is now considered likely to be erroneous.",,,,,,‹^‚í‚µ‚¢ƒ^ƒCƒvY’nFƒ^ƒCƒvY’n‚Æ‚³‚ê‚½‚à‚Ì‚ÌAÀÛ‚É‚ÍŒë‚è‚Ì‰Â”\«‚ª‚‚¢‚Æl‚¦‚ç‚ê‚éY’n‚Å‚·B,????? ???: ???? ?????? ??? ???? ?? ?????.,,"„R„€„}„~„y„„„u„|„„~„p„‘ „„„y„„€„r„p„‘ „}„u„ƒ„„„~„€„ƒ„„„: „r„€„x„}„€„w„~„€, „€„Š„y„q„€„‰„~„p„‘.",‰Â‹^“I–Í®?’nF”í•`q??Œ^?’n’A‰Â”\‘¶İ??B
+legend_doubtful_synonymized_type_tooltip,,,"Doubtful type locality of synonymized species: A previously separate species type locality now considered invalid or merged, with doubts.",,,,,,“‡‚³‚ê‚½í‚Ì‹^‚í‚µ‚¢ƒ^ƒCƒvY’nFŒ»İA—LŒø‚Æ‚ÍŒ©‚È‚³‚ê‚Ä‚¢‚È‚¢‚à‚Ì‚ÌA‰ß‹‚É‚Í•Ê‚Ìí‚Æ‚µ‚Äˆµ‚í‚ê‚Ä‚¢‚½í‚Ì‹^‚í‚µ‚¢ƒ^ƒCƒvY’n‚Å‚·B,?? ??? ?? ?? ???: ??? ???? ????? ????? ??????.,,„R„€„}„~„y„„„u„|„„~„p„‘ „„„y„„€„r„p„‘ „}„u„ƒ„„„~„€„ƒ„„„ „ƒ„y„~„€„~„y„}„y„x„y„‚„€„r„p„~„~„€„s„€ „r„y„t„p.,›ß‡›ó•¨?“I‰Â‹^–Í®?’nFŠù”ñ—LÁ?–”‘¶İ‹^“_B
+legend_specimen_tooltip,,,"Specimen record: A record for which the creators of this database take responsibility. Specifically, this includes records based on specimens observed by the database creators or by coauthors of joint publications.",,,,,,•W–{‹L˜^F–{ƒf[ƒ^ƒx[ƒX‚Ìì¬Ò‚ªÓ”C‚ğ‚à‚Â‹L˜^‚Å‚·B‹ï‘Ì“I‚É‚ÍAƒf[ƒ^ƒx[ƒX‚Ìì¬Ò‚ª•W–{‚ğŠÏ@‚µ‚½‹L˜^‚ÆA‹¤’˜˜_•¶‚Ì’˜Ò‚ª•W–{‚ğŠÏ@‚µ‚½‹L˜^‚ªŠÜ‚Ü‚ê‚Ü‚·B,?? ??: ?????? ???? ??? ??? ??? ?????.,,„H„p„„y„ƒ„ „„€ „„{„x„u„}„„|„‘„‚„…: „~„p„q„|„„t„p„|„p„ƒ„ „p„r„„„€„‚„€„} „y„|„y „u„s„€ „ƒ„€„p„r„„„€„‚„€„}.,?–{??F—R”˜??ŒšÒ?©ˆ½‹¤“¯ìÒ?@“I??B
+legend_literature_record_tooltip,,,"Literature record: A record published in the literature, excluding specimen records. These may include records lacking sufficient supporting evidence, and some may be reclassified as questionable in the future.",,,,,,•¶Œ£‹L˜^F•W–{‹L˜^‚ğœ‚­A•¶Œ£‚ÉŒfÚ‚³‚ê‚½‹L˜^‚Å‚·BØ‹’‚ª\•ª‚Å‚Í‚È‚¢‹L˜^‚àŠÜ‚Ü‚ê‚Ä‚¨‚èAˆê•”‚Ì‹L˜^‚Í«—ˆA‹^‚í‚µ‚¢‹L˜^‚É•Ï‚í‚é‰Â”\«‚ª‚ ‚è‚Ü‚·B,"?? ??: ??? ???? ????, ?? ??? ?????.",,„L„y„„„u„‚„p„„„…„‚„~„p„‘ „x„p„„y„ƒ„: „r„ƒ„„„‚„u„‰„p„u„„„ƒ„‘ „„„€„|„„{„€ „r „|„y„„„u„‚„p„„„…„‚„u.,•¶Œ£??F”ñ?–{??“Io”Å??C‰Â”\•ïŠÜ?˜•s‘«“I??B
+legend_doubtful_literature_tooltip,,,"Doubtful record: Not only clear misidentifications but also questionable records are included. This category also encompasses cases where the same identifier has misidentified the same species in other publications, where the record is far from any confirmed occurrences, or where the identifier's overall reliability is notably low.",,,,,,‹^‚í‚µ‚¢‹L˜^F–¾Šm‚ÈŒë“¯’è‚¾‚¯‚Å‚È‚­A‹^‚í‚µ‚¢‹L˜^‚àŠÜ‚İ‚Ü‚·B“¯ˆê‚Ì“¯’èÒ‚ª•Ê‚Ìo”Å•¨‚Å“¯‚¶í‚ğŒë“¯’è‚µ‚Ä‚¢‚½‚èAŠm‚©‚È‹L˜^‚©‚ç—£‚ê‚Ä‚¢‚éê‡A“¯’èÒ‚Ì“¯’è¸“x‚ª’˜‚µ‚­’á‚¢ê‡‚à‚±‚ÌƒJƒeƒSƒŠ[‚ÉŠÜ‚Ü‚ê‚Ü‚·B,????? ??: ??? ??? ??? ????? ??? ?????.,,„R„€„}„~„y„„„u„|„„~„p„‘ „x„p„„y„ƒ„: „}„€„w„u„„ „q„„„„ „€„Š„y„q„€„‰„~„€„z „y„|„y „~„u„~„p„t„u„w„~„€„z.,‰Â‹^??F•ïŠ‡??’è˜a‰Â‹^??“™C—ˆŒ¹•s‰ÂèÏB
+select_order,,,Select order,,,,,,–Ú‚ğ‘I‘ğ,? ??,,„B„„q„u„‚„y„„„u „€„„„‚„‘„t,??–Ú
+select_family,,,Select family,,,,,,‰È‚ğ‘I‘ğ,? ??,,„B„„q„u„‚„y„„„u „ƒ„u„}„u„z„ƒ„„„r„€,??‰È
+select_genus,,,Select genus,,,,,,‘®‚ğ‘I‘ğ,? ??,,„B„„q„u„‚„y„„„u „‚„€„t,??‘®
+select_species,,,Select species,,,,,,í‚ğ‘I‘ğ,? ??,,„B„„q„u„‚„y„„„u „r„y„t,???
+select_prefecture,,,Select prefecture,,,,,,“s“¹•{Œ§‚ğ‘I‘ğ,? ??,,„B„„q„u„‚„y„„„u „„‚„u„†„u„{„„„…„‚„…,??“s“¹•{?
+select_island,,,Select island,,,,,,“‡‚ğ‘I‘ğ,? ??,,„B„„q„u„‚„y„„„u „€„ƒ„„„‚„€„r,????
+select_literature,,,Select literature,,,,,,•¶Œ£‚ğ‘I‘ğ,?? ??,,„B„„q„u„‚„y„„„u „y„ƒ„„„€„‰„~„y„{,??•¶Œ£
+number_of_records_by_month,,,Number of records by Month,,,,,,oŒ»ŠúiŒ•Êj,?? ?? ?,,„@„{„„„y„r„~„€„ƒ„„„ „„€ „}„u„ƒ„‘„ˆ„p„},ˆÂŒ???”
+number_of_records,,,Number of records,,,,,,‹L˜^”,?? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „x„p„„y„ƒ„u„z,??”
+month,,,Month,,,,,,Œ,?,,„M„u„ƒ„‘„ˆ,Œ?
+map_attribution,,,Created by processing data from <a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>Location Reference Information Download Service</a> (MLIT).,,,,,,u<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>ˆÊ’uQÆî•ñƒ_ƒEƒ“ƒ[ƒhƒT[ƒrƒX</a>vi‘“yŒğ’ÊÈj‚ğ‰ÁH‚µ‚Äì¬,<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>?? ????? ?? ?? ?? ???? ???</a>? ???? ??,,"„R„€„x„t„p„~„€ „~„p „€„ƒ„~„€„r„u „t„p„~„~„„‡ <a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>„M„y„~„y„ƒ„„„u„‚„ƒ„„„r„p „x„u„}„|„y, „y„~„†„‚„p„ƒ„„„‚„…„{„„„…„‚„ „y „„„‚„p„~„ƒ„„€„‚„„„p „`„„€„~„y„y</a>.",Šî˜°<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>“ú–{‘“yŒğ’ÊÈˆÊ’uQlM‘§‰º?•?</a>“I?—¿§ì
+prefecture_chart_title_head,,,By Prefecture: ,,,,,,Še“s“¹•{Œ§‚Ì // uŠe“s“¹•{Œ§‚Ìv,?? ,,„P„€ „„‚„u„†„u„{„„„…„‚„p„}: ,ˆÂ“s“¹•{?F
+chart_by_order,,,by Order,,,,,,–Ú•Ê,??,,„„€ „€„„„‚„‘„t„…,ˆÂ–Ú•ª?
+chart_by_family,,,by Family,,,,,,‰È•Ê,??,,„„€ „ƒ„u„}„u„z„ƒ„„„r„…,ˆÂ‰È•ª?
+chart_ratio,,,Ratio(%),,,,,,Š„‡(%),??(%),,„D„€„|„‘ (%),”ä—ái%j
+chart_records,,,Number of Records,,,,,,‹L˜^”,?? ?,,„H„p„„y„ƒ„u„z,??”
+chart_species,,,Number of Species,,,,,,í”,? ?,,„B„y„t„€„r,•¨?”
+chart_prefecture_axis,,,Prefecture,,,,,,“s“¹•{Œ§,?,,„P„‚„u„†„u„{„„„…„‚„p,“s“¹•{?
+chart_ratio_axis,,,Ratio(%),,,,,,Š„‡(%),??(%),,„D„€„|„‘ (%),”ä—ái%j
+chart_records_axis,,,Records,,,,,,‹L˜^”,?? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „x„p„„y„ƒ„u„z,??”
+chart_species_axis,,,Species,,,,,,í”,? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „r„y„t„€„r,•¨?”
+chart_tooltip_ratio,,,{val}% ({absCount} sp.),,,,,,{val}% ({absCount}í)  // Œãq‚ÌƒR[ƒ‹ƒoƒbƒN—p,{val}% ({absCount}?),,{val}% ({absCount} „r„y„t„€„r),{val}%i{absCount}?j
+year_chart_record_publication,,,Number of Records & Cumulative (Publication Year),,,,,,‹L˜^”‚Æ—İÏ‹L˜^”io”Å”Nj,?? ??? ?? ? ? ??,,„H„p„„y„ƒ„y „y „{„…„}„…„|„‘„„„y„r („„€ „s„€„t„… „„…„q„|„y„{„p„ˆ„y„y),o”Å”N?“I??”—^—İ?
+year_chart_record_collection,,,Number of Records & Cumulative (Collection Year),,,,,,‹L˜^”‚Æ—İÏ‹L˜^”iÌW”Nj,?? ??? ?? ? ? ??,,„H„p„„y„ƒ„y „y „{„…„}„…„|„‘„„„y„r („„€ „s„€„t„… „ƒ„q„€„‚„p),ÑW”N?“I??”—^—İ?
+year_chart_species_publication,,,Number of Species & Cumulative (Publication Year),,,,,,í”‚Æ—İÏí”io”Å”Nj,?? ??? ? ? ? ??,,„B„y„t„ „y „{„…„}„…„|„‘„„„y„r („„€ „s„€„t„… „„…„q„|„y„{„p„ˆ„y„y),o”Å”N?“I•¨?”—^—İ?
+year_chart_species_collection,,,Number of Species & Cumulative (Collection Year),,,,,,í”‚Æ—İÏí”iÌW”Nj,?? ??? ? ? ? ??,,„B„y„t„ „y „{„…„}„…„|„‘„„„y„r („„€ „s„€„t„… „ƒ„q„€„‚„p),ÑW”N?“I•¨?”—^—İ?
+year_chart_y_label_record,,,Number of records,,,,,,‹L˜^”,?? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „x„p„„y„ƒ„u„z,??”
+year_chart_y_label_species,,,Number of species,,,,,,í”,? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „r„y„t„€„r,•¨?”
+year_chart_y2_label_record,,,Cumulative number of records,,,,,,—İÏ‹L˜^”,?? ?? ?,,„K„…„}„…„|„‘„„„y„r„~„€„u „{„€„|„y„‰„u„ƒ„„„r„€ „x„p„„y„ƒ„u„z,—İ???”
+year_chart_y2_label_species,,,Cumulative number of species,,,,,,—İÏí”,?? ? ?,,„K„…„}„…„|„‘„„„y„r„~„€„u „{„€„|„y„‰„u„ƒ„„„r„€ „r„y„t„€„r,—İ?•¨?”
+year_type_1,,,Original description,,,,,,Œ´‹LÚ,? ??,,„P„u„‚„r„€„~„p„‰„p„|„„~„€„u „€„„y„ƒ„p„~„y„u,Œ´n•`q
+year_type_2,,,Original description of synonymized species,,,,,,“‡‚³‚ê‚½í‚ÌŒ´‹LÚ,?? ?? ? ??,,„P„u„‚„r„€„~„p„‰„p„|„„~„€„u „€„„y„ƒ„p„~„y„u „ƒ„y„~„€„~„y„}„y„x„y„‚„€„r„p„~„~„€„s„€ „r„y„t„p,›ß‡›ó•¨?“IŒ´n•`q
+year_type_3,,,Doubtful type,,,,,,‹^‚í‚µ‚¢ƒ^ƒCƒv,?? ??,,„R„€„}„~„y„„„u„|„„~„p„‘ „„„y„„€„r„p„‘ „x„p„„y„ƒ„,‰Â‹^?Œ^
+year_type_4,,,Doubtful & Synonymized type,,,,,,‹^‚í‚µ‚¢“‡‚³‚ê‚½í‚Ìƒ^ƒCƒv,?? ?? ?? ??,,„R„€„}„~„y„„„u„|„„~„p„‘ „„„y„„€„r„p„‘ „x„p„„y„ƒ„ „ƒ„y„~„€„~„y„}„y„x„y„‚„€„r„p„~„~„€„s„€ „r„y„t„p,›ß‡›ó•¨?“I‰Â‹^?Œ^
+year_type_5,,,Specimen record,,,,,,•W–{‹L˜^,?? ??,,„H„p„„y„ƒ„ „„€ „„{„x„u„}„„|„‘„‚„…,?–{??
+year_type_6,,,Literature record,,,,,,•¶Œ£‹L˜^,?? ??,,„L„y„„„u„‚„p„„„…„‚„~„p„‘ „x„p„„y„ƒ„,•¶Œ£??
+year_type_7,,,Doubtful literature record,,,,,,‹^‚í‚µ‚¢•¶Œ£‹L˜^,?? ?? ??,,„R„€„}„~„y„„„u„|„„~„p„‘ „|„y„„„u„‚„p„„„…„‚„~„p„‘ „x„p„„y„ƒ„,‰Â‹^•¶Œ£??
+order,,,Order,,,,,,–Ú,?,,„O„„„‚„‘„t,–Ú
+family,,,Faimily,,,,,,‰È,?,,„R„u„}„u„z„ƒ„„„r„€,‰È
+number_of_species,,,Number of species,,,,,,í”,? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „r„y„t„€„r,•¨?”
+number_of_records,,,Number of records,,,,,,‹L˜^”,?? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „x„p„„y„ƒ„u„z,??”
+ratio,,,Ratio,,,,,,Š„‡,??,,„D„€„|„‘,”ä—á
+record_type,,,Record Type,,,,,,‹L˜^‚Ìí—Ş,?? ??,,„S„y„ „x„p„„y„ƒ„y,???Œ^
+original_japanese_name,,,Japanese Name in Literature,,,,,,•¶Œ£’†‚Ì˜a–¼,?? ? ???,,„`„„€„~„ƒ„{„€„u „y„}„‘ „r „y„ƒ„„„€„‰„~„y„{„u,•¶Œ£’†“I“ú•¶–¼
+original_scientific_name,,,Scientific Name in Literature,,,,,,•¶Œ£’†‚ÌŠw–¼,?? ? ??,,„N„p„…„‰„~„€„u „y„}„‘ „r „y„ƒ„„„€„‰„~„y„{„u,•¶Œ£’†“IŠw–¼
+page,,,Page,,,,,,ƒy[ƒW,???,,„R„„„‚„p„~„y„ˆ„p,?–Ê
+location,,,Location,,,,,,ÌW’n,???,,„M„u„ƒ„„„€„~„p„‡„€„w„t„u„~„y„u,ÑW’n“_
+collection_date,,,Collection Date,,,,,,ÌW“ú,???,,„D„p„„„p „ƒ„q„€„‚„p,ÑW“úŠú
+collector_jp,,,Collector (jp),,,,,,ÌWÒ (jp),??? (???),,„R„€„q„y„‚„p„„„u„|„ („‘„.),ÑWÒi“ú•¶j
+collector_en,,,Collector (en),,,,,,ÌWÒ (en),??? (??),,„R„€„q„y„‚„p„„„u„|„ („p„~„s„|.),ÑWÒi‰p•¶j
+literature,,,Literature,,,,,,•¶Œ£,??,,„L„y„„„u„‚„p„„„…„‚„p,•¶Œ£
+note,,,Notes,,,,,,”õl,??,,„H„p„}„u„„„{„y,?’
+entry,,,Entry,,,,,,‹L“ü,??,,„H„p„„y„ƒ„,?“ü
+entered_by_on,,,Entered by {name} on {date},,,,,,"‹L“ü: {name}, {date}",{name} ?? {date}? ???,,"„B„~„u„ƒ„u„~„€: {name}, {date}",{name} ˜° {date} ?“ü
+unpublished_data,,,Unpublished Data,,,,,,–¢Œö•\ƒf[ƒ^,??? ???,,„N„u„€„„…„q„|„y„{„€„r„p„~„~„„u „t„p„~„~„„u,–¢?•\”˜
+unknown,,,Unknown,,,,,,Unknown,??,,„N„u„y„x„r„u„ƒ„„„~„€,–¢’m
+touch_hint,,,Use two fingers to move the map<br><br>Tap a marker for details,,,,,,2–{w‚Å’n}‚ğ‘€ì<br><br>ƒ}[ƒJ[ƒNƒŠƒbƒN‚ÅÚ×•\¦,? ????? ??? ??<br><br>??? ?? ?? ??,,„I„ƒ„„€„|„„x„…„z„„„u „t„r„p „„p„|„„ˆ„p „t„|„‘ „„u„‚„u„}„u„‹„u„~„y„‘ „{„p„‚„„„<br><br>„N„p„w„}„y„„„u „~„p „}„p„‚„{„u„‚ „t„|„‘ „„€„t„‚„€„q„~„€„ƒ„„„u„z,g—p‘ow??’n?<br><br>“_????ŠÅ?î
+click_for_details,,,Click for details,,,,,,ƒNƒŠƒbƒN‚ÅÚ×•\¦,??? ??? ??,,„N„p„w„}„y„„„u „t„|„‘ „„€„t„‚„€„q„~„€„ƒ„„„u„z,“_??ŠÅ?î
+record_count,,,Number of records,,,,,,‹L˜^”,?? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „x„p„„y„ƒ„u„z,??”
+species_count,,,Number of species,,,,,,í”,? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „r„y„t„€„r,•¨?”
+prefecture_chart_title_species_order,,,Number of Species by Order in Each Prefecture,,,,,,Še“s“¹•{Œ§‚Ì–Ú•Êí”,? ?? ?? ? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „r„y„t„€„r „„€ „€„„„‚„‘„t„p„} „r „{„p„w„t„€„z „„‚„u„†„u„{„„„…„‚„u,Še“s“¹•{?“I–Ú?•¨?”
+prefecture_chart_title_species_family,,,Number of Species by Family in Each Prefecture,,,,,,Še“s“¹•{Œ§‚Ì‰È•Êí”,? ?? ?? ? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „r„y„t„€„r „„€ „ƒ„u„}„u„z„ƒ„„„r„p„} „r „{„p„w„t„€„z „„‚„u„†„u„{„„„…„‚„u,Še“s“¹•{?“I‰È?•¨?”
+prefecture_chart_title_record_order,,,Number of Records by Order in Each Prefecture,,,,,,Še“s“¹•{Œ§‚Ì–Ú•Ê‹L˜^”,? ?? ?? ?? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „x„p„„y„ƒ„u„z „„€ „€„„„‚„‘„t„p„} „r „{„p„w„t„€„z „„‚„u„†„u„{„„„…„‚„u,Še“s“¹•{?“I–Ú???”
+prefecture_chart_title_record_family,,,Number of Records by Family in Each Prefecture,,,,,,Še“s“¹•{Œ§‚Ì‰È•Ê‹L˜^”,? ?? ?? ?? ?,,„K„€„|„y„‰„u„ƒ„„„r„€ „x„p„„y„ƒ„u„z „„€ „ƒ„u„}„u„z„ƒ„„„r„p„} „r „{„p„w„t„€„z „„‚„u„†„u„{„„„…„‚„u,Še“s“¹•{?“I‰È???”
+prefecture_chart_title_ratio_order,,,Ratio by Order in Each Prefecture,,,,,,Še“s“¹•{Œ§‚Ì–Ú•ÊŠ„‡,? ?? ?? ??,,„D„€„|„‘ (%) „„€ „€„„„‚„‘„t„p„} „r „{„p„w„t„€„z „„‚„u„†„u„{„„„…„‚„u,Še“s“¹•{?“I–Ú?”ä—á
+prefecture_chart_title_ratio_family,,,Ratio by Family in Each Prefecture,,,,,,Še“s“¹•{Œ§‚Ì‰È•ÊŠ„‡,? ?? ?? ??,,„D„€„|„‘ (%) „„€ „ƒ„u„}„u„z„ƒ„„„r„p„} „r „{„p„w„t„€„z „„‚„u„†„u„{„„„…„‚„u,Še“s“¹•{?“I‰È?”ä—á

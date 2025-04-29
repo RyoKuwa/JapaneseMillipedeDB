@@ -122,7 +122,8 @@ const translations = {
     touch_hint: "2本指で地図を操作<br><br>マーカークリックで詳細表示",
     click_for_details: "クリックで詳細表示",
     record_count: "記録数",
-    species_count: "種数"
+    species_count: "種数",
+    reset_page: "初期状態に戻す"
   },
 
   en: {
@@ -246,7 +247,8 @@ const translations = {
     touch_hint: "Use two fingers to move the map<br><br>Tap a marker for details",
     click_for_details: "Click for details",
     record_count: "Number of records",
-    species_count: "Number of species"
+    species_count: "Number of species",
+    reset_page: "Reset to default"
   }
 };
 

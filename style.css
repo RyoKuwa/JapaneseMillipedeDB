@@ -859,6 +859,13 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   overflow-y: auto !important;
 }
 
+#reset-page-wrapper {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 999; /* 必要に応じて他要素より前面に出す */
+}
+
 @media (max-width: 711px) {
   /* タイトル部分 */
   header {
