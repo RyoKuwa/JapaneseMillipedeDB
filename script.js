@@ -45,88 +45,109 @@ const initMap = () => {
     container: 'mapid',
     style: {
       version: 8,
-      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
       sources: {
-        japan: {
-          type: "geojson",
-          data: "Japan.geojson",
-          attribution: translations[lang]?.map_attribution 
-                       || "「<a href='https://nlftp.mlit.go.jp/ksj/' target='_blank'>位置参照情報ダウンロードサービス</a>」（国土交通省）を加工して作成"
+        osm: {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: translations[lang]?.map_attribution || 
+            "地図データ: © <a href='https://www.openstreetmap.org/' target='_blank'>OpenStreetMap</a> contributors"
+        },
+        esri: {
+          type: 'raster',
+          tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          attribution: 'Imagery © <a href="https://www.esri.com/en-us/home" target="_blank">Esri</a>'
         }
       },
       layers: [
-        { id: "background", type: "background", paint: { "background-color": "rgba(173, 216, 230, 1)" } },
-        { id: "japan", type: "fill", source: "japan", paint: { "fill-color": "#fff", "fill-outline-color": "#000" } },
-        { id: "japan-outline", type: "line", source: "japan", paint: { "line-color": "#000", "line-width": 1 } }
+        {
+          id: 'osm-layer',
+          type: 'raster',
+          source: 'osm',
+          layout: { visibility: 'visible' },
+          minzoom: 0,
+          maxzoom: 19
+        },
+        {
+          id: 'satellite-layer',
+          type: 'raster',
+          source: 'esri',
+          layout: { visibility: 'none' }, // 初期状態で非表示
+          minzoom: 0,
+          maxzoom: 19
+        }
       ]
     },
     center: [136, 35.7],
     zoom: defaultZoom,
-    maxZoom: 9,
+    maxZoom: 19,
     minZoom: 3,
     dragPan: !isTouchDevice,
     touchZoomRotate: true
   });
 
-  // 地図コントロール
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: 'metric' }), 'bottom-left');
 
-  // ▼ タッチデバイスの場合のみ、2本指操作でドラッグを許可し、1本指でオーバーレイを表示
+  map.addControl(new maplibregl.GeolocateControl({
+    positionOptions: {
+      enableHighAccuracy: true
+    },
+    trackUserLocation: true,
+    showUserHeading: true
+  }), 'top-right');
+
   if (isTouchDevice) {
     const touchHint = document.getElementById("touch-hint");
     map.on('touchstart', (e) => {
       if (!e.points) return;
-    
-      // 2本指以上の場合はピンチズームなどドラッグ許可
       if (e.points.length >= 2) {
         map.dragPan.enable();
         touchHint.style.display = 'none';
         return;
       }
-    
-      // 1本指の場合 → ドラッグ無効化・移動距離判定の準備
       map.dragPan.disable();
       touchHint.style.display = 'none';
-    
-      // タッチ開始座標を記録 (1本指だけを想定)
       const p = e.points[0];
       map._touchStartPosition = { x: p.x, y: p.y };
     });
-    
+
     map.on('touchmove', (e) => {
       if (!e.points) return;
-    
       if (e.points.length >= 2) {
-        // 2本指になった → ドラッグ許可
         map.dragPan.enable();
         touchHint.style.display = 'none';
         return;
       }
-    
-      // 1本指移動量を判定
-      const { x: startX, y: startY } = map._touchStartPosition || {x: 0, y: 0};
+      const { x: startX, y: startY } = map._touchStartPosition || { x: 0, y: 0 };
       const { x: nowX, y: nowY } = e.points[0];
       const dx = nowX - startX;
       const dy = nowY - startY;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-    
-      // ある程度(例: 10px以上)移動したらオーバーレイを表示
+      const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist > 10) {
         touchHint.style.display = 'block';
       }
     });
-    
+
     map.on('touchend', () => {
-      // 1本指を離したらドラッグを無効にしてオーバーレイ非表示
       map.dragPan.disable();
       touchHint.style.display = 'none';
     });
   }
 
-  // 既存の呼び出し（選択ラベル更新など）
-  updateSelectedLabels();
+  // レイヤー切り替えボタンをセットアップ
+  const toggleButton = document.getElementById('layer-toggle');
+  if (toggleButton) {
+    toggleButton.addEventListener('click', () => {
+      const osmVisible = map.getLayoutProperty('osm-layer', 'visibility') === 'visible';
+      map.setLayoutProperty('osm-layer', 'visibility', osmVisible ? 'none' : 'visible');
+      map.setLayoutProperty('satellite-layer', 'visibility', osmVisible ? 'visible' : 'none');
+      toggleButton.textContent = osmVisible ? '地図に切り替え' : '航空写真に切り替え';
+    });
+  }
 
+  updateSelectedLabels();
 };
 
 function initBiennialSelects() {
@@ -359,6 +380,7 @@ const loadDistributionCSV = async () => {
       genus: record["Genus"] || "-",
       family: record["Family"] || "-",
       order: record["Order"] || "-",
+      population: record["個体数"] || "-",
       literatureID: record["文献ID"] || "-",
       page: record["掲載ページ"] || "-",
       original: record["オリジナル"] || "-",
@@ -1566,13 +1588,23 @@ const preparePopupContent = (filteredData) => {
     `;
 
     if (!row.literatureID || row.literatureID === "-") {
-      content += translations[lang]?.unpublished_data || "未公表データ Unpublished Data";
+      content += `
+        ${translations[lang]?.location || "場所"}:
+        <a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank" rel="noopener">
+          ${row.latitude}, ${row.longitude}
+        </a><br>
+        ${translations[lang]?.population || "個体数"}: ${row.population || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.collection_date || "採集日"}: ${row.date || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.collector_jp || "採集者"}: ${row.collectorJp || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.collector_en || "collector"}: ${row.collectorEn || (translations[lang]?.unknown || "不明")}
+      `;
     } else {
       content += `
         ${translations[lang]?.original_japanese_name || "文献中の和名"}: ${row.originalJapaneseName || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.original_scientific_name || "文献中の学名"}: ${row.originalScientificName || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.page || "ページ"}: ${row.page || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.location || "場所"}: ${row.location || (translations[lang]?.unknown || "不明")}<br>
+        ${translations[lang]?.population || "個体数"}: ${row.population || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.collection_date || "採集日"}: ${row.date || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.collector_jp || "採集者"}: ${row.collectorJp || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.collector_en || "collector"}: ${row.collectorEn || (translations[lang]?.unknown || "不明")}<br><br>
@@ -3458,24 +3490,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateYearChart();
       }
 
-      const newStyle = {
-        version: 8,
-        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-        sources: {
-          japan: {
-            type: "geojson",
-            data: "Japan.geojson",
-            attribution: translations[lang]?.map_attribution
-          }
-        },
-        layers: [
-          { id: "background", type: "background", paint: { "background-color": "rgba(173, 216, 230, 1)" } },
-          { id: "japan", type: "fill", source: "japan", paint: { "fill-color": "#fff", "fill-outline-color": "#000" } },
-          { id: "japan-outline", type: "line", source: "japan", paint: { "line-color": "#000", "line-width": 1 } }
-        ]
-      };
-
-      map.setStyle(newStyle);
     });
   }
   // ページ初期化ボタンの処理
