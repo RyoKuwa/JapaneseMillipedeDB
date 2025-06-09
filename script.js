@@ -1578,6 +1578,7 @@ const preparePopupContent = (filteredData) => {
         ${translations[lang]?.collection_date || "採集日"}: ${row.date || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.collector_jp || "採集者"}: ${row.collectorJp || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.collector_en || "collector"}: ${row.collectorEn || (translations[lang]?.unknown || "不明")}<br><br>
+        ${translations[lang]?.note_en || "備考"}: ${row.note || (translations[lang]?.unknown || "不明")}<br><br>
         ${translations[lang]?.literature || "文献"}: ${literatureName} ${
           literatureLink ? `<a href="${literatureLink}" target="_blank">${literatureLink}</a>` : ""
         }<br><br>
