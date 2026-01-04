@@ -40,7 +40,8 @@ header h1 {
 /* 検索コンテナの基本スタイル */
 .search-container {
   position: absolute;
-  width: auto;
+  width: 340px;
+  max-width: calc(100% - 20px);
   top: 10px;
   left: 10px;
   background: white;
@@ -450,6 +451,22 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
   font-size: 14px;
 }
 
+/* Select2 の幅が選択内容で変わらないようにする（Flexで固定） */
+.select-container .select2-container {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0 !important; /* contentで幅が変わらないようにする（flexで確保） */
+  max-width: 100%;
+}
+
+/* 選択中の文字列が長い場合は省略表示（幅を変えない） */
+.select-container .select2-container .select2-selection__rendered {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 2.4em; /* 矢印＋クリアボタン分 */
+}
+
 .custom-select2-clear {
   position: absolute;
   right: 8px;
@@ -587,8 +604,10 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 }
 
 #month-chart {
+  width: 100%;
   height: 40vh;
 }
+
 
 /* 都道府県グラフを包むラッパに対するスクロール指定 */
 .chart-container-scroll {
@@ -615,12 +634,11 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 /* canvas 本体: レスポンシブで伸びるよう width 100% */
 #prefecture-chart {
-  /* 凡例 + 47都道府県を並べるため、最低幅を広めに取る */
-  min-width: 1500px;       /* 数値は任意で調整 */
-  /* 高さは親要素に合わせるなら min-height で可変 */
-  min-height: 800px;       /* これにより上画像のように縦に大きく描画 */
-  margin: 0 auto;          /* 中央寄せ（任意） */
+  width: 100%;
+  height: 800px;
+  margin: 0 auto;
 }
+
 
 /* ラジオボタン同士の間隔や配置を制御 */
 #classification-radio {
@@ -685,7 +703,7 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 /* 出版年・採集年グラフ共通ラッパー */
 #year-chart-wrapper {
   width: 100%;
-  min-height: 400px;
+  min-height: 800px;
   overflow-x: auto;
   overflow-y: auto;
   margin: 20px 0;
@@ -696,10 +714,11 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
 
 /* 出版年・採集年グラフ canvas */
 #year-chart {
-  min-width: 1500px;   /* 年数が多くても表示できるように横長に */
-  min-height: 400px;
+  width: 100%;
+  height: 800px;
   margin: 0 auto;
 }
+
 
 /* ポップアップ全体のラッパー */
 .popup-wrapper {
@@ -956,3 +975,54 @@ ctrl-top-left, .mapboxgl-ctrl-top-right, .maplibregl-ctrl-bottom-left, .maplibre
     padding: 1px 4px;
   }
 }
+
+/* ==================== Box Selection (Rectangle) ==================== */
+.box-select-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.box-select-buttons button {
+  flex: 1 1 0;
+  height: 30px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: #eee;
+  cursor: pointer;
+}
+
+#box-select-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 28; /* search-container(30)より下 */
+  display: none;
+  pointer-events: none;
+}
+
+#box-select-overlay.active {
+  display: block;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+#box-select-rect {
+  position: absolute;
+  border: 2px dashed rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.08);
+  display: none;
+}
+
+/* スマホ（タッチ）環境では範囲選択ボタン自体を非表示 */
+@media (hover: none) and (pointer: coarse) {
+  #box-select-buttons {
+    display: none;
+  }
+}
+
+
+/* ECharts containers */
+.echarts-chart { display: block; }

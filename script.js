@@ -27,8 +27,9 @@ let currentShowAbove = null;
 let isZooming = false;
 
 // グラフ関連
-let monthChart = null;
-let prefectureChart = null;
+let monthChart = null;      // ECharts instance
+let prefectureChart = null; // ECharts instance
+let yearChart = null;       // ECharts instance
 let currentClassification = "order";  // "order" or "family"
 let currentChartMode = "count";       // "count" or "ratio"
 let chartTitle;
@@ -227,9 +228,9 @@ function getLiteratureLabel(item) {
   // item: { id, label_jp, label_en, link, ... } の想定
   if (!item) {
     // 見つからない場合
-    return (lang === "en") ? "Unknown" : "不明";
+    return (lang === "ja") ? "不明" : "Unknown";
   }
-  if (lang === "en") {
+  if (lang !== "ja") {
     // 英語UIの場合 → 英語ラベルがあればそれを使い，無ければ日本語にfallback
     return item.label_en || item.label_jp || "Unknown";
   } else {
@@ -586,7 +587,8 @@ const gatherSelectOptions = (data) => {
       const val = r[dataKey] || "-";
       if (!uniqueMap.has(val)) {
         const jName = taxonMap[val]?.japaneseName || "-";
-        uniqueMap.set(val, { value: val, label: `${val} / ${jName}` });
+        const label = (lang === "ja") ? `${val} / ${jName}` : val;
+        uniqueMap.set(val, { value: val, label });
       }
     });
     const arr = Array.from(uniqueMap.values());
@@ -603,7 +605,7 @@ const gatherSelectOptions = (data) => {
       .filter(item => data.some(row => row[dataKey] === item))
       .map(item => {
         const match = metaArray.find(m => m.jp === item);
-        const label = (lang === "en" && match?.en) ? match.en : item;
+        const label = (lang !== "ja" && match?.en) ? match.en : item;
         return { value: item, label };
       });
   };
@@ -628,7 +630,12 @@ const populateSelect = (selectId, options, selectedValue) => {
   const currentVal = (selectedValue != null) ? selectedValue : selectEl.value;
 
   // 2) プレースホルダ文字列を取得（無ければ"選択"）
-  const defaultText = SELECT_PLACEHOLDERS[selectId] || "選択";
+  const placeholderKey = SELECT_PLACEHOLDERS[selectId];
+  const defaultText = (
+    (placeholderKey && translations?.[lang]?.[placeholderKey])
+    || (placeholderKey && translations?.["ja"]?.[placeholderKey])
+    || "選択"
+  );
 
   // 3) セレクトを一旦クリア
   $(selectEl).empty();
@@ -699,7 +706,10 @@ const updateSelectBoxes = (filters, selectOptions) => {
   // 種リストなどは既存の combinedNames をそのまま使う
   populateSelect(
     "filter-species",
-    combinedNames.map(name => ({ value: name, label: name })),
+    combinedNames.map(name => ({
+      value: name,
+      label: (lang === "ja") ? name : String(name).split(" / ")[0]
+    })),
     filters.species
   );
 
@@ -780,16 +790,26 @@ const applyFilters = async (updateMap = true, filtersOverride = null) => {
       }
     }
 
-    // 採集月フィルタ
+    // 採集月フィルタ（1〜12月 + 不明）
     const useCollectionMonth = $("#filter-collection-month-active").is(":checked");
     if (useCollectionMonth) {
-      const selectedMonths = $(".collection-month:checked").map(function () {
-        return parseInt(this.value, 10);
+      const selectedMonthValues = $(".collection-month:checked").map(function () {
+        return String(this.value);
       }).get();
-      if (selectedMonths.length > 0) {
+
+      if (selectedMonthValues.length > 0) {
+        const selectedSet = new Set(selectedMonthValues);
+        const includeUnknown = selectedSet.has("unknown");
+
         filteredRowsLocal = filteredRowsLocal.filter(r => {
           const cm = parseInt(r.collectionMonth, 10);
-          return selectedMonths.includes(cm);
+          const isValidMonth = Number.isFinite(cm) && cm >= 1 && cm <= 12;
+
+          if (isValidMonth) {
+            return selectedSet.has(String(cm));
+          }
+          // 数値として解釈できない / 範囲外 → 「不明」扱い
+          return includeUnknown;
         });
       }
     }
@@ -809,7 +829,18 @@ const applyFilters = async (updateMap = true, filtersOverride = null) => {
       }
     }
 
-    filteredRows = filteredRowsLocal;
+// 矩形選択（BBox）フィルタ
+if (boxBounds) {
+  const { west, south, east, north } = boxBounds;
+  filteredRowsLocal = filteredRowsLocal.filter(r => {
+    const lon = parseFloat(r.longitude);
+    const lat = parseFloat(r.latitude);
+    if (Number.isNaN(lon) || Number.isNaN(lat)) return false;
+    return (lon >= west && lon <= east && lat >= south && lat <= north);
+  });
+}
+
+filteredRows = filteredRowsLocal;
 
     // 🔧 filtersOverride を渡す！
     updateFilters(filteredRowsLocal, filters);
@@ -892,7 +923,7 @@ const getLiteratureInfo = (literatureID) => {
   if (!item) {
     // 見つからないときのフォールバック
     return {
-      literatureName: (lang === "en") ? "Unknown" : "不明",
+      literatureName: (lang === "ja") ? "不明" : "Unknown",
       literatureLink: null
     };
   }
@@ -911,7 +942,11 @@ const initializeSelect2 = () => {
   // 既存のSelect2をすべて破棄 & イベント解除
   Object.keys(SELECT_PLACEHOLDERS).forEach(key => {
     const id = "#" + key;
-    $(id).off();
+    const $el = $(id);
+    if ($el.data("select2")) {
+      $el.select2("destroy");
+    }
+    $el.off();
   });
 
   // セレクトボックス一覧 (辞書のキーを使って組み立て)
@@ -1096,6 +1131,14 @@ const updateDropdownPlaceholders = () => {
   });
 };
 
+
+// 採集月チェックボックス（1〜12月 + 不明）を一括でON/OFFする
+function setAllCollectionMonthCheckboxes(checked) {
+  document.querySelectorAll(".collection-month").forEach(cb => {
+    cb.checked = !!checked;
+  });
+}
+
 // チェックボックスイベントのセットアップ関数
 function setupCheckboxListeners() {
   const checkboxIds = [
@@ -1138,6 +1181,11 @@ function setupCheckboxListeners() {
     const cb = document.getElementById(id);
     if (cb) {
       cb.addEventListener("change", () => {
+        // 採集月フィルターのON/OFF時は、1〜12月 + 不明をまとめて切り替える
+        if (id === "filter-collection-month-active") {
+          setAllCollectionMonthCheckboxes(cb.checked);
+        }
+
         if (updateUIIds.has(id)) {
           updateFilterActivationUI(); // ← フィルターUI更新
         }
@@ -1156,6 +1204,16 @@ function setupCheckboxListeners() {
   
   document.querySelectorAll(".collection-month").forEach(cb => {
     cb.addEventListener("change", () => {
+      // 採集月フィルターがOFFでも、特定の月を選べるようにする：
+      // 月のどれかがチェックされたら、自動でフィルターをONにして選択を有効化する
+      const master = document.getElementById("filter-collection-month-active");
+      const anyChecked = !!document.querySelector(".collection-month:checked");
+      if (master && !master.checked && anyChecked) {
+        // プログラム的にONにする（changeイベントは発火しないので「全選択」にはならない）
+        master.checked = true;
+        updateFilterActivationUI();
+      }
+
       applyFilters(true);
       updateURL();
     });
@@ -1257,6 +1315,10 @@ const setupResetButton = () => {
 
       clearMarkers();
       updateSelectedLabels();
+      if (typeof clearBoxSelection === "function") {
+        clearBoxSelection({ apply: false });
+        if (typeof setBoxSelectMode === "function") setBoxSelectMode(false);
+      }
       applyFilters(true);
       updateURL();
     });
@@ -1556,16 +1618,16 @@ const preparePopupContent = (filteredData) => {
     if (!row.latitude || !row.longitude) return null;
     const { literatureName, literatureLink } = getLiteratureInfo(row.literatureID);
     const recordType = recordTypeMapping[row.recordType] || (translations[lang]?.unknown || "不明");
-
-    let titleLine = (lang === "en")
-      ? `<strong>${row.scientificName}</strong><br>`
-      : `<strong>${row.japaneseName} ${row.scientificName}</strong><br>`;
-
+  
+    let titleLine = (lang === "ja")
+      ? `<strong>${row.japaneseName} ${row.scientificName}</strong><br>`
+      : `<strong>${row.scientificName}</strong><br>`;
+  
     let content = `
       ${titleLine}
       ${translations[lang]?.record_type || "記録の種類"}: ${recordType}<br>
     `;
-
+  
     if (!row.literatureID || row.literatureID === "-") {
       content += translations[lang]?.unpublished_data || "未公表データ Unpublished Data";
     } else {
@@ -1578,12 +1640,17 @@ const preparePopupContent = (filteredData) => {
         ${translations[lang]?.collection_date || "採集日"}: ${row.date || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.collector_jp || "採集者"}: ${row.collectorJp || (translations[lang]?.unknown || "不明")}<br>
         ${translations[lang]?.collector_en || "collector"}: ${row.collectorEn || (translations[lang]?.unknown || "不明")}<br><br>
-        ${translations[lang]?.note_en || "備考"}: ${row.note || (translations[lang]?.unknown || "不明")}<br><br>
-        ${translations[lang]?.literature || "文献"}: ${literatureName} ${
-          literatureLink ? `<a href="${literatureLink}" target="_blank">${literatureLink}</a>` : ""
-        }<br><br>
       `;
-
+  
+      // 備考が "-" または空欄でない場合のみ追加
+      if (row.note && row.note !== "-") {
+        content += `${translations[lang]?.note_en || "備考"}: ${row.note}<br><br>`;
+      }
+  
+      content += `${translations[lang]?.literature || "文献"}: ${literatureName} ${
+        literatureLink ? `<a href="${literatureLink}" target="_blank">${literatureLink}</a>` : ""
+      }<br><br>`;
+  
       if (row.registrant && row.registrationDate) {
         const entryText = translations[lang]?.entered_by_on
           ?.replace("{name}", row.registrant)
@@ -1593,22 +1660,76 @@ const preparePopupContent = (filteredData) => {
         content += `${translations[lang]?.entry || "記入"}: ${row.registrant || "-"}, ${row.registrationDate || "-"}`;
       }
     }
+  
     return { row, popupContent: content };
   }).filter(i => i !== null);
-
+  
   return { popupContents };
 };
 
 // ==================== グラフ系 ====================
+// ---- ECharts helpers (bar width/gap fixed by dynamically resizing chart DOM width) ----
+const ECHART_CFG = {
+  month: {
+    bar: 18,
+    gap: 8,
+    // legend が重ならないように、上側に少し余裕を持たせる
+    grid: { left: 55, right: 45, top: 60, bottom: 45 }
+  },
+  pref: {
+    bar: 20,
+    gap: 8,
+    grid: { left: 70, right: 260, top: 40, bottom: 120 }
+  },
+  year: {
+    bar: 14,
+    gap: 8,
+    grid: { left: 70, right: 90, top: 70, bottom: 80 }
+  }
+};
+
+function setEChartDomWidth(domId, itemCount, cfg) {
+  const el = document.getElementById(domId);
+  if (!el) return;
+
+  const n = Math.max(1, itemCount || 0);
+  const band = cfg.bar + cfg.gap;
+
+  // ECharts chart width = grid.left + grid.right + (band * n)
+  const w = cfg.grid.left + cfg.grid.right + band * n;
+
+  el.style.width = `${w}px`;
+}
+
+function getOrInitEChart(domId, existingInstance) {
+  const el = document.getElementById(domId);
+  if (!el || typeof echarts === "undefined") return null;
+
+  // If DOM was replaced, old instance must be disposed
+  const current = echarts.getInstanceByDom(el);
+  if (current && existingInstance && current !== existingInstance) {
+    try { existingInstance.dispose(); } catch (e) {}
+  }
+
+  if (existingInstance && !existingInstance.isDisposed()) return existingInstance;
+
+  if (current) return current;
+
+  return echarts.init(el, null, { renderer: "canvas" });
+}
+
+function safeDisposeEChart(instance) {
+  if (!instance) return;
+  try { instance.dispose(); } catch (e) {}
+}
+
 function generateMonthlyChart(allRows) {
   const monthTitleEl = document.getElementById("month-chart-title");
   if (monthTitleEl) {
-    const titleText = translations[lang]?.number_of_records_by_month || "出現期（月別）";
-    monthTitleEl.textContent = titleText;
+    monthTitleEl.textContent = translations[lang]?.monthly_occurrence || "出現期";
   }
 
-  if (monthChart) monthChart.destroy();
-  
+  // 12 months: store unique keys to avoid double-counts
   const monthlySetAdult = Array.from({ length: 12 }, () => new Set());
   const monthlySetJuvenile = Array.from({ length: 12 }, () => new Set());
 
@@ -1624,57 +1745,63 @@ function generateMonthlyChart(allRows) {
     }
   });
 
-  const ctx = document.getElementById('month-chart').getContext('2d');
-  monthChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ["1","2","3","4","5","6","7","8","9","10","11","12"],
-      datasets: [
-        {
-          label:  translations[lang]?.adult || "成体",
-          data: monthlySetAdult.map(s => s.size),
-          backgroundColor: "rgba(255, 99, 132, 0.6)",
-          borderColor: "rgba(255, 99, 132, 1)",
-          borderWidth: 1
-        },
-        {
-          label: translations[lang]?.juvenile_unknown || "幼体・不明",
-          data: monthlySetJuvenile.map(s => s.size),
-          backgroundColor: "rgba(54, 162, 235, 0.6)",
-          borderColor: "rgba(54, 162, 235, 1)",
-          borderWidth: 1
-        }
-      ]
+  const labels = ["1","2","3","4","5","6","7","8","9","10","11","12"];
+  const adult = monthlySetAdult.map(s => s.size);
+  const juvenile = monthlySetJuvenile.map(s => s.size);
+
+  // Fixed bar width/gap by sizing DOM width to category count
+  setEChartDomWidth("month-chart", labels.length, ECHART_CFG.month);
+
+  // Init / update chart
+  monthChart = getOrInitEChart("month-chart", monthChart);
+  if (!monthChart) return;
+
+  const option = {
+    animation: false,
+    grid: { ...ECHART_CFG.month.grid, containLabel: true },
+    tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+    // 項目が少ない/多い場合でも崩れにくい legend
+    legend: {
+      type: "scroll",
+      orient: "horizontal",
+      top: 8,
+      left: 10,
+      right: 10,
+      itemGap: 12
     },
-    options: {
-      animation: false,
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          stacked: true,
-          title: { display: true, text: translations[lang]?.month || "月" }
-        },
-        y: {
-          stacked: true,
-          beginAtZero: true,
-          title: { display: true, text: translations[lang]?.number_of_records || "記録数" },
-          ticks: { precision: 0, maxTicksLimit: 20 }
-        }
+    xAxis: {
+      type: "category",
+      name: translations[lang]?.month || "月",
+      nameLocation: "end",
+      nameGap: 22,
+      data: labels,
+      axisTick: { alignWithLabel: true }
+    },
+    yAxis: {
+      type: "value",
+      name: translations[lang]?.number_of_records || "記録数",
+      minInterval: 1
+    },
+    series: [
+      {
+        name: translations[lang]?.adult || "成体",
+        type: "bar",
+        stack: "monthly",
+        barWidth: ECHART_CFG.month.bar,
+        data: adult
       },
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: {
-            boxWidth: 20,
-            padding: 12
-          }
-        },
-        title: { display: false } // Chart.js内蔵タイトルはオフ
+      {
+        name: translations[lang]?.juvenile_unknown || "幼体・不明",
+        type: "bar",
+        stack: "monthly",
+        barWidth: ECHART_CFG.month.bar,
+        data: juvenile
       }
-    }
-  });
+    ]
+  };
+
+  monthChart.setOption(option, true);
+  monthChart.resize();
 }
 
 function generatePrefectureChart(allRows) {
@@ -1692,39 +1819,33 @@ function generatePrefectureChart(allRows) {
         : (currentChartMode === "record")
           ? translations[lang]?.chart_records || "記録数"
           : translations[lang]?.chart_ratio || "割合";
-
       chartTitle = `${titleHead}${classificationText}${unit}`;
     } else {
-      const unitEn = (currentChartMode === "count") ? "Number of Species" 
-                     : (currentChartMode === "record") ? "Number of Records" 
+      const classificationTextEn = (currentClassification === "order") ? "by Order" : "by Family";
+      const unitEn = (currentChartMode === "count") ? "Number of Species"
+                     : (currentChartMode === "record") ? "Number of Records"
                      : "Ratio";
-      const byTaxon = (currentClassification === "order") ? "Order" : "Family";
-      chartTitle = `${unitEn} by ${byTaxon} in Each Prefecture`;
+      chartTitle = `${unitEn} in Each Prefecture (${classificationTextEn})`;
     }
     prefTitleEl.textContent = chartTitle;
   }
 
-  if (prefectureChart) prefectureChart.destroy();
+  // ====== Data aggregation (same as before) ======
+  const chartMode = currentChartMode;         // "count" / "record" / "ratio"
+  const classificationKey = currentClassification; // "order" / "family"
 
-  const classificationKey = currentClassification;
-  const chartMode = currentChartMode;
-  const excludeUndescribed = document.getElementById("exclude-undescribed")?.checked;
-  const validRanks = ["species", "species complex", "subspecies"];
+  const targetRows = allRows.filter(r => r.prefecture && r.prefecture !== "-");
 
-  const targetRows = allRows.filter(row => {
-    const rank = row.taxonRank?.toLowerCase();
-    if (!validRanks.includes(rank)) return false;
-    if (excludeUndescribed && row.undescribedSpecies?.toLowerCase() === "yes") return false;
-    return true;
-  });
-
-  const prefectureTaxonMap = {};
-  const prefectureRecordMap = {};
+  const prefectureTaxonMap = {};   // {pref: {taxon: Set(species)}}
+  const prefectureRecordMap = {};  // {pref: {taxon: number}}
+  const taxonSource = {};          // keep taxon keys per prefecture
 
   function getNormalizedSpeciesName(row) {
-    const rank = row.taxonRank?.toLowerCase();
-    const sciName = row.scientificName?.trim() || "";
-    if (rank === "subspecies") {
+    const sciName = row.scientificName || "";
+    if (row.subspecies && row.subspecies !== "-") {
+      return `${sciName} ${row.subspecies}`;
+    }
+    if (lang !== "ja") {
       const parts = sciName.split(/\s+/);
       return parts.length >= 2 ? parts[0] + " " + parts[1] : sciName;
     }
@@ -1732,7 +1853,7 @@ function generatePrefectureChart(allRows) {
   }
 
   targetRows.forEach(row => {
-    const pref = row.prefecture;   // 日本語名
+    const pref = row.prefecture;
     const keyValue = (classificationKey === "order") ? row.order : row.family;
     if (!pref || pref === "-" || !keyValue || keyValue === "-") return;
 
@@ -1745,48 +1866,58 @@ function generatePrefectureChart(allRows) {
     if (!prefectureRecordMap[pref]) prefectureRecordMap[pref] = {};
     if (!prefectureRecordMap[pref][keyValue]) prefectureRecordMap[pref][keyValue] = 0;
     prefectureRecordMap[pref][keyValue]++;
+
+    if (!taxonSource[pref]) taxonSource[pref] = {};
+    taxonSource[pref][keyValue] = true;
   });
 
+  // Prefecture order list (JP)
+  const prefectureOrder = [
+    "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
+    "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
+    "新潟県","富山県","石川県","福井県","山梨県","長野県",
+    "岐阜県","静岡県","愛知県","三重県",
+    "滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
+    "鳥取県","島根県","岡山県","広島県","山口県",
+    "徳島県","香川県","愛媛県","高知県",
+    "福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県",
+    "沖縄県"
+  ];
+
+  // Determine prefecture list to display
   let sortedPrefectures = [];
-  if (chartMode === "count") {
-    const arr = Object.keys(prefectureTaxonMap).map(pref => {
-      const total = Object.values(prefectureTaxonMap[pref]).reduce((sum, set) => sum + set.size, 0);
-      return { pref, total };
-    });
-    arr.sort((a, b) => b.total - a.total);
-    sortedPrefectures = arr.map(i => i.pref);
-  } else if (chartMode === "record") {
-    const arr = Object.keys(prefectureRecordMap).map(pref => {
-      const total = Object.values(prefectureRecordMap[pref]).reduce((sum, val) => sum + val, 0);
-      return { pref, total };
-    });
-    arr.sort((a, b) => b.total - a.total);
+  if (chartMode === "count" || chartMode === "record") {
+    const arr = prefectureOrder
+      .filter(p => !!prefectureTaxonMap[p])
+      .map(p => {
+        const total = Object.values(prefectureTaxonMap[p] || {}).reduce((sum, set) => sum + set.size, 0);
+        return { pref: p, total };
+      })
+      .sort((a, b) => b.total - a.total);
     sortedPrefectures = arr.map(i => i.pref);
   } else {
-    // chartMode === "ratio" など
     sortedPrefectures = prefectureOrder.filter(p => !!prefectureTaxonMap[p]);
   }
 
+  // Display label mapping
   let displayedPrefectures;
-  if (lang === "en") {
+  if (lang !== "ja") {
     displayedPrefectures = sortedPrefectures.map(jpName => {
       const match = prefectureMeta.find(m => m.jp === jpName);
-      return match ? match.en : jpName; // 該当が無ければ日本語表示 fallback
+      return match ? match.en : jpName;
     });
   } else {
-    displayedPrefectures = sortedPrefectures; // 日本語のまま
+    displayedPrefectures = sortedPrefectures;
   }
 
-  // taxonSet から datasets を組み立て
+  // Collect taxon keys
   const taxonSet = new Set();
-  const taxonSource = (chartMode === "record") ? prefectureRecordMap : prefectureTaxonMap;
   for (const pref in taxonSource) {
-    for (const key in taxonSource[pref]) {
-      taxonSet.add(key);
-    }
+    for (const key in taxonSource[pref]) taxonSet.add(key);
   }
   const taxons = Array.from(taxonSet).sort();
 
+  // Build per-taxon data (and abs counts for ratio tooltip)
   const datasets = taxons.map((taxon, index) => {
     const data = [];
     const absData = [];
@@ -1796,6 +1927,7 @@ function generatePrefectureChart(allRows) {
         ? (prefectureRecordMap[pref]?.[taxon] || 0)
         : (prefectureTaxonMap[pref]?.[taxon]?.size || 0);
       absData.push(count);
+
       if (chartMode === "ratio") {
         const total = Object.values(prefectureTaxonMap[pref] || {}).reduce((sum, set) => sum + set.size, 0);
         const ratio = total === 0 ? 0 : ((count / total) * 100).toFixed(1);
@@ -1814,86 +1946,100 @@ function generatePrefectureChart(allRows) {
       "rgba(255, 159, 64, 0.6)",
       "rgba(199, 199, 199, 0.6)"
     ];
-    const borderColorPalette = colorPalette.map(c => c.replace("0.6", "1"));
+
     return {
       label: taxon,
       data,
       _absData: absData,
-      backgroundColor: colorPalette[index % colorPalette.length],
-      borderColor: borderColorPalette[index % borderColorPalette.length],
-      borderWidth: 1,
-      order: taxons.length - 1 - index
+      color: colorPalette[index % colorPalette.length]
     };
   });
 
-  const ctx = document.getElementById("prefecture-chart").getContext("2d");
-  prefectureChart = new Chart(ctx, {
-    type: "bar",
-    data: { 
-      labels: displayedPrefectures,
-      datasets
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: { padding: { right: 50 } },
-      scales: {
-        x: {
-          stacked: true,
-          // X軸タイトルも翻訳済みの pref / or fallback
-          title: { display: true, text: translations[lang]?.prefecture || "都道府県" },
-          ticks: { autoSkip: false, maxRotation: 60 }
-        },
-        y: {
-          stacked: true,
-          beginAtZero: true,
-          max: (chartMode === "ratio") ? 100 : undefined,
-          title: {
-            display: true,
-            text: (chartMode === "ratio")
-              ? (translations[lang]?.chart_ratio || "割合")
-              : (chartMode === "record")
-                ? (translations[lang]?.chart_records || "記録数")
-                : (translations[lang]?.chart_species || "種数")
-          }
-        }
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: "right",
-          labels: {
-            generateLabels: chart => chart.data.datasets.map((d, i) => {
-              const sci = d.label;
-              const jap = taxonMap[sci]?.japaneseName || "-";
-              return {
-                text: `${sci} / ${jap}`,
-                fillStyle: d.backgroundColor,
-                strokeStyle: d.borderColor,
-                lineWidth: d.borderWidth,
-                hidden: !chart.isDatasetVisible(i),
-                datasetIndex: i
-              };
-            }).sort((a, b) => a.text.localeCompare(b.text))
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const val = ctx.parsed.y;
-              const abs = ctx.dataset._absData?.[ctx.dataIndex] || 0;
-              return (chartMode === "ratio")
-                ? `${ctx.dataset.label}: ${val}% (${abs}種)`
-                : `${ctx.dataset.label}: ${val}`;
-            }
-          }
-        },
-        title: { display: false }
-      },
-      barThickness: 20
-    }
+  // ====== ECharts rendering ======
+  // Fix bar width + gap by resizing the chart DOM width to match category count
+  setEChartDomWidth("prefecture-chart", displayedPrefectures.length, ECHART_CFG.pref);
+
+  prefectureChart = getOrInitEChart("prefecture-chart", prefectureChart);
+  if (!prefectureChart) return;
+
+  const unitText = (chartMode === "ratio")
+    ? (translations[lang]?.chart_ratio || "割合")
+    : (chartMode === "record")
+      ? (translations[lang]?.chart_records || "記録数")
+      : (translations[lang]?.chart_species || "種数");
+
+  const xAxisName = translations[lang]?.prefecture || "都道府県";
+
+  const series = datasets.map(d => {
+    const data = (chartMode === "ratio")
+      ? d.data.map((v, i) => ({ value: v, abs: d._absData[i] }))
+      : d.data;
+    return {
+      name: (() => {
+        const sci = d.label;
+        const jap = taxonMap[sci]?.japaneseName || "-";
+        return (lang === "ja") ? `${sci} / ${jap}` : sci;
+      })(),
+      type: "bar",
+      stack: "total",
+      barWidth: ECHART_CFG.pref.bar,
+      itemStyle: { color: d.color },
+      emphasis: { focus: "series" },
+      data
+    };
   });
+
+  const option = {
+    animation: false,
+    grid: { ...ECHART_CFG.pref.grid, containLabel: true },
+    legend: {
+      type: "scroll",
+      orient: "vertical",
+      right: 10,
+      top: 40,
+      bottom: 20
+    },
+    tooltip: {
+      trigger: "axis",
+      axisPointer: { type: "shadow" },
+      formatter: params => {
+        if (!params || !params.length) return "";
+        const axisLabel = params[0].axisValueLabel;
+        const lines = [axisLabel];
+
+        params.forEach(p => {
+          const name = p.seriesName;
+          const val = p.value;
+          if (chartMode === "ratio") {
+            const abs = (p.data && typeof p.data.abs !== "undefined") ? p.data.abs : "";
+            lines.push(`${name}: ${val}% (${abs}${translations[lang]?.species_unit || "種"})`);
+          } else {
+            lines.push(`${name}: ${val}`);
+          }
+        });
+        return lines.join("<br/>");
+      }
+    },
+    xAxis: {
+      type: "category",
+      name: xAxisName,
+      data: displayedPrefectures,
+      axisLabel: { interval: 0, rotate: 60 },
+      axisTick: { alignWithLabel: true }
+    },
+    yAxis: [
+      {
+        type: "value",
+        name: unitText,
+        max: (chartMode === "ratio") ? 100 : undefined,
+        axisLabel: { formatter: (chartMode === "ratio") ? "{value}%" : "{value}" }
+      }
+    ],
+    series
+  };
+
+  prefectureChart.setOption(option, true);
+  prefectureChart.resize();
 }
 
 function generateYearChart(rows, mode) {
@@ -1921,79 +2067,122 @@ function generateYearChart(rows, mode) {
   }
 
   const yearKey = mode.includes("collection") ? "collectionYear" : "publicationYear";
-  const yearData = {};
-  const speciesByYearByType = {};
-  const cumulativeSpeciesSet = new Set();
 
-  const originalTypes = [
-    "1_タイプ産地",
-    "2_統合された種のタイプ産地",
-    "3_疑わしいタイプ産地",
-    "4_疑わしい統合された種のタイプ産地",
-    "5_標本記録",
-    "6_文献記録",
-    "7_疑わしい文献記録"
+  // ---- recordType (1..7) definitions ----
+  const typeDefs = [
+    { id: 1, key: "year_type_1", fallback: "原記載", color: "#1f77b4" },
+    { id: 2, key: "year_type_2", fallback: "統合された種の原記載", color: "#9467bd" },
+    { id: 3, key: "year_type_3", fallback: "疑わしいタイプ", color: "#ffb6c1", borderColor: "#000", borderWidth: 1 },
+    { id: 4, key: "year_type_4", fallback: "疑わしい統合された種のタイプ", color: "#ff99c8", borderColor: "#000", borderWidth: 1 },
+    { id: 5, key: "year_type_5", fallback: "標本記録", color: "#d62728" },
+    // White fill + red border (match the marker style)
+    { id: 6, key: "year_type_6", fallback: "文献記録", color: "#ffffff", borderColor: "#d62728", borderWidth: 2 },
+    { id: 7, key: "year_type_7", fallback: "疑わしい文献記録", color: "#ffb6c1", borderColor: "#000", borderWidth: 1 }
   ];
 
-  const displayLabels = [
-    translations[lang]?.year_type_1 || "Original description",
-    translations[lang]?.year_type_2 || "Original description of synonymized species",
-    translations[lang]?.year_type_3 || "Doubtful type",
-    translations[lang]?.year_type_4 || "Doubtful & Synonymized type",
-    translations[lang]?.year_type_5 || "Specimen record",
-    translations[lang]?.year_type_6 || "Literature record",
-    translations[lang]?.year_type_7 || "Doubtful literature record"
-  ];
-
-  const colors = [
-    "#E69F00",
-    "#56B4E9",
-    "#009E73",
-    "#F0E442",
-    "#0072B2",
-    "#D55E00",
-    "#CC79A7"
-  ];
+  // Raw aggregation
+  const yearData = {};              // {year: {typeId: count}}
+  const speciesByYearByType = {};   // {year: {typeId: Set(species)}}
 
   rows.forEach(row => {
-    const year = parseInt(row[yearKey]);
-    const type = row.recordType;
+    const year = parseInt(row[yearKey], 10);
     const species = row.scientificName;
-    if (!Number.isInteger(year) || !species || species === "-") return;
+    const typeId = parseInt(String(row.recordType || "").split("_")[0], 10);
+
+    if (!Number.isInteger(year) || !Number.isInteger(typeId) || !species || species === "-") return;
 
     if (mode.startsWith("record")) {
       if (!yearData[year]) yearData[year] = {};
-      if (!yearData[year][type]) yearData[year][type] = 0;
-      yearData[year][type]++;
-    } else if (mode.startsWith("species")) {
+      yearData[year][typeId] = (yearData[year][typeId] || 0) + 1;
+    } else {
       if (!speciesByYearByType[year]) speciesByYearByType[year] = {};
-      if (!speciesByYearByType[year][type]) speciesByYearByType[year][type] = new Set();
-      speciesByYearByType[year][type].add(species);
+      if (!speciesByYearByType[year][typeId]) speciesByYearByType[year][typeId] = new Set();
+      speciesByYearByType[year][typeId].add(species);
     }
   });
 
-  const allYears = Object.keys(mode.startsWith("record") ? yearData : speciesByYearByType).map(y => parseInt(y));
+  const allYears = Object.keys(mode.startsWith("record") ? yearData : speciesByYearByType).map(y => parseInt(y, 10));
   if (allYears.length === 0) {
-    if (window.yearChart) window.yearChart.destroy();
+    safeDisposeEChart(yearChart);
+    yearChart = null;
     return;
   }
 
   const minYear = Math.min(...allYears);
   const maxYear = Math.max(...allYears);
+
+  // Fill missing years so the timeline is continuous
   const sortedYears = [];
-  for (let y = minYear; y <= maxYear; y++) {
-    sortedYears.push(y);
+  for (let y = minYear; y <= maxYear; y++) sortedYears.push(y);
+
+  // Build bar series (only types that actually have data)
+  const barSeries = [];
+  const activeTypeIds = [];
+
+  typeDefs.forEach(def => {
+    const label = translations[lang]?.[def.key] || def.fallback;
+
+    const data = sortedYears.map(year => {
+      if (mode.startsWith("record")) {
+        return yearData[year]?.[def.id] || 0;
+      }
+      return speciesByYearByType[year]?.[def.id]?.size || 0;
+    });
+
+    const total = data.reduce((a, b) => a + b, 0);
+    if (total <= 0) return;
+
+    activeTypeIds.push(def.id);
+
+    const itemStyle = { color: def.color };
+    if (def.borderColor) itemStyle.borderColor = def.borderColor;
+    if (def.borderWidth) itemStyle.borderWidth = def.borderWidth;
+
+    barSeries.push({
+      name: label,
+      type: "bar",
+      stack: "stack1",
+      barWidth: ECHART_CFG.year.bar,
+      itemStyle,
+      emphasis: { focus: "series" },
+      data
+    });
+  });
+
+  // Cumulative line (based on the visible types)
+  const cumulativeLabel = mode.startsWith("record")
+    ? (translations[lang]?.year_chart_y2_label_record || "累積記録数")
+    : (translations[lang]?.year_chart_y2_label_species || "累積種数");
+
+  const cumulativeArray = [];
+  if (mode.startsWith("record")) {
+    let cumulativeSum = 0;
+    for (const year of sortedYears) {
+      const total = activeTypeIds.reduce((sum, t) => sum + (yearData[year]?.[t] || 0), 0);
+      cumulativeSum += total;
+      cumulativeArray.push(cumulativeSum);
+    }
+  } else {
+    const cumulativeSet = new Set();
+    for (const year of sortedYears) {
+      activeTypeIds.forEach(t => {
+        const setObj = speciesByYearByType[year]?.[t];
+        if (setObj && setObj.forEach) setObj.forEach(v => cumulativeSet.add(v));
+      });
+      cumulativeArray.push(cumulativeSet.size);
+    }
   }
 
-  const datasets = [];
-  const cumulativeArray = [];
-
-  const cumulativeLabel =
-  translations[lang]?.[
-    mode.startsWith("species")
-      ? "year_chart_y2_label_species"
-      : "year_chart_y2_label_record"
-  ] || (mode.startsWith("species") ? "累積種数" : "累積記録数");(mode.startsWith("species") ? "累積種数" : "累積記録数");
+  const lineSeries = {
+    name: cumulativeLabel,
+    type: "line",
+    yAxisIndex: 1,
+    showSymbol: false,
+    smooth: false,
+    lineStyle: { width: 2, color: "#000" },
+    itemStyle: { color: "#000" },
+    data: cumulativeArray
+  };
 
   const leftAxisLabel =
     translations[lang]?.[
@@ -2005,121 +2194,36 @@ function generateYearChart(rows, mode) {
       mode.startsWith("species") ? "year_chart_y2_label_species" : "year_chart_y2_label_record"
     ] || (mode.startsWith("species") ? "累積種数" : "累積記録数");
 
-  if (mode.startsWith("record")) {
-    const activeTypes = [];
-    originalTypes.forEach((type, index) => {
-      const data = sortedYears.map(year => yearData[year]?.[type] || 0);
-      const total = data.reduce((a, b) => a + b, 0);
-      if (total > 0) {
-        datasets.push({
-          label: displayLabels[index],
-          backgroundColor: colors[index],
-          data: data,
-          stack: 'stack1'
-        });
-        activeTypes.push(type);
+  // Fix bar width + gap by resizing the chart DOM width to match category count
+  setEChartDomWidth("year-chart", sortedYears.length, ECHART_CFG.year);
+
+  yearChart = getOrInitEChart("year-chart", yearChart);
+  if (!yearChart) return;
+
+  const option = {
+    animation: false,
+    grid: { ...ECHART_CFG.year.grid, containLabel: true },
+    tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+    legend: { type: "scroll", top: 10 },
+    xAxis: {
+      type: "category",
+      data: sortedYears.map(String),
+      axisTick: { alignWithLabel: true },
+      axisLabel: {
+        interval: 0,
+        rotate: 45,
+        hideOverlap: true
       }
-    });
-
-    let cumulativeSum = 0;
-    for (const year of sortedYears) {
-      const total = activeTypes.reduce((sum, type) => sum + (yearData[year]?.[type] || 0), 0);
-      cumulativeSum += total;
-      cumulativeArray.push(cumulativeSum);
-    }
-
-    datasets.push({
-      label: cumulativeLabel,
-      data: cumulativeArray,
-      type: 'line',
-      borderColor: 'black',
-      backgroundColor: 'black',
-      fill: false,
-      yAxisID: 'y-axis-2',
-      tension: 0.1,
-      pointRadius: 0
-    });
-  } else if (mode.startsWith("species")) {
-    originalTypes.forEach((type, index) => {
-      const data = sortedYears.map(year => speciesByYearByType[year]?.[type]?.size || 0);
-      const total = data.reduce((a, b) => a + b, 0);
-      if (total > 0) {
-        datasets.push({
-          label: displayLabels[index],
-          backgroundColor: colors[index],
-          data: data,
-          stack: 'stack1'
-        });
-      }
-    });
-
-    for (const year of sortedYears) {
-      const types = speciesByYearByType[year];
-      if (types) {
-        for (const type in types) {
-          for (const s of types[type]) cumulativeSpeciesSet.add(s);
-        }
-      }
-      cumulativeArray.push(cumulativeSpeciesSet.size);
-    }
-
-    datasets.push({
-      label: cumulativeLabel,
-      data: cumulativeArray,
-      type: 'line',
-      borderColor: 'black',
-      backgroundColor: 'black',
-      fill: false,
-      yAxisID: 'y-axis-2',
-      tension: 0.1,
-      pointRadius: 0
-    });
-  }
-
-  const ctx = document.getElementById("year-chart").getContext("2d");
-  if (window.yearChart) window.yearChart.destroy();
-
-  window.yearChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: sortedYears,
-      datasets: datasets
     },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: {
-        legend: {
-          position: 'top'
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false
-        }
-      },
-      scales: {
-        x: {
-          stacked: true
-        },
-        y: {
-          stacked: true,
-          title: {
-            display: true,
-            text: leftAxisLabel
-          }
-        },
-        'y-axis-2': {
-          type: 'linear',
-          position: 'right',
-          grid: { drawOnChartArea: false },
-          title: {
-            display: true,
-            text: rightAxisLabel
-          }
-        }
-      }
-    }
-  });
+    yAxis: [
+      { type: "value", name: leftAxisLabel, minInterval: 1 },
+      { type: "value", name: rightAxisLabel, minInterval: 1 }
+    ],
+    series: [...barSeries, lineSeries]
+  };
+
+  yearChart.setOption(option, true);
+  yearChart.resize();
 }
 
 // ==================== UI補助 ====================
@@ -2133,12 +2237,23 @@ function updateFilterActivationUI() {
     const enabled = checkbox.checked;
 
     // label以外の子要素（スライダーやinput）に処理を適用
+    const isCollectionMonthToggle = (checkboxId === "filter-collection-month-active");
+
     container.querySelectorAll(":scope > *:not(label)").forEach(child => {
-      child.classList.toggle("filter-body-disabled", !enabled);
+      // 採集月フィルタはOFFでも各月(＋不明)を操作できるようにし、見た目もグレーアウトしない
+      child.classList.toggle("filter-body-disabled", (!enabled && !isCollectionMonthToggle));
 
       // input, select, button を無効化
+      // 採集月は「OFF後に特定の月を選べる」ように、月チェックは常に操作可能にする
       child.querySelectorAll("input, select, button").forEach(ctrl => {
-        ctrl.disabled = !enabled;
+        if (isCollectionMonthToggle) {
+          ctrl.disabled = false;
+          // もしCSSで pointer-events が無効化されていても操作できるようにする
+          child.style.pointerEvents = "auto";
+        } else {
+          ctrl.disabled = !enabled;
+          child.style.pointerEvents = "";
+        }
       });
     });
 
@@ -2274,7 +2389,7 @@ function updateSelectedLabels() {
     // -----------------------------
     // 5) 英語UIなら「和名 /」部分を除去
     // -----------------------------
-    if (lang === "en") {
+    if (lang !== "ja") {
       labelText = labelText.replace(/^.*?\/\s*/, "");
     }
 
@@ -2335,15 +2450,36 @@ function updateSelectedLabels() {
 
   // 採集月（出現期）
   if ($("#filter-collection-month-active").is(":checked")) {
-    const selectedMonths = $(".collection-month:checked").map(function () {
-      return this.value;
+    const selectedMonthValues = $(".collection-month:checked").map(function () {
+      return String(this.value);
     }).get();
-    if (selectedMonths.length > 0) {
+
+    if (selectedMonthValues.length > 0) {
+      const monthKeyMap = {
+        "1": "january",
+        "2": "february",
+        "3": "march",
+        "4": "april",
+        "5": "may",
+        "6": "june",
+        "7": "july",
+        "8": "august",
+        "9": "september",
+        "10": "october",
+        "11": "november",
+        "12": "december"
+      };
+
+      const monthLabels = selectedMonthValues.map(v => {
+        if (v === "unknown") return getTranslation(lang, "unknown") || "不明";
+        const key = monthKeyMap[v];
+        return key ? (getTranslation(lang, key) || v) : v;
+      });
+
       if (lang === "ja") {
-        labels.push(`採集月：${selectedMonths.join(", ")}`);
+        labels.push(`採集月：${monthLabels.join(", ")}`);
       } else {
-        // "Month(s) collected: X, Y, Z"
-        labels.push(`Month(s): ${selectedMonths.join(", ")}`);
+        labels.push(`Month(s): ${monthLabels.join(", ")}`);
       }
     }
   }
@@ -2550,9 +2686,9 @@ const DEFAULT_STATE = {
   filterCollectionMonthActive: false,
   filterLifeStageActive: false,
 
-  // --- 月チェックボックス（1～12） ---
+  // --- 月チェックボックス（1～12 + 不明） ---
   // 以前はすべて checked だった場合は true, すべて外したいなら false
-  collectionMonths: [true, true, true, true, true, true, true, true, true, true, true, true],
+  collectionMonths: [false, false, false, false, false, false, false, false, false, false, false, false, false],
 
   // --- ライフステージチェックボックス ---
   lifeStages: {
@@ -2609,11 +2745,11 @@ function applyDefaultState() {
   document.getElementById("filter-collection-month-active").checked = DEFAULT_STATE.filterCollectionMonthActive;
   document.getElementById("filter-life-stage-active").checked = DEFAULT_STATE.filterLifeStageActive;
 
-  // 2. 月ごとのチェックボックス
+  // 2. 月ごとのチェックボックス（1〜12 + 不明）
   const monthCheckboxes = document.querySelectorAll(".collection-month");
-  // 12個ある想定; i=0 -> 1月, i=1 -> 2月, ...
+  // 13個ある想定; i=0 -> 1月, i=1 -> 2月, ... i=11 -> 12月, i=12 -> 不明
   monthCheckboxes.forEach((cb, i) => {
-    cb.checked = DEFAULT_STATE.collectionMonths[i];
+    cb.checked = (DEFAULT_STATE.collectionMonths[i] ?? false);
   });
 
   // 3. ライフステージ
@@ -2706,11 +2842,18 @@ function readStateFromQuery() {
   });
 
   if (params.has("collectionMonths")) {
-    const m = params.get("collectionMonths");
-    if (m.length === 12) {
+    const m = params.get("collectionMonths") || "";
+
+    // 旧仕様(12桁)にも対応
+    if (m.length === 13) {
+      for (let i = 0; i < 13; i++) {
+        restoredState.collectionMonths[i] = m[i] === "1";
+      }
+    } else if (m.length === 12) {
       for (let i = 0; i < 12; i++) {
         restoredState.collectionMonths[i] = m[i] === "1";
       }
+      restoredState.collectionMonths[12] = false; // 不明（13番目）
     }
   }
 
@@ -2827,11 +2970,18 @@ function applyStateToDOM(state) {
     intervalEl.value = "2"; // デフォルトの周期
   }
 
-  // --- 9) 月チェックボックス (.collection-month)
+  // --- 9) 月チェックボックス (.collection-month)（1〜12月 + 不明）
   const monthCheckboxes = document.querySelectorAll(".collection-month");
   monthCheckboxes.forEach((cb, i) => {
     cb.checked = !!state.collectionMonths[i];
   });
+
+  // 採集月フィルターがOFFのときは、月チェックもすべてOFFにしておく
+  if (!state.filterCollectionMonthActive) {
+    monthCheckboxes.forEach(cb => {
+      cb.checked = false;
+    });
+  }
 }
 
 function getCurrentStateFromDOM() {
@@ -2984,7 +3134,7 @@ function updateURL() {
     }
   });
 
-  // 月チェックボックス（12桁）
+  // 月チェックボックス（13桁: 1〜12月 + 不明）
   const monthString = currentState.collectionMonths.map(v => (v ? "1" : "0")).join("");
   const defaultMonthString = DEFAULT_STATE.collectionMonths.map(v => (v ? "1" : "0")).join("");
   if (monthString !== defaultMonthString) {
@@ -3001,7 +3151,15 @@ function updateURL() {
     }
   }
 
-  const queryString = params.toString();
+
+// 矩形選択（BBox）: boxBounds があれば URL に保存
+if (typeof boxBounds !== "undefined" && boxBounds) {
+  const { west, south, east, north } = boxBounds;
+  const bboxStr = [west, south, east, north].map(v => Number(v).toFixed(6)).join(",");
+  params.set("bbox", bboxStr);
+}
+
+const queryString = params.toString();
   const newUrl = queryString ? `?${queryString}` : window.location.pathname;
   window.history.replaceState({}, "", newUrl);
 }
@@ -3067,7 +3225,7 @@ function updatePrefectureListInTab() {
       const enName = prefectureMeta.find(m => m.jp === jpName)?.en || "-";
 
       // 言語に応じて表示形式を切り替え
-      li.textContent = (lang === "en") ? enName : `${jpName} / ${enName}`;
+      li.textContent = (lang !== "ja") ? enName : `${jpName} / ${enName}`;
       listContainer.appendChild(li);
     }
   });
@@ -3089,7 +3247,7 @@ function updateIslandListInTab() {
       const enName = islandMeta.find(m => m.jp === jpName)?.en || "-";
 
       // 表示言語に応じて内容を変更
-      li.textContent = (lang === "en") ? enName : `${jpName} / ${enName}`;
+      li.textContent = (lang !== "ja") ? enName : `${jpName} / ${enName}`;
       listContainer.appendChild(li);
     }
   });
@@ -3180,17 +3338,17 @@ const updateSpeciesListInTab = () => {
 
   sortByNo(Object.keys(tree), "order").forEach(order => {
     let orderFormatted = formatOrderFamilyName(`${getDisplayName(order).jpn} / ${order}`);
-    if (lang === "en") orderFormatted = orderFormatted.replace(/^.*?\/\s*/, "");
+    if (lang !== "ja") orderFormatted = orderFormatted.replace(/^.*?\/\s*/, "");
     createLi(orderFormatted, 0, 'higher-taxonomy');
 
     sortByNo(Object.keys(tree[order]), "family").forEach(family => {
       let familyFormatted = formatOrderFamilyName(`${getDisplayName(family).jpn} / ${family}`);
-      if (lang === "en") familyFormatted = familyFormatted.replace(/^.*?\/\s*/, "");
+      if (lang !== "ja") familyFormatted = familyFormatted.replace(/^.*?\/\s*/, "");
       createLi(familyFormatted, 1, 'higher-taxonomy');
 
       sortByNo(Object.keys(tree[order][family]), "genus").forEach(genus => {
         let genusFormatted = formatGenusName(`${getDisplayName(genus).jpn} / ${genus}`);
-        if (lang === "en") genusFormatted = genusFormatted.replace(/^.*?\/\s*/, "");
+        if (lang !== "ja") genusFormatted = genusFormatted.replace(/^.*?\/\s*/, "");
         createLi(genusFormatted, 2, 'higher-taxonomy');
 
         const speciesList = Object.entries(tree[order][family][genus]);
@@ -3206,7 +3364,7 @@ const updateSpeciesListInTab = () => {
             if (data.rank === "subspecies") return;
 
             let label = formatSpeciesName(`${data.japaneseName} / ${sci}`);
-            if (lang === "en") label = label.replace(/^.*?\/\s*/, "");
+            if (lang !== "ja") label = label.replace(/^.*?\/\s*/, "");
             label = `${speciesCounter}. ${label}`;
             createLi(label, 3);
 
@@ -3235,7 +3393,7 @@ const updateSpeciesListInTab = () => {
                 .replace(/\baff\./g, '<span class="non-italic">aff.</span>');
 
               let subLabel = `${subJpn} / ${formattedSubSci}${subAuthor}`;
-              if (lang === "en") subLabel = `${formattedSubSci}${subAuthor}`;
+              if (lang !== "ja") subLabel = `${formattedSubSci}${subAuthor}`;
               subLabel = `${speciesCounter}.${idx + 1} ${subLabel}`;
               createLi(subLabel, 4);
             });
@@ -3253,9 +3411,294 @@ const updateSpeciesListInTab = () => {
 };
 
 // ==================== メイン処理 ====================
+
+
+// ==================== Box selection (rectangle) ====================
+// boxBounds: { west, south, east, north } (LngLat) / null
+let boxSelectMode = false;
+let boxBounds = null;
+
+const BOX_SOURCE_ID = "box-selection";
+const BOX_FILL_LAYER_ID = "box-selection-fill";
+const BOX_LINE_LAYER_ID = "box-selection-line";
+
+function getEmptyFeatureCollection() {
+  return { type: "FeatureCollection", features: [] };
+}
+
+function getBoxPolygonFeature(bounds) {
+  const { west, south, east, north } = bounds;
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [[
+        [west, south],
+        [east, south],
+        [east, north],
+        [west, north],
+        [west, south]
+      ]]
+    },
+    properties: {}
+  };
+}
+
+function ensureBoxLayers() {
+  if (!map) return;
+
+  // style 未ロードだと addSource/addLayer が落ちるのでガード
+  if (!map.isStyleLoaded || !map.isStyleLoaded()) {
+    // 初回 load と style 変更の両方に対応
+    map.once("load", ensureBoxLayers);
+    map.once("styledata", ensureBoxLayers);
+    return;
+  }
+
+  if (!map.getSource(BOX_SOURCE_ID)) {
+    map.addSource(BOX_SOURCE_ID, {
+      type: "geojson",
+      data: getEmptyFeatureCollection()
+    });
+  }
+
+  if (!map.getLayer(BOX_FILL_LAYER_ID)) {
+    map.addLayer({
+      id: BOX_FILL_LAYER_ID,
+      type: "fill",
+      source: BOX_SOURCE_ID,
+      paint: {
+        "fill-color": "#000",
+        "fill-opacity": 0.08
+      }
+    });
+  }
+
+  if (!map.getLayer(BOX_LINE_LAYER_ID)) {
+    map.addLayer({
+      id: BOX_LINE_LAYER_ID,
+      type: "line",
+      source: BOX_SOURCE_ID,
+      paint: {
+        "line-color": "#000",
+        "line-width": 2
+      }
+    });
+  }
+}
+
+function updateBoxLayer() {
+  if (!map) return;
+  ensureBoxLayers();
+
+  const src = map.getSource(BOX_SOURCE_ID);
+  if (!src) return;
+
+  if (!boxBounds) {
+    src.setData(getEmptyFeatureCollection());
+    return;
+  }
+
+  src.setData({
+    type: "FeatureCollection",
+    features: [getBoxPolygonFeature(boxBounds)]
+  });
+}
+
+function clearBoxSelection({ apply = true } = {}) {
+  boxBounds = null;
+  updateBoxLayer();
+  if (apply && typeof applyFilters === "function") {
+    applyFilters(true);
+    if (typeof updateURL === "function") updateURL();
+    setBoxSelectMode(false);
+  }
+}
+
+function setBoxSelectMode(on) {
+  boxSelectMode = !!on;
+
+  const overlay = document.getElementById("box-select-overlay");
+  if (overlay) {
+    overlay.classList.toggle("active", boxSelectMode);
+  }
+
+  // カーソル（環境によって overlay の class 切替だけだと残ることがあるので明示）
+  if (map && map.getCanvas) {
+    map.getCanvas().style.cursor = boxSelectMode ? "crosshair" : "";
+  }
+
+  // モード中は地図操作を止める（ドラッグ＝矩形になるように）
+  if (map) {
+    if (boxSelectMode) {
+      if (map.dragPan) map.dragPan.disable();
+      if (map.scrollZoom) map.scrollZoom.disable();
+      if (map.doubleClickZoom) map.doubleClickZoom.disable();
+      if (map.dragRotate) map.dragRotate.disable();
+      if (map.keyboard) map.keyboard.disable();
+      if (map.touchZoomRotate) map.touchZoomRotate.disableRotation();
+    } else {
+      if (map.dragPan) map.dragPan.enable();
+      if (map.scrollZoom) map.scrollZoom.enable();
+      if (map.doubleClickZoom) map.doubleClickZoom.enable();
+      if (map.dragRotate) map.dragRotate.enable();
+      if (map.keyboard) map.keyboard.enable();
+      if (map.touchZoomRotate) map.touchZoomRotate.enableRotation();
+    }
+  }
+}
+
+function initBoxSelection() {
+  const toggleBtn = document.getElementById("box-select-toggle");
+  const clearBtn = document.getElementById("box-select-clear");
+  const overlay = document.getElementById("box-select-overlay");
+  const rectEl = document.getElementById("box-select-rect");
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      setBoxSelectMode(!boxSelectMode);
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      clearBoxSelection({ apply: true });
+    });
+  }
+
+  if (!overlay || !rectEl) return;
+
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
+
+  function hideRect() {
+    rectEl.style.display = "none";
+  }
+
+  function showRect(x1, y1, x2, y2) {
+    const left = Math.min(x1, x2);
+    const top = Math.min(y1, y2);
+    const width = Math.abs(x2 - x1);
+    const height = Math.abs(y2 - y1);
+
+    rectEl.style.display = "block";
+    rectEl.style.left = left + "px";
+    rectEl.style.top = top + "px";
+    rectEl.style.width = width + "px";
+    rectEl.style.height = height + "px";
+  }
+
+  overlay.addEventListener("pointerdown", (e) => {
+    if (!boxSelectMode) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const r = overlay.getBoundingClientRect();
+    startX = e.clientX - r.left;
+    startY = e.clientY - r.top;
+
+    dragging = true;
+    showRect(startX, startY, startX, startY);
+
+    overlay.setPointerCapture(e.pointerId);
+  });
+
+  overlay.addEventListener("pointermove", (e) => {
+    if (!boxSelectMode || !dragging) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const r = overlay.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+
+    showRect(startX, startY, x, y);
+  });
+
+  function finishDrag(e) {
+    if (!boxSelectMode || !dragging) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    dragging = false;
+    hideRect();
+
+    // pointer capture を解除（環境によっては残ると挙動が不安定になる）
+    try {
+      overlay.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+
+    const r = overlay.getBoundingClientRect();
+    const endX = e.clientX - r.left;
+    const endY = e.clientY - r.top;
+
+    const minX = Math.min(startX, endX);
+    const maxX = Math.max(startX, endX);
+    const minY = Math.min(startY, endY);
+    const maxY = Math.max(startY, endY);
+
+    // クリックに近い小さい矩形は無視（ただしモードは解除する）
+    if (Math.abs(maxX - minX) < 8 || Math.abs(maxY - minY) < 8) {
+      setBoxSelectMode(false);
+      return;
+    }
+
+    // 画面座標 -> 緯度経度（LngLat）
+    const p1 = map.unproject([minX, minY]); // 左上
+    const p2 = map.unproject([maxX, maxY]); // 右下
+
+    const west = Math.min(p1.lng, p2.lng);
+    const east = Math.max(p1.lng, p2.lng);
+    const south = Math.min(p1.lat, p2.lat);
+    const north = Math.max(p1.lat, p2.lat);
+
+    boxBounds = { west, south, east, north };
+    updateBoxLayer();
+
+    applyFilters(true);
+    if (typeof updateURL === "function") updateURL();
+
+    // 1回選択したら範囲選択モードを解除する
+    setBoxSelectMode(false);
+  }
+
+  overlay.addEventListener("pointerup", finishDrag);
+
+  // キャンセル時は確定せずにモードだけ解除
+  overlay.addEventListener("pointercancel", (e) => {
+    if (!boxSelectMode || !dragging) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragging = false;
+    hideRect();
+    try {
+      overlay.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+    setBoxSelectMode(false);
+  });
+
+  // Esc でモード解除
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && boxSelectMode) {
+      setBoxSelectMode(false);
+    }
+  });
+
+  // 地図ができたらレイヤーも用意
+  ensureBoxLayers();
+}
+
+
 document.addEventListener("DOMContentLoaded", async () => {
   // 1. 地図の初期化
   initMap();
+
+  // 1-b. 矩形選択（ボックス）初期化
+  initBoxSelection();
 
   // 2. CSV類の読み込み
   await loadTaxonNameCSV();
@@ -3270,7 +3713,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 3. URLクエリから状態オブジェクトを取得（セレクト・チェックボックス等を含む）
   let restoredState = JSON.parse(JSON.stringify(DEFAULT_STATE));
   if (window.location.search) {
-    const params = new URLSearchParams(window.location.search);
+const params = new URLSearchParams(window.location.search);
+
+// 矩形選択（BBox）: URL から復元（bbox=west,south,east,north）
+if (params.has("bbox")) {
+  const raw = params.get("bbox") || "";
+  const parts = raw.split(",").map(s => parseFloat(s.trim()));
+  if (parts.length === 4 && parts.every(v => Number.isFinite(v))) {
+    const [w, s, e, n] = parts;
+    // 念のため正規化（min/max）
+    boxBounds = {
+      west: Math.min(w, e),
+      south: Math.min(s, n),
+      east: Math.max(w, e),
+      north: Math.max(s, n)
+    };
+  }
+}
+
   
     // 年フィルタのON判定（既に追加済み）
     if (params.has("publicationYearFrom") || params.has("publicationYearTo")) {
@@ -3321,13 +3781,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   
     if (params.has("collectionMonths")) {
-      const m = params.get("collectionMonths");
-      if (m.length === 12) {
-        for (let i = 0; i < 12; i++) {
-          restoredState.collectionMonths[i] = m[i] === "1";
-        }
+    const m = params.get("collectionMonths") || "";
+
+    // 旧仕様(12桁)にも対応
+    if (m.length === 13) {
+      for (let i = 0; i < 13; i++) {
+        restoredState.collectionMonths[i] = m[i] === "1";
       }
+    } else if (m.length === 12) {
+      for (let i = 0; i < 12; i++) {
+        restoredState.collectionMonths[i] = m[i] === "1";
+      }
+      restoredState.collectionMonths[12] = false; // 不明（13番目）
     }
+  }
   }  
 
   // 4. セレクトボックス候補の取得・初期化（ここで値もセットされる）
@@ -3363,11 +3830,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   linkMasterAndDubiousCheckboxes();
   setupClassificationRadio();
 
-  document.getElementById("toggle-higher-taxonomy").addEventListener("change", function () {
-    const show = this.checked;
-    document.querySelectorAll(".higher-taxonomy").forEach(el => {
-      el.style.display = show ? "" : "none";
-    });
+  // 「高次分類群を表示」のON/OFFで、種リストのインデントも含めて再計算する。
+// （.higher-taxonomy を直接 show/hide するだけだと、種/亜種の字下げが更新されないため）
+document.getElementById("toggle-higher-taxonomy").addEventListener("change", () => {
+    updateSpeciesListInTab();
+    // URL 状態（toggleHigherTaxonomy=1/0）も同期
+    if (typeof updateURL === "function") updateURL();
   });
 
   const masterCb = document.getElementById("legend-master-checkbox");
@@ -3419,17 +3887,41 @@ document.addEventListener("DOMContentLoaded", async () => {
       updateURL();
     });
   });
+// 画面幅の切替で search-container の配置が変わるため、Select2 の幅も再計算する
+let lastLayoutIsNarrow = window.innerWidth <= 711;
 
-  window.addEventListener("resize", () => {
-    adjustSearchContainerAndLegend();
-    if (filteredRows && filteredRows.length > 0) {
-      generateMonthlyChart(filteredRows);
-      generatePrefectureChart(filteredRows);
-      updateYearChart();
+window.addEventListener("resize", () => {
+  adjustSearchContainerAndLegend();
+
+  const nowIsNarrow = window.innerWidth <= 711;
+  if (nowIsNarrow !== lastLayoutIsNarrow) {
+    lastLayoutIsNarrow = nowIsNarrow;
+    // レイアウトが大きく切り替わるタイミングで Select2 を再初期化して幅を追従させる
+    try {
+      initializeSelect2();
+      updateDropdownPlaceholders();
+    } catch (e) {
+      console.warn("Select2 refresh failed on resize:", e);
     }
-  });
+  }
+
+  if (filteredRows && filteredRows.length > 0) {
+    generateMonthlyChart(filteredRows);
+    generatePrefectureChart(filteredRows);
+    updateYearChart();
+  }
+});
 
   adjustSearchContainerAndLegend();
+
+  // translation.csv の読み込み完了を待つ（失敗してもページは動かす）
+  if (window.translationsReady) {
+    try {
+      await window.translationsReady;
+    } catch (e) {
+      console.warn("translation.csv load failed:", e);
+    }
+  }
 
   const savedLang = localStorage.getItem("preferredLanguage");
   const langSelector = document.getElementById("language-selector");
@@ -3478,7 +3970,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         ]
       };
 
-      map.setStyle(newStyle);
+map.setStyle(newStyle);
+// style切替でボックス選択レイヤーが消えるので復元
+try {
+  map.once("styledata", () => {
+    if (typeof updateBoxLayer === "function") updateBoxLayer();
+  });
+} catch (e) {
+  console.warn("box layer restore failed:", e);
+}
     });
   }
   // ページ初期化ボタンの処理
@@ -3505,6 +4005,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         island: "",
         literature: ""
       };
+
+      if (typeof clearBoxSelection === "function") {
+        clearBoxSelection({ apply: false });
+        if (typeof setBoxSelectMode === "function") setBoxSelectMode(false);
+      }
+
       applyFilters(true, filters);
   
       // 5. URL更新・ラベル更新

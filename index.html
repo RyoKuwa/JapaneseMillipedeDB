@@ -25,9 +25,7 @@
     <!-- jQuery UI Touch Punch -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
     
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <!-- Chart.js -->    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet" />
 
@@ -45,6 +43,18 @@
       <select id="language-selector">
         <option value="ja">日本語</option>
         <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
+        <option value="es">Español</option>
+        <option value="pt">Português</option>
+        <option value="ru">Русский</option>
+        <option value="zh">中文（简体）</option>
+        <option value="zh_tw">中文（繁體）</option>
+        <option value="ko">한국어</option>
+        <option value="ar">العربية</option>
+        <option value="hi">हिन्दी</option>
+        <option value="hu">Magyar</option>
+        <option value="id">Bahasa Indonesia</option>
       </select>
     </div>
     <h1 data-i18n="heading">日本産ヤスデ類の分布 (作成中)<br>Distribution of Japanese Millipede (under construction)</h1>
@@ -56,6 +66,7 @@
 
   <div id="mapid">
     <div id="touch-hint" data-i18n="touch_hint">2本指で地図を操作<br><br>マーカークリックで詳細表示</div>
+    <div id="box-select-overlay" aria-hidden="true"><div id="box-select-rect"></div></div>
     <!-- 検索とセレクトボックス -->
     <div class="search-container">
       <div class="search-header">
@@ -108,6 +119,11 @@
         <button class="nav-button" id="next-literature">&gt;</button>
       </div>
       <button id="reset-button" data-i18n="reset">リセット</button>
+
+<div id="box-select-buttons" class="box-select-buttons">
+  <button id="box-select-toggle" type="button" data-i18n="box_select">範囲選択</button>
+  <button id="box-select-clear" type="button" data-i18n="box_clear">範囲解除</button>
+</div>
 
       <!-- 既存の「リセット」ボタンやチェックボックス類の下に追加 -->
       <div class="select-box-divider-two"></div>
@@ -229,6 +245,10 @@
           <label>
             <input type="checkbox" class="collection-month" value="12">
             <span data-i18n="december">12月</span>
+          </label>
+          <label>
+            <input type="checkbox" class="collection-month" value="unknown">
+            <span data-i18n="unknown">不明</span>
           </label>
         </div>
       </div>
@@ -373,7 +393,7 @@
       <div id="chart-wrapper"  class="chart-container-scroll">
         <!-- グラフを表示するキャンバス -->
         <div id="chart-container">
-          <canvas id="month-chart"></canvas>
+          <div id="month-chart" class="echarts-chart"></div>
         </div>
       </div>
       
@@ -395,7 +415,7 @@
       </div>
       <div id="chart-area" style="position: relative; width: 100%;">
         <div id="prefecture-chart-wrapper" class="chart-container-scroll">
-          <canvas id="prefecture-chart"></canvas>
+          <div id="prefecture-chart" class="echarts-chart"></div>
         </div>        
       </div>
 
@@ -419,7 +439,7 @@
 
       <!-- グラフ描画エリア -->
       <div id="year-chart-wrapper" class="chart-container-scroll">
-        <canvas id="year-chart"></canvas>
+        <div id="year-chart" class="echarts-chart"></div>
       </div>
 
     </div>
